@@ -127,6 +127,7 @@ public class CommandLine {
 	// is going to establish a connection with MySQL
 	private String[] getCredentials() {
 		String[] cred = new String[3];
+    System.out.print("*******ENTER LOGIN CREDENTIALS FOR MYSQL DATABASE*******\n\n");
 		System.out.print("Username: ");
 		cred[0] = sc.nextLine();
 		System.out.print("Password: ");
