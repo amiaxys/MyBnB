@@ -1,8 +1,14 @@
 package main;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Scanner;
-import java.sql.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 public class CommandLine {
 
@@ -75,18 +81,15 @@ public class CommandLine {
 						break;
 					case 1:
 						this.createUser();
-						//this.insertOperator();
+						// this.insertOperator();
 						break;
 					case 2:
 						System.out.println("To be implemented, nothing here yet.");
-						//this.selectOperator();
+						// this.selectOperator();
 						break;
-					/*case 3:
-						this.printSchema();
-						break;
-					case 4:
-						this.printColSchema();
-						break;*/
+					/*
+					 * case 3: this.printSchema(); break; case 4: this.printColSchema(); break;
+					 */
 					default:
 						System.out.println("That's not an option, please try again!");
 						break;
@@ -113,12 +116,14 @@ public class CommandLine {
 		System.out.println("0. Exit.");
 		System.out.println("1. Create an account.");
 		System.out.println("2. Sign in.");
-		// NOTE: change menu so that once they sign in/create an account, 
+		// NOTE: change menu so that once they sign in/create an account,
 		// there's sign out and other operations
 		// NOTE: remember to add the report option
-		/*System.out.println("2. Select a record.");
-		System.out.println("3. Print schema.");
-		System.out.println("4. Print table schema.");*/
+		/*
+		 * System.out.println("2. Select a record.");
+		 * System.out.println("3. Print schema.");
+		 * System.out.println("4. Print table schema.");
+		 */
 		System.out.print("Choose one of the previous options [0-2]: ");
 	}
 
@@ -131,25 +136,74 @@ public class CommandLine {
 		cred[0] = sc.nextLine();
 		System.out.print("Password: ");
 		cred[1] = sc.nextLine();
-		/*
-		 * System.out.print("Database: "); cred[2] = sc.nextLine();
-		 */
 		return cred;
 	}
-	
+
+	// Code from:
+	// https://www.javaguides.net/2020/02/java-sha-256-hash-with-salt-example.html
+	private static byte[] getSalt() {
+		SecureRandom random = new SecureRandom();
+		byte[] salt = new byte[16];
+		random.nextBytes(salt);
+		return salt;
+	}
+
+	private static String getSaltHashedPassword(String password, byte[] salt) {
+		String shPassword = null;
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			md.update(salt);
+			byte[] bytes = md.digest(password.getBytes());
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < bytes.length; i++) {
+				sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
+			}
+			shPassword = sb.toString();
+		} catch (NoSuchAlgorithmException e) {
+			System.out.println("Error salt and hashing password!");
+			e.printStackTrace();
+		}
+		return shPassword;
+	}
+
+	private boolean checkValidDate(String date) {
+		boolean success = true;
+		DateTimeFormatter format = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT);
+		try {
+			format.parse(date);
+			int[] splitDate = Arrays.stream(date.split("-")).mapToInt(Integer::parseInt).toArray();
+			LocalDate current = LocalDate.now();
+			if (splitDate[0] > current.getYear()) {
+				success = false;
+			} else if (splitDate[0] == current.getYear()) {
+				if (splitDate[1] > current.getMonthValue()) {
+					success = false;
+				} else if (splitDate[1] == current.getMonthValue()) {
+					if (splitDate[2] > current.getDayOfMonth()) {
+						success = false;
+					}
+				}
+			}
+		} catch (DateTimeParseException e) {
+			success = false;
+		}
+		return success;
+	}
+
 	// Function that handles the feature: "Create an account."
 	private void createUser() {
-		// NOTE: remember to salt and hash password later
-		// https://www.javaguides.net/2020/02/java-sha-256-hash-with-salt-example.html
-		// NOTE: make a class/model for this later
+		// NOTE: make a class/model for this later?
+		boolean repeat = false;
 		String sin = null;
 		String password = null;
+		byte[] salt = getSalt();
 		String name = null;
 		String address = null;
-		Date birthdate = null;
+		String birthdate = null;
 		String occupation = null;
 		String temp;
-		while (sin == null || password == null) {
+		while (sin == null || password == null || repeat) {
+			repeat = false;
 			try {
 				System.out.print("Enter SIN: ");
 				temp = sc.nextLine();
@@ -166,7 +220,7 @@ public class CommandLine {
 				System.out.print("Enter password: ");
 				temp = sc.nextLine();
 				if (temp.length() >= 8) {
-					password = temp;
+					password = getSaltHashedPassword(temp, salt);
 				} else {
 					System.out.println("Your password is not 8 characters long, try again!");
 					continue;
@@ -182,14 +236,17 @@ public class CommandLine {
 					address = temp;
 				}
 				System.out.print("Enter birthdate (YYYY-MM-DD): ");
-				temp = sc.nextLine();
+				temp = sc.nextLine().strip();
 				if (temp.length() != 0) {
-					//birthdate = temp;
-					/* DateTimeFormatter sdr = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSzzz");
-    				ZonedDateTime MydateTime = ZonedDateTime.parse(kafkaTime,sdr);
-    				this.time = MydateTime.toInstant().toEpochMilli(); */
+					if (checkValidDate(temp)) {
+						birthdate = temp;
+					} else {
+						System.out.println("That's not a proper birthdate, try again!");
+						repeat = true;
+						continue;
+					}
 				}
-				
+
 				System.out.print("Enter occupation: ");
 				temp = sc.nextLine();
 				if (temp.length() != 0) {
@@ -199,79 +256,52 @@ public class CommandLine {
 				System.out.println("That's not a SIN, please try again!");
 			}
 		}
-		
-		int rows = sqlMngr.insertUser(sin, password, name, address, birthdate, occupation);
+
+		int rows = sqlMngr.insertUser(sin, password, salt, name, address, birthdate, occupation);
 		System.out.println("");
 		System.out.println("Rows affected: " + rows);
 		System.out.println("");
-	
+
 	}
 
-/*	// Function that handles the feature: "3. Print schema."
-	private void printSchema() {
-		ArrayList<String> schema = sqlMngr.getSchema();
-
-		System.out.println("");
-		System.out.println("------------");
-		System.out.println("Total number of tables: " + schema.size());
-		for (int i = 0; i < schema.size(); i++) {
-			System.out.println("Table: " + schema.get(i));
-		}
-		System.out.println("------------");
-		System.out.println("");
-	}
-
-	// Function that handles the feature: "4. Print table schema."
-	private void printColSchema() {
-		System.out.print("Table Name: ");
-		String tableName = sc.nextLine();
-		ArrayList<String> result = sqlMngr.colSchema(tableName);
-		System.out.println("");
-		System.out.println("------------");
-		System.out.println("Total number of fields: " + result.size() / 2);
-		for (int i = 0; i < result.size(); i += 2) {
-			System.out.println("-");
-			System.out.println("Field Name: " + result.get(i));
-			System.out.println("Field Type: " + result.get(i + 1));
-		}
-		System.out.println("------------");
-		System.out.println("");
-	}
-
-	// Function that handles the feature: "2. Select a record."
-	private void selectOperator() {
-		String query = "";
-		System.out.print("Issue the Select Query: ");
-		query = sc.nextLine();
-		query.trim();
-		if (query.substring(0, 6).compareToIgnoreCase("select") == 0)
-			sqlMngr.selectOp(query);
-		else
-			System.err.println("No select statement provided!");
-	}
-
-	// Function that handles the feature: "1. Insert a record."
-	private void insertOperator() {
-		int rowsAff = 0;
-		int counter = 0;
-		String query = "";
-		System.out.print("Table: ");
-		String table = sc.nextLine();
-		System.out.print("Comma Separated Columns: ");
-		String cols = sc.nextLine();
-		System.out.print("Comma Separated Values: ");
-		String[] vals = sc.nextLine().split(",");
-		// transform the user input into a valid SQL insert statement
-		query = "INSERT INTO " + table + " (" + cols + ") VALUES(";
-		for (counter = 0; counter < vals.length - 1; counter++) {
-			query = query.concat("'" + vals[counter] + "',");
-		}
-		query = query.concat("'" + vals[counter] + "');");
-		System.out.println(query);
-		rowsAff = sqlMngr.insertOp(query);
-		System.out.println("");
-		System.out.println("Rows affected: " + rowsAff);
-		System.out.println("");
-	}*/
+	/*
+	 * // Function that handles the feature: "3. Print schema." private void
+	 * printSchema() { ArrayList<String> schema = sqlMngr.getSchema();
+	 * 
+	 * System.out.println(""); System.out.println("------------");
+	 * System.out.println("Total number of tables: " + schema.size()); for (int i =
+	 * 0; i < schema.size(); i++) { System.out.println("Table: " + schema.get(i)); }
+	 * System.out.println("------------"); System.out.println(""); }
+	 * 
+	 * // Function that handles the feature: "4. Print table schema." private void
+	 * printColSchema() { System.out.print("Table Name: "); String tableName =
+	 * sc.nextLine(); ArrayList<String> result = sqlMngr.colSchema(tableName);
+	 * System.out.println(""); System.out.println("------------");
+	 * System.out.println("Total number of fields: " + result.size() / 2); for (int
+	 * i = 0; i < result.size(); i += 2) { System.out.println("-");
+	 * System.out.println("Field Name: " + result.get(i));
+	 * System.out.println("Field Type: " + result.get(i + 1)); }
+	 * System.out.println("------------"); System.out.println(""); }
+	 * 
+	 * // Function that handles the feature: "2. Select a record." private void
+	 * selectOperator() { String query = "";
+	 * System.out.print("Issue the Select Query: "); query = sc.nextLine();
+	 * query.trim(); if (query.substring(0, 6).compareToIgnoreCase("select") == 0)
+	 * sqlMngr.selectOp(query); else
+	 * System.err.println("No select statement provided!"); }
+	 * 
+	 * // Function that handles the feature: "1. Insert a record." private void
+	 * insertOperator() { int rowsAff = 0; int counter = 0; String query = "";
+	 * System.out.print("Table: "); String table = sc.nextLine();
+	 * System.out.print("Comma Separated Columns: "); String cols = sc.nextLine();
+	 * System.out.print("Comma Separated Values: "); String[] vals =
+	 * sc.nextLine().split(","); // transform the user input into a valid SQL insert
+	 * statement query = "INSERT INTO " + table + " (" + cols + ") VALUES("; for
+	 * (counter = 0; counter < vals.length - 1; counter++) { query =
+	 * query.concat("'" + vals[counter] + "',"); } query = query.concat("'" +
+	 * vals[counter] + "');"); System.out.println(query); rowsAff =
+	 * sqlMngr.insertOp(query); System.out.println("");
+	 * System.out.println("Rows affected: " + rowsAff); System.out.println(""); }
+	 */
 
 }

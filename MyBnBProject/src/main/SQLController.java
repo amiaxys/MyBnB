@@ -12,9 +12,9 @@ public class SQLController {
 	// Object which communicates with the SQL backend delivering to it the
 	// desired query from our application and returning the results of this
 	// execution the same way that are received from the SQL backend.
-	//private Statement st = null;
+	// private Statement st = null;
 	private PreparedStatement insertUser = null;
-	
+
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
 		Class.forName(dbClassName);
@@ -27,7 +27,7 @@ public class SQLController {
 			success = createDatabase();
 			conn.close();
 			conn = DriverManager.getConnection(connection, user, pass);
-			//st = conn.createStatement();
+			// st = conn.createStatement();
 			success = createTables();
 			success = prepareStatements();
 
@@ -43,14 +43,14 @@ public class SQLController {
 	// Acts like a destructor.
 	public void disconnect() {
 		try {
-			//st.close();
+			// st.close();
 			insertUser.close();
 			conn.close();
 		} catch (SQLException e) {
 			System.err.println("Exception occured while disconnecting!");
 			e.printStackTrace();
 		} finally {
-			//st = null;
+			// st = null;
 			insertUser = null;
 			conn = null;
 		}
@@ -63,9 +63,9 @@ public class SQLController {
 			createDb.executeUpdate();
 			createDb.close();
 		} catch (SQLException e) {
-			success = false;
-			System.err.println("Database could not be created!");
-			e.printStackTrace();
+			// success = false;
+			System.err.println("Database already exists!");
+			// e.printStackTrace();
 		}
 		return success;
 	}
@@ -73,52 +73,57 @@ public class SQLController {
 	private boolean createTables() {
 		boolean success = true;
 		try {
-			PreparedStatement createUserTb = conn.prepareStatement("CREATE TABLE User (" 
-					+ "	SIN CHAR(9) PRIMARY KEY,"
-					+ " Password VARCHAR(250) NOT NULL," 
-					+ "	Name VARCHAR(250)," 
-					+ "	Address VARCHAR(250),"
-					+ "	Birthdate DATE," 
-					+ "	Occupation VARCHAR(100)" 
-					+ ")");
+			PreparedStatement createUserTb = conn.prepareStatement(
+					"CREATE TABLE User (" 
+							+ "	SIN CHAR(9) PRIMARY KEY," 
+							+ " Password VARCHAR(250) NOT NULL,"
+							+ " Salt BINARY(16) NOT NULL," 
+							+ "	Name VARCHAR(250),"
+							+ "	Address VARCHAR(250)," 
+							+ "	Birthdate CHAR(10)," 
+							+ "	Occupation VARCHAR(100)" 
+							+ ")");
 			createUserTb.executeUpdate();
 			createUserTb.close();
 		} catch (SQLException e) {
-			success = false;
-			System.err.println("Tables could not be created!");
-			e.printStackTrace();
+			// success = false;
+			System.err.println("Tables already exist!");
+			// e.printStackTrace();
 		}
 		return success;
 	}
-	
+
 	private boolean prepareStatements() {
 		boolean success = true;
 		try {
-			insertUser = conn.prepareStatement("INSERT INTO User"
-					+ " (SIN, Password, Name, Address, Birthdate, Occupation)" 
-					+ " VALUES (?, ?, ?, ?, ?, ?)");
+			insertUser = conn.prepareStatement("INSERT INTO User" 
+							+ " (SIN, Password, Salt, Name, Address, Birthdate, Occupation)"
+							+ " VALUES (?, ?, ?, ?, ?, ?, ?)");
 		} catch (SQLException e) {
 			success = false;
 			System.err.println("Prepared statements could not be created!");
 			e.printStackTrace();
 		}
-		return success; 
+		return success;
 	}
 
 	// Controls the execution of an insert query.
 	// Functionality: "1. Insert a record."
-	public int insertUser(String sin, String password, String name, String address, Date birthdate, String occupation) {
+	public int insertUser(String sin, String password, byte[] salt, String name, String address, String birthdate,
+			String occupation) {
 		int rows = 0;
 		try {
 			insertUser.setString(1, sin);
 			insertUser.setString(2, password);
-			insertUser.setString(3, name);
-			insertUser.setString(4, address);
-			insertUser.setDate(5, birthdate);
-			insertUser.setString(6, occupation);
+			insertUser.setBytes(3, salt);
+			insertUser.setString(4, name);
+			insertUser.setString(5, address);
+			insertUser.setString(6, birthdate);
+			insertUser.setString(7, occupation);
 			rows = insertUser.executeUpdate();
 		} catch (SQLException e) {
-			System.err.println("Exception triggered when inserting user! Your SIN may already be attached to an account.");
+			System.err.println(
+					"Exception triggered when inserting user! Your SIN may already be attached to an account.");
 			e.printStackTrace();
 		}
 		return rows;
