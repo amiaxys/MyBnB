@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
+import java.time.temporal.TemporalAccessor;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -215,19 +216,9 @@ public class CommandLine {
 		boolean success = true;
 		DateTimeFormatter format = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT);
 		try {
-			format.parse(date);
-			int[] splitDate = Arrays.stream(date.split("-")).mapToInt(Integer::parseInt).toArray();
-			LocalDate current = LocalDate.now();
-			if (splitDate[0] > current.getYear()) {
+			LocalDate parsedDate = LocalDate.parse(date, format);
+			if (parsedDate.isAfter(LocalDate.now())) {
 				success = false;
-			} else if (splitDate[0] == current.getYear()) {
-				if (splitDate[1] > current.getMonthValue()) {
-					success = false;
-				} else if (splitDate[1] == current.getMonthValue()) {
-					if (splitDate[2] > current.getDayOfMonth()) {
-						success = false;
-					}
-				}
 			}
 		} catch (DateTimeParseException e) {
 			success = false;
