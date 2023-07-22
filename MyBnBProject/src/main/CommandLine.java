@@ -74,33 +74,13 @@ public class CommandLine {
 			System.out.println("");
 
 			String input = "";
-			int choice = -1;
 			do {
-				menu(); // Print Menu
-				input = sc.nextLine();
-				try {
-					choice = Integer.parseInt(input);
-					switch (choice) { // Activate the desired functionality
-					case 0:
-						break;
-					case 1:
-						this.createUser();
-						// this.insertOperator();
-						break;
-					case 2:
-						this.signIn();
-						// this.selectOperator();
-						break;
-					/*
-					 * case 3: this.printSchema(); break; case 4: this.printColSchema(); break;
-					 */
-					default:
-						System.out.println("That's not an option, please try again!");
-						break;
-					}
-				} catch (NumberFormatException e) {
-					input = "-1";
+				if (this.currentUser == null) {
+					input = runMenuOptions();
+				} else {
+					input = runUserMenuOptions();
 				}
+
 			} while (input.compareTo("0") != 0);
 
 			return true;
@@ -116,14 +96,12 @@ public class CommandLine {
 	 * ------------ Private functions ------------
 	 */
 
-	// Print menu options
+	// Print not signed in menu options
 	private static void menu() {
 		System.out.println("=========MENU=========");
 		System.out.println("0. Exit.");
 		System.out.println("1. Create an account.");
 		System.out.println("2. Sign in.");
-		// NOTE: change menu so that once they sign in/create an account,
-		// there's sign out and other operations
 		// NOTE: remember to add the report option
 		/*
 		 * System.out.println("2. Select a record.");
@@ -131,6 +109,66 @@ public class CommandLine {
 		 * System.out.println("4. Print table schema.");
 		 */
 		System.out.print("Choose one of the previous options [0-2]: ");
+	}
+
+	// Print signed in menu (user menu) options
+	private static void userMenu() {
+		System.out.println("=========USER MENU=========");
+		System.out.println("0. Exit.");
+		System.out.println("1. Some other option here.");
+		// add delete account + sign out here later
+		System.out.print("Choose one of the previous options [0-1]: ");
+	}
+
+	// Loop through and execute menu options
+	private String runMenuOptions() {
+		menu(); // Print Menu
+		String input = sc.nextLine();
+		try {
+			int choice = Integer.parseInt(input);
+			// Activate the desired functionality
+			switch (choice) {
+			case 0:
+				break;
+			case 1:
+				this.createUser();
+				break;
+			case 2:
+				this.signIn();
+				break;
+			default:
+				System.out.println("That's not an option, please try again!");
+				break;
+			}
+		} catch (NumberFormatException e) {
+			input = "-1";
+		}
+		
+		return input;
+	}
+
+	// Loop through and execute user menu options
+	private String runUserMenuOptions() {
+		userMenu(); // Print Menu
+		String input = sc.nextLine();
+		try {
+			int choice = Integer.parseInt(input);
+			// Activate the desired functionality
+			switch (choice) {
+			case 0:
+				break;
+			case 1:
+				System.out.println("Not an option yet.");
+				break;
+			default:
+				System.out.println("That's not an option, please try again!");
+				break;
+			}
+		} catch (NumberFormatException e) {
+			input = "-1";
+		}
+		
+		return input;
 	}
 
 	// Called during the initialization of an instance of the current class
@@ -202,8 +240,8 @@ public class CommandLine {
 		boolean repeat = false;
 		User user = new User();
 		user.salt = getSalt();
-		String temp;
-		while (user.sin == null || user.password == null || repeat) {
+		String temp = "";
+		while ((user.sin == null || user.password == null || repeat) && !temp.equalsIgnoreCase("exit")) {
 			repeat = false;
 			try {
 				System.out.print("Enter SIN: ");
@@ -274,9 +312,9 @@ public class CommandLine {
 	private void signIn() {
 		User user = null;
 		String sin = null;
-		String temp;
-		while (user == null) {
-			while (sin == null) {
+		String temp = "";
+		while (user == null && !temp.equalsIgnoreCase("exit")) {
+			while (sin == null && !temp.equalsIgnoreCase("exit")) {
 				System.out.print("Enter SIN: ");
 				temp = sc.nextLine().strip();
 				if (temp.length() != 9) {
