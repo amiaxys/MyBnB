@@ -16,8 +16,12 @@ public class CommandLine {
 	private SQLController sqlMngr = null;
 	// 'sc' is needed in order to scan the inputs provided by the user
 	private Scanner sc = null;
+	// current user, if signed in
+	private User currentUser = null;
 
-	// Public functions - CommandLine State Functions
+	/*
+	 * ------------ Public functions - CommandLine State Functions ------------
+	 */
 
 	/*
 	 * Function used for initializing an instance of current class
@@ -84,7 +88,7 @@ public class CommandLine {
 						// this.insertOperator();
 						break;
 					case 2:
-						System.out.println("To be implemented, nothing here yet.");
+						this.signIn();
 						// this.selectOperator();
 						break;
 					/*
@@ -108,7 +112,9 @@ public class CommandLine {
 		}
 	}
 
-	// Private functions
+	/*
+	 * ------------ Private functions ------------
+	 */
 
 	// Print menu options
 	private static void menu() {
@@ -132,7 +138,7 @@ public class CommandLine {
 	// is going to establish a connection with MySQL
 	private String[] getCredentials() {
 		String[] cred = new String[3];
-    System.out.print("*******ENTER LOGIN CREDENTIALS FOR MYSQL DATABASE*******\n\n");
+		System.out.println("*******ENTER LOGIN CREDENTIALS FOR MYSQL DATABASE*******\n");
 		System.out.print("Username: ");
 		cred[0] = sc.nextLine();
 		System.out.print("Password: ");
@@ -193,21 +199,86 @@ public class CommandLine {
 
 	// Function that handles the feature: "Create an account."
 	private void createUser() {
-		// NOTE: make a class/model for this later?
 		boolean repeat = false;
-		String sin = null;
-		String password = null;
-		byte[] salt = getSalt();
-		String name = null;
-		String address = null;
-		String birthdate = null;
-		String occupation = null;
+		User user = new User();
+		user.salt = getSalt();
 		String temp;
-		while (sin == null || password == null || repeat) {
+		while (user.sin == null || user.password == null || repeat) {
 			repeat = false;
 			try {
 				System.out.print("Enter SIN: ");
+				temp = sc.nextLine().strip();
+				if (temp.length() != 9) {
+					System.out.println("That's not a SIN, please try again!");
+					continue;
+				}
+				int tempInt = Integer.parseInt(temp);
+				if (tempInt < 0) {
+					System.out.println("That's not a SIN, please try again!");
+					continue;
+				}
+				user.sin = temp;
+				System.out.print("Enter password: ");
 				temp = sc.nextLine();
+				int tempLen = temp.length();
+				if (tempLen >= 8 && tempLen <= 250) {
+					user.password = getSaltHashedPassword(temp, user.salt);
+				} else if (tempLen < 8) {
+					System.out.println("Your password is not 8 characters long, try again!");
+					continue;
+				} else if (tempLen > 250) {
+					System.out.println("Your password is too long, try again!");
+					continue;
+				}
+				System.out.print("Enter name: ");
+				temp = sc.nextLine().strip();
+				if (temp.length() != 0) {
+					user.name = temp;
+				}
+				System.out.print("Enter address: ");
+				temp = sc.nextLine().strip();
+				if (temp.length() != 0) {
+					user.address = temp;
+				}
+				System.out.print("Enter birthdate (YYYY-MM-DD): ");
+				temp = sc.nextLine().strip();
+				if (temp.length() != 0) {
+					if (checkValidDate(temp)) {
+						user.birthdate = temp;
+					} else {
+						System.out.println("That's not a proper birthdate, try again!");
+						repeat = true;
+						continue;
+					}
+				}
+
+				System.out.print("Enter occupation: ");
+				temp = sc.nextLine().strip();
+				if (temp.length() != 0) {
+					user.occupation = temp;
+				}
+			} catch (NumberFormatException e) {
+				System.out.println("That's not a SIN, please try again!");
+			}
+		}
+
+		int rows = sqlMngr.insertUser(user.sin, user.password, user.salt, user.name, user.address, user.birthdate,
+				user.occupation);
+		System.out.println("");
+		System.out.println("User table rows affected: " + rows);
+		System.out.println("");
+
+	}
+
+	// Function that handles the feature: "Sign in."
+	private void signIn() {
+		User user = null;
+		String sin = null;
+		String temp;
+		while (user == null) {
+			while (sin == null) {
+				System.out.print("Enter SIN: ");
+				temp = sc.nextLine().strip();
 				if (temp.length() != 9) {
 					System.out.println("That's not a SIN, please try again!");
 					continue;
@@ -218,51 +289,26 @@ public class CommandLine {
 					continue;
 				}
 				sin = temp;
-				System.out.print("Enter password: ");
-				temp = sc.nextLine();
-				if (temp.length() >= 8) {
-					password = getSaltHashedPassword(temp, salt);
-				} else {
-					System.out.println("Your password is not 8 characters long, try again!");
-					continue;
-				}
-				System.out.print("Enter name: ");
-				temp = sc.nextLine();
-				if (temp.length() != 0) {
-					name = temp;
-				}
-				System.out.print("Enter address: ");
-				temp = sc.nextLine();
-				if (temp.length() != 0) {
-					address = temp;
-				}
-				System.out.print("Enter birthdate (YYYY-MM-DD): ");
-				temp = sc.nextLine().strip();
-				if (temp.length() != 0) {
-					if (checkValidDate(temp)) {
-						birthdate = temp;
-					} else {
-						System.out.println("That's not a proper birthdate, try again!");
-						repeat = true;
-						continue;
-					}
-				}
+			}
 
-				System.out.print("Enter occupation: ");
-				temp = sc.nextLine();
-				if (temp.length() != 0) {
-					occupation = temp;
-				}
-			} catch (NumberFormatException e) {
-				System.out.println("That's not a SIN, please try again!");
+			user = sqlMngr.selectUserBySIN(sin);
+			if (user == null) {
+				System.out.println("Try again!");
+				sin = null;
 			}
 		}
 
-		int rows = sqlMngr.insertUser(sin, password, salt, name, address, birthdate, occupation);
-		System.out.println("");
-		System.out.println("Rows affected: " + rows);
-		System.out.println("");
+		String password = null;
+		System.out.print("Enter password: ");
+		temp = sc.nextLine();
+		password = getSaltHashedPassword(temp, user.salt);
 
+		if (password.equals(user.password)) {
+			System.out.println("You are signed in!");
+			this.currentUser = user;
+		} else {
+			System.out.println("Wrong password!");
+		}
 	}
 
 	/*

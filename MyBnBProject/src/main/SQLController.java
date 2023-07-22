@@ -1,19 +1,20 @@
 package main;
 
 import java.sql.*;
-import java.util.ArrayList;
 
 public class SQLController {
 	private static final String dbClassName = "com.mysql.cj.jdbc.Driver";// "com.mysql.jdbc.Driver";
 	private static final String CONNECTION = "jdbc:mysql://127.0.0.1/";
+
 	// Object that establishes and keeps the state of our application's
 	// connection with the MySQL backend.
 	private Connection conn = null;
-	// Object which communicates with the SQL backend delivering to it the
-	// desired query from our application and returning the results of this
-	// execution the same way that are received from the SQL backend.
-	// private Statement st = null;
+
+	// Objects which communicates with the SQL backend delivering to it the
+	// desired statement/query from our application and returning the results
+	// of this execution the same way that are received from the SQL backend.
 	private PreparedStatement insertUser = null;
+	private PreparedStatement selectUserBySIN = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -27,7 +28,6 @@ public class SQLController {
 			success = createDatabase();
 			conn.close();
 			conn = DriverManager.getConnection(connection, user, pass);
-			// st = conn.createStatement();
 			success = createTables();
 			success = prepareStatements();
 
@@ -43,15 +43,15 @@ public class SQLController {
 	// Acts like a destructor.
 	public void disconnect() {
 		try {
-			// st.close();
 			insertUser.close();
+			selectUserBySIN.close();
 			conn.close();
 		} catch (SQLException e) {
 			System.err.println("Exception occured while disconnecting!");
 			e.printStackTrace();
 		} finally {
-			// st = null;
 			insertUser = null;
+			selectUserBySIN = null;
 			conn = null;
 		}
 	}
@@ -73,16 +73,18 @@ public class SQLController {
 	private boolean createTables() {
 		boolean success = true;
 		try {
-			PreparedStatement createUserTb = conn.prepareStatement(
-					"CREATE TABLE User (" 
-							+ "	SIN CHAR(9) PRIMARY KEY," 
-							+ " Password VARCHAR(250) NOT NULL,"
+			// @formatter:off
+			PreparedStatement createUserTb = conn
+					.prepareStatement("CREATE TABLE User (" 
+							+ "	SIN CHAR(9) PRIMARY KEY,"
+							+ " Password VARCHAR(250) NOT NULL," 
 							+ " Salt BINARY(16) NOT NULL," 
 							+ "	Name VARCHAR(250),"
 							+ "	Address VARCHAR(250)," 
 							+ "	Birthdate CHAR(10)," 
 							+ "	Occupation VARCHAR(100)" 
 							+ ")");
+			// @formatter:on
 			createUserTb.executeUpdate();
 			createUserTb.close();
 		} catch (SQLException e) {
@@ -96,9 +98,12 @@ public class SQLController {
 	private boolean prepareStatements() {
 		boolean success = true;
 		try {
-			insertUser = conn.prepareStatement("INSERT INTO User" 
-							+ " (SIN, Password, Salt, Name, Address, Birthdate, Occupation)"
-							+ " VALUES (?, ?, ?, ?, ?, ?, ?)");
+			// @formatter:off
+			insertUser = conn.prepareStatement("INSERT INTO User"
+					+ " (SIN, Password, Salt, Name, Address, Birthdate, Occupation)" 
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?)");
+			// @formatter:on
+			selectUserBySIN = conn.prepareStatement("SELECT * FROM User WHERE SIN=?");
 		} catch (SQLException e) {
 			success = false;
 			System.err.println("Prepared statements could not be created!");
@@ -108,7 +113,7 @@ public class SQLController {
 	}
 
 	// Controls the execution of an insert query.
-	// Functionality: "1. Insert a record."
+	// Functionality: Insert a user.
 	public int insertUser(String sin, String password, byte[] salt, String name, String address, String birthdate,
 			String occupation) {
 		int rows = 0;
@@ -127,6 +132,32 @@ public class SQLController {
 			e.printStackTrace();
 		}
 		return rows;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select a user by SIN.
+	public User selectUserBySIN(String sin) {
+		User user = new User();
+		try {
+			selectUserBySIN.setString(1, sin);
+			ResultSet rs = selectUserBySIN.executeQuery();
+
+			rs.next();
+			user.sin = rs.getString("SIN");
+			user.password = rs.getString("Password");
+			user.salt = rs.getBytes("Salt");
+			user.name = rs.getString("Name");
+			user.address = rs.getString("Address");
+			user.birthdate = rs.getString("Birthdate");
+			user.occupation = rs.getString("Occupation");
+
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println(
+					"Exception triggered during selecting user by SIN! This SIN may not be attached to an account.");
+			e.printStackTrace();
+		}
+		return user;
 	}
 
 	/*
