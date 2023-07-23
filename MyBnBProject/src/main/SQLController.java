@@ -2,6 +2,7 @@ package main;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.util.ArrayList;
 
 public class SQLController {
 	private static final String dbClassName = "com.mysql.cj.jdbc.Driver";// "com.mysql.jdbc.Driver";
@@ -19,6 +20,7 @@ public class SQLController {
   private PreparedStatement insertListing = null;
   private PreparedStatement insertHosts = null;
   private PreparedStatement insertAvailability = null;
+  private PreparedStatement selectListingAddr = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -186,6 +188,8 @@ public class SQLController {
       insertAvailability = conn.prepareStatement("INSERT INTO Availability"
 					+ " (Street, Number, PostalCode, Country, Year, Month, Day, Availability, Price)" 
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+      selectListingAddr = conn.prepareStatement("SELECT * FROM Listing WHERE Street=? AND"
+          + " Number=? AND PostalCode=? AND Country=? AND City=?");
 		} catch (SQLException e) {
 			success = false;
 			System.err.println("Prepared statements could not be created!");
@@ -304,6 +308,44 @@ public class SQLController {
 			e.printStackTrace();
 		}
 		return rows;
+	}
+
+  // Controls the execution of a select query.
+	// Functionality: Select listings by address.
+	public ArrayList<Listing> searchListingAddr(String street, int number, String postalCode, String country, String city) {
+		ArrayList<Listing> listings = new ArrayList<>();
+		try {
+      int count = 0;
+			selectListingAddr.setString(++count, street);
+      selectListingAddr.setInt(++count, number);
+      selectListingAddr.setString(++count, postalCode);
+      selectListingAddr.setString(++count, country);
+      selectListingAddr.setString(++count, city);
+
+			ResultSet rs = selectListingAddr.executeQuery();
+
+      count = 0;
+      while (rs.next()) {
+        Listing temp = new Listing();
+        temp.type = rs.getString("Type");
+        temp.street = rs.getString("Street");
+        temp.number = rs.getInt("Number");
+        temp.postalCode = rs.getString("PostalCode");
+        temp.country = rs.getString("Country");
+        temp.city = rs.getString("City");
+        temp.latitude = rs.getBigDecimal("Latitude");
+        temp.longitude = rs.getBigDecimal("Longitude");
+        temp.amenities = rs.getString("Amenities");
+        listings.add(temp);
+      }
+
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println(
+					"Exception triggered during selecting listing by address! This address may not be attached to an account.");
+			e.printStackTrace();
+		}
+		return listings;
 	}
 
 	/*

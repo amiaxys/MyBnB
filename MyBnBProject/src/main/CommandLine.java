@@ -134,8 +134,19 @@ public class CommandLine {
 		System.out.println("=========USER MENU=========");
 		System.out.println("0. Exit.");
 		System.out.println("1. Create a listing.");
+    System.out.println("2. Search for listings.");
 		// add delete account + sign out here later
-		System.out.print("Choose one of the previous options [0-1]: ");
+		System.out.print("Choose one of the previous options [0-2]: ");
+	}
+
+  // Print search options
+  private static void searchOptions() {
+		System.out.println("*********SEARCH OPTIONS*********");
+		System.out.println("0. Back.");
+		System.out.println("1. Search by exact address.");
+    System.out.println("2. Search by latitude and longitude. [not implemented]");
+    System.out.println("3. Search by postal code. [not implemented]");
+		System.out.print("Choose one of the previous options [0-3]: ");
 	}
 
 	// Loop through and execute menu options
@@ -178,6 +189,12 @@ public class CommandLine {
 			case 1:
 				this.createListing();
 				break;
+      case 2:
+        String searchInput;
+        do {
+				  searchInput = this.runSearchOptions();
+			  } while (searchInput.compareTo("0") != 0);
+        break;
 			default:
 				System.out.println("That's not an option, please try again!");
 				break;
@@ -188,6 +205,33 @@ public class CommandLine {
 		
 		return input;
 	}
+
+  private String runSearchOptions() {
+    searchOptions(); // Print search options
+		String input = sc.nextLine();
+		try {
+			int choice = Integer.parseInt(input);
+			// Activate the desired functionality
+			switch (choice) {
+			case 0:
+				break;
+			case 1:
+				this.searchListingByAddress();
+				break;
+      case 2:
+        break;
+      case 3:
+        break;
+			default:
+				System.out.println("That's not an option, please try again!");
+				break;
+			}
+		} catch (NumberFormatException e) {
+			input = "-1";
+		}
+		
+		return input;
+  }
 
 	// Called during the initialization of an instance of the current class
 	// in order to retrieve from the user the credentials with which our program
@@ -477,15 +521,55 @@ public class CommandLine {
 		
 		int rows = sqlMngr.insertListing(type, street, number, postalCode, country, city, latitude, longitude, traits);
 		System.out.println("\nRows affected: " + rows +"\n");	
-
     // inserting to Listing failed.
     if (rows == 0) {
       return;
     }
-    
     //insert new row to table Hosts
     rows = sqlMngr.insertHosts(currentUser.sin, street, number, postalCode, country);
 	}
+
+  private void printListings(ArrayList<Listing> listings) {
+    int count = 0;
+    System.out.println("\nResult: " + listings.size() + " listings\n");
+    System.out.println("---------------------------------------------------------------------------------------------------------------------------");
+    System.out.printf("| %-14s | %-102s |%n", "Type", "Address");
+    System.out.println("===========================================================================================================================");
+    for (Listing listing: listings) {
+      count++;
+      System.out.printf("| %d. %-11s | %d %-30s %-25s %-30s %-10s |", count,listing.type,listing.number,listing.street,
+        listing.city,listing.country,listing.postalCode);
+    }
+    System.out.println("\n---------------------------------------------------------------------------------------------------------------------------\n");
+  } 
+
+  private void searchListingByAddress() {
+    String street, postalCode, country, city;
+    int number = -1;
+
+    System.out.print("Enter a street name: ");
+    street = sc.nextLine();
+
+    while (number == -1) {
+      try {
+        System.out.print("Enter a street number: ");
+        number = Integer.parseInt(sc.nextLine());
+      } catch (NumberFormatException e) {
+        System.out.println("That's not a numeral value, please try again!");
+        continue;
+      }
+    }
+    System.out.print("Enter a postal code: ");
+    postalCode = sc.nextLine();
+    System.out.print("Enter a country: ");
+    country = sc.nextLine();
+    System.out.print("Enter a city: ");
+    city = sc.nextLine();
+    
+    ArrayList<Listing> listings = sqlMngr.searchListingAddr(street, number, postalCode, country, city);
+
+    printListings(listings); //print result
+  }
 
 	/*
 	 * // Function that handles the feature: "3. Print schema." private void
