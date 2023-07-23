@@ -1,15 +1,17 @@
 package main;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
-import java.time.temporal.TemporalAccessor;
+import java.math.BigDecimal;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.text.DecimalFormat;
 
 public class CommandLine {
 
@@ -19,6 +21,21 @@ public class CommandLine {
 	private Scanner sc = null;
 	// current user, if signed in
 	private User currentUser = null;
+
+  private ArrayList<String> amenities = new ArrayList<>(
+      Arrays.asList("wifi","kitchen","washer","dryer",
+        "air conditioning","heating","dedicated workspace", "tv",
+        "hair dryer","iron","pool","hot tub","free parking",
+        "ev charger","crib","gym","bbq grill","breakfast",
+        "indoor fireplace","smoking allowed","beachfront",
+        "waterfront","ski-in/ski-out","smoke alarm","carbon monoxide alarm"));
+  /*private ArrayList<String> amenities = new ArrayList<>(
+      Arrays.asList("Wifi","Kitchen","Washer","Dryer",
+        "Air conditioning","Heating","Dedicated workspace", "TV",
+        "Hair dryer","Iron","Pool","Hot tub","Free parking",
+        "EV charger","Crib","Gym","BBQ grill","Breakfast",
+        "Indoor fireplace","Smoking allowed","Beachfront",
+        "Waterfront","Ski-in/ski-out","Smoke alarm","Carbon monoxide alarm"));*/
 
 	/*
 	 * ------------ Public functions - CommandLine State Functions ------------
@@ -116,7 +133,7 @@ public class CommandLine {
 	private static void userMenu() {
 		System.out.println("=========USER MENU=========");
 		System.out.println("0. Exit.");
-		System.out.println("1. Some other option here.");
+		System.out.println("1. Create a listing.");
 		// add delete account + sign out here later
 		System.out.print("Choose one of the previous options [0-1]: ");
 	}
@@ -159,7 +176,7 @@ public class CommandLine {
 			case 0:
 				break;
 			case 1:
-				System.out.println("Not an option yet.");
+				this.createListing();
 				break;
 			default:
 				System.out.println("That's not an option, please try again!");
@@ -247,7 +264,7 @@ public class CommandLine {
 					continue;
 				}
 				user.sin = temp;
-				System.out.print("Enter password: ");
+				System.out.print("Enter password (8-250 characters): ");
 				temp = sc.nextLine();
 				int tempLen = temp.length();
 				if (tempLen >= 8 && tempLen <= 250) {
@@ -338,6 +355,136 @@ public class CommandLine {
 		} else {
 			System.out.println("Wrong password!");
 		}
+	}
+
+  private boolean isValid(String input, int max) {
+    if (input.strip().equals("")) {
+      System.out.println("Input should be nonempty, please try again!");
+			return false;
+    }
+    if (input.length() > max) {
+      System.out.println("Length of input should not be more than " + max +" characters, please try again!");
+			return false;
+    }
+    return true;
+  }
+
+  private boolean isValidAmenities(String list) {
+    String[] splStrings = list.split(",");
+    for (String word: splStrings) {
+      if (!amenities.contains(word.strip().toLowerCase())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private void printAmenities() {
+    System.out.println("Wifi\t\t\t\t\tKitchen\t\t\t\t\tWasher\nDryer"+
+        "\t\t\t\t\tAir conditioning\t\t\t\t\tHeating\nDedicated workspace\t\t\t\t\tTV"+
+        "\t\t\t\t\tHair dryer\nIron\t\t\t\t\tPool\t\t\t\t\tHot tub\nFree parking"+
+        "\t\t\t\t\tEV charger\t\t\t\t\tCrib\nGym\t\t\t\t\tBBQ grill\t\t\t\t\tBreakfast"+
+        "\nIndoor fireplace\t\t\t\t\tSmoking allowed\t\t\t\t\tBeachfront"+
+        "\nWaterfront\t\t\t\t\tSki-in/ski-out\t\t\t\t\tSmoke alarm\nCarbon monoxide alarm");
+  }
+
+  // Function that handles the feature: "Create a listing."
+  private void createListing() {
+		String type = null;
+    String street = null; int number = 0; String postalCode = null;
+		String country = null; String city = null;
+		BigDecimal latitude = null; BigDecimal longitude = null;
+    String traits = null;
+    String temp;
+		
+    // insert new row to table Listing
+		while (type == null || postalCode == null || latitude == null || longitude == null) {
+			System.out.print("Enter a type of listing (apartment, house, or room): ");
+			temp = sc.nextLine();
+      if (!temp.equals("apartment") && !temp.equals("house") && !temp.equals("room")) {
+        System.out.println("That's not a valid type of listing, please try again!");
+				continue;
+      }
+      type = temp;
+
+      System.out.print("Enter the street name: ");
+			temp = sc.nextLine();
+      if (!isValid(temp, 40)) {
+				continue;
+      }
+      street = temp;
+
+      try {
+        System.out.print("Enter the street number: ");
+			  temp = sc.nextLine();
+        if (!isValid(temp, 6)) {
+				  continue;
+        }
+        number = Integer.parseInt(temp);
+
+        System.out.print("Enter the postal code: ");
+			  temp = sc.nextLine();
+        if (!isValid(temp, 10)) {
+				  continue;
+        }
+        postalCode = temp;
+
+        System.out.print("Enter the country: ");
+			  temp = sc.nextLine();
+        if (!isValid(temp, 56)) {
+				  continue;
+        }
+        country = temp;
+
+        System.out.print("Enter the city: ");
+			  temp = sc.nextLine();
+        if (!isValid(temp, 20)) {
+				  continue;
+        }
+        city = temp;
+
+        DecimalFormat df = new DecimalFormat("#.####");
+        System.out.print("Enter the latitude: ");
+			  temp = sc.nextLine();
+        if (!isValid(temp, 7)) {
+				  continue;
+        }
+        latitude = new BigDecimal(df.format(Double.parseDouble(temp)));
+
+        System.out.print("Enter the longitude: ");
+			  temp = sc.nextLine();
+        if (!isValid(temp, 8)) {
+				  continue;
+        }
+        longitude = new BigDecimal(df.format(Double.parseDouble(temp)));
+      } catch (NumberFormatException e) {
+        System.out.println("That's not a numeral value, please try again!");
+      }
+		}
+
+    System.out.println("\nSelect any of the following amenities/characteristics:\n");
+    printAmenities();
+    System.out.println("\n");
+    while (traits == null) {
+      System.out.print("Enter a list of amenities above separated by commas, no space in between! (e.g., Wifi,Hot tub,Gym): ");
+		  temp = sc.nextLine();
+      if (!isValidAmenities(temp)) {
+        System.out.println("That's an invalid list, please try again!");
+        continue;
+      }
+	    traits = temp;
+    }
+		
+		int rows = sqlMngr.insertListing(type, street, number, postalCode, country, city, latitude, longitude, traits);
+		System.out.println("\nRows affected: " + rows +"\n");	
+
+    // inserting to Listing failed.
+    if (rows == 0) {
+      return;
+    }
+    
+    //insert new row to table Hosts
+    rows = sqlMngr.insertHosts(currentUser.sin, street, number, postalCode, country);
 	}
 
 	/*

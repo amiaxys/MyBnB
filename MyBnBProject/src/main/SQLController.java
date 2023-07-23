@@ -1,5 +1,6 @@
 package main;
 
+import java.math.BigDecimal;
 import java.sql.*;
 
 public class SQLController {
@@ -15,6 +16,9 @@ public class SQLController {
 	// of this execution the same way that are received from the SQL backend.
 	private PreparedStatement insertUser = null;
 	private PreparedStatement selectUserBySIN = null;
+  private PreparedStatement insertListing = null;
+  private PreparedStatement insertHosts = null;
+  private PreparedStatement insertAvailability = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -87,9 +91,78 @@ public class SQLController {
 			// @formatter:on
 			createUserTb.executeUpdate();
 			createUserTb.close();
+      } catch (SQLException e) {
+			// success = false;
+			System.err.println("Table User already exist!");
+			// e.printStackTrace();
+		}
+
+    try {
+      PreparedStatement createListingTb = conn.prepareStatement("CREATE TABLE Listing ("
+        + " Type VARCHAR(15),"
+        + " Street VARCHAR(40),"
+        + " Number INT,"
+        + " PostalCode VARCHAR(10),"
+        + " Country VARCHAR(56),"
+        + " City VARCHAR(20),"
+        + " Latitude DECIMAL(6,4),"
+        + " Longitude DECIMAL(7,4),"
+        + " Amenities SET('Wifi','Kitchen','Washer','Dryer',"
+        + "'Air conditioning','Heating','Dedicated workspace', 'TV',"
+        + "'Hair dryer','Iron','Pool','Hot tub','Free parking',"
+        + "'EV charger','Crib','Gym','BBQ grill','Breakfast',"
+        + "'Indoor fireplace','Smoking allowed','Beachfront',"
+        + "'Waterfront','Ski-in/ski-out','Smoke alarm','Carbon monoxide alarm'),"
+        + " PRIMARY KEY(Street, Number, PostalCode, Country)"
+        + ")");
+			createListingTb.executeUpdate();
+			createListingTb.close();
+      } catch (SQLException e) {
+			// success = false;
+			System.err.println("Table Listing already exist!");
+			// e.printStackTrace();
+		}
+
+    try {
+      PreparedStatement createHostsTb = conn.prepareStatement("CREATE TABLE Hosts ("
+        + " SIN CHAR(9) NOT NULL,"
+        + " Street VARCHAR(40),"
+        + " Number INT,"
+        + " PostalCode VARCHAR(10),"
+        + " Country VARCHAR(56),"
+        + " PRIMARY KEY(Street, Number, PostalCode, Country),"
+        + " FOREIGN KEY (SIN) REFERENCES User(SIN),"
+        + " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES"
+        + " Listing(Street, Number, PostalCode, Country)"
+        + ")");
+			createHostsTb.executeUpdate();
+			createHostsTb.close();
+      } catch (SQLException e) {
+			// success = false;
+			System.err.println("Table Hosts already exist!");
+			// e.printStackTrace();
+		}
+
+    try {
+      PreparedStatement createAvailabilityTb = conn.prepareStatement("CREATE TABLE Availability ("
+        + " Street VARCHAR(40),"
+        + " Number INT,"
+        + " PostalCode VARCHAR(10),"
+        + " Country VARCHAR(56),"
+        + " Year TINYINT,"
+        + " Month TINYINT,"
+        + " Day TINYINT,"
+        + " Availability VARCHAR(15),"
+        + " Price DECIMAL(10,2),"
+        + " PRIMARY KEY(Street, Number, PostalCode, Country, Year, Month, Day),"
+        + " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES"
+        + " Listing(Street, Number, PostalCode, Country)"
+        + ")");
+			createAvailabilityTb.executeUpdate();
+			createAvailabilityTb.close();
 		} catch (SQLException e) {
 			// success = false;
-			System.err.println("Tables already exist!");
+			System.err.println("Table Availability already exist!");
 			// e.printStackTrace();
 		}
 		return success;
@@ -104,6 +177,15 @@ public class SQLController {
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?)");
 			// @formatter:on
 			selectUserBySIN = conn.prepareStatement("SELECT * FROM User WHERE SIN=?");
+      insertListing = conn.prepareStatement("INSERT INTO Listing"
+					+ " (Type, Street, Number, PostalCode, Country, City, Latitude, Longitude, Amenities)" 
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+      insertHosts = conn.prepareStatement("INSERT INTO Hosts"
+					+ " (SIN, Street, Number, PostalCode, Country)" 
+					+ " VALUES (?, ?, ?, ?, ?)");
+      insertAvailability = conn.prepareStatement("INSERT INTO Availability"
+					+ " (Street, Number, PostalCode, Country, Year, Month, Day, Availability, Price)" 
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 		} catch (SQLException e) {
 			success = false;
 			System.err.println("Prepared statements could not be created!");
@@ -158,6 +240,70 @@ public class SQLController {
 			e.printStackTrace();
 		}
 		return user;
+	}
+
+  // Controls the execution of an insert query.
+	// Functionality: Insert a Listing.
+	public int insertListing(String type, String street, int number, String postalCode, String country, String city,
+  BigDecimal latitude, BigDecimal longitude, String amenities) {
+		int rows = 0;
+		try {
+			insertListing.setString(1, type);
+			insertListing.setString(2, street);
+			insertListing.setInt(3, number);
+			insertListing.setString(4, postalCode);
+			insertListing.setString(5, country);
+			insertListing.setString(6, city);
+      insertListing.setBigDecimal(7, latitude);
+			insertListing.setBigDecimal(8, longitude);
+      insertListing.setString(9, amenities);
+			rows = insertListing.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when inserting listing! Another listing with the same type and address may already exist.");
+			//e.printStackTrace();
+		}
+		return rows;
+	}
+
+  // Controls the execution of an insert query.
+	// Functionality: Insert an Availability.
+	public int insertAvailability(String street, int number, String postalCode, String country, int year, int month,
+  int day, String availability, BigDecimal price) {
+		int rows = 0;
+		try {
+			insertAvailability.setString(1, street);
+			insertAvailability.setInt(2, number);
+			insertAvailability.setString(3, postalCode);
+			insertAvailability.setString(4, country);
+			insertAvailability.setInt(5, year);
+      insertAvailability.setInt(6, month);
+      insertAvailability.setInt(7, day);
+      insertAvailability.setString(8, availability);
+			insertAvailability.setBigDecimal(9, price);
+			rows = insertAvailability.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when inserting availability! Another availiability with the same date and address may already exist.");
+			e.printStackTrace();
+		}
+		return rows;
+	}
+
+  // Controls the execution of an insert query.
+	// Functionality: Insert a Hosts.
+	public int insertHosts(String sin, String street, int number, String postalCode, String country) {
+		int rows = 0;
+		try {
+			insertHosts.setString(1, sin);
+      insertHosts.setString(2, street);
+			insertHosts.setInt(3, number);
+			insertHosts.setString(4, postalCode);
+			insertHosts.setString(5, country);
+			rows = insertHosts.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when inserting hosts! Another hosts with the same address may already exist.");
+			e.printStackTrace();
+		}
+		return rows;
 	}
 
 	/*
