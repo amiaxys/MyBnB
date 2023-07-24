@@ -2,6 +2,7 @@ package main;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 
 public class SQLController {
@@ -18,10 +19,15 @@ public class SQLController {
 	private PreparedStatement insertUser = null;
 	private PreparedStatement selectUserBySIN = null;
 	private PreparedStatement insertListing = null;
-	private PreparedStatement insertHosts = null;
-	private PreparedStatement insertAvailability = null;
 	private PreparedStatement selectListingAddr = null;
-  private PreparedStatement selectAllListing = null;
+	private PreparedStatement selectAllListing = null;
+	private PreparedStatement insertHosts = null;
+	private PreparedStatement selectHostsBySIN = null;
+	private PreparedStatement insertAvailability = null;
+	private PreparedStatement selectAllAvailBetweenDate = null;
+	private PreparedStatement selectAvailBetweenDate = null;
+	private PreparedStatement deleteAvailBetweenDate = null;
+	private PreparedStatement insertBooked = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -87,7 +93,7 @@ public class SQLController {
 					+ " Salt BINARY(16) NOT NULL," 
 					+ "	Name VARCHAR(250),"
 					+ "	Address VARCHAR(250)," 
-					+ "	Birthdate CHAR(10)," 
+					+ "	Birthdate DATE," 
 					+ "	Occupation VARCHAR(100)" 
 					+ ")");
 			// @formatter:on
@@ -156,12 +162,10 @@ public class SQLController {
 					+ " Number INT,"
 					+ " PostalCode VARCHAR(10),"
 					+ " Country VARCHAR(56),"
-					+ " Year TINYINT,"
-					+ " Month TINYINT,"
-					+ " Day TINYINT,"
-					+ " Availability VARCHAR(15),"
+					+ " Date DATE,"
+					+ " Available BOOL NOT NULL,"
 					+ " Price DECIMAL(10,2),"
-					+ " PRIMARY KEY(Street, Number, PostalCode, Country, Year, Month, Day),"
+					+ " PRIMARY KEY(Street, Number, PostalCode, Country, Date),"
 					+ " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES"
 					+ " Listing(Street, Number, PostalCode, Country)"
 					+ ")");
@@ -173,6 +177,31 @@ public class SQLController {
 			System.err.println("Availability table already exists!");
 			// e.printStackTrace();
 		}
+
+		try {
+			// @formatter:off
+			PreparedStatement createBookedTb = conn.prepareStatement("CREATE TABLE Booked ("
+					+ " SIN CHAR(9) NOT NULL,"
+					+ " Street VARCHAR(40),"
+					+ " Number INT,"
+					+ " PostalCode VARCHAR(10),"
+					+ " Country VARCHAR(56),"
+					+ " FromDate DATE,"
+					+ " ToDate DATE,"
+					+ " PaymentMethod SET('Credit card', 'Debit card', 'PayPal'),"
+					+ " PRIMARY KEY (Street, Number, PostalCode, Country, FromDate, ToDate),"
+					+ " FOREIGN KEY (SIN) REFERENCES User(SIN),"
+					+ " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES"
+					+ " Listing(Street, Number, PostalCode, Country)"
+					+ ")");
+			// @formatter:on
+			createBookedTb.executeUpdate();
+			createBookedTb.close();
+		} catch (SQLException e) {
+			// success = false;
+			System.err.println("Booked table already exists!");
+			// e.printStackTrace();
+		}
 		return success;
 	}
 
@@ -180,23 +209,39 @@ public class SQLController {
 		boolean success = true;
 		try {
 			// @formatter:off
+			// User statements
 			insertUser = conn.prepareStatement("INSERT INTO User"
 					+ " (SIN, Password, Salt, Name, Address, Birthdate, Occupation)" 
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?)");
-			
 			selectUserBySIN = conn.prepareStatement("SELECT * FROM User WHERE SIN=?");
+			// Listing statements
 			insertListing = conn.prepareStatement("INSERT INTO Listing"
 					+ " (Type, Street, Number, PostalCode, Country, City, Latitude, Longitude, Amenities)" 
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+			selectListingAddr = conn.prepareStatement("SELECT * FROM Listing WHERE Street=? AND"
+					+ " Number=? AND PostalCode=? AND Country=? AND City=?");
+			selectAllListing = conn.prepareStatement("SELECT * FROM Listing");
+			// Hosts statements
 			insertHosts = conn.prepareStatement("INSERT INTO Hosts"
 					+ " (SIN, Street, Number, PostalCode, Country)" 
 					+ " VALUES (?, ?, ?, ?, ?)");
+			selectHostsBySIN = conn.prepareStatement("SELECT * FROM Hosts WHERE SIN=?");
+			// Availability statements
 			insertAvailability = conn.prepareStatement("INSERT INTO Availability"
-					+ " (Street, Number, PostalCode, Country, Year, Month, Day, Availability, Price)" 
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-			selectListingAddr = conn.prepareStatement("SELECT * FROM Listing WHERE Street=? AND"
-					+ " Number=? AND PostalCode=? AND Country=? AND City=?");
-      selectAllListing = conn.prepareStatement("SELECT * FROM Listing");
+					+ " (Street, Number, PostalCode, Country, Date, Available, Price)" 
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?)");
+			selectAllAvailBetweenDate = conn.prepareStatement("SELECT * FROM Availability WHERE"
+					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND Date BETWEEN ? AND ?");
+			selectAvailBetweenDate = conn.prepareStatement("SELECT * FROM Availability WHERE"
+					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND"
+					+ " (Date BETWEEN ? AND ?) AND Available=?");
+			deleteAvailBetweenDate = conn.prepareStatement("DELETE FROM Availability WHERE"
+					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND"
+					+ " (Date BETWEEN ? AND ?) AND Available=?");
+			// Booked statements
+			insertBooked = conn.prepareStatement("INSERT INTO Booked"
+					+ " (SIN, Street, Number, PostalCode, Country, From, To, PaymentMethod)" 
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 			// @formatter:on
 		} catch (SQLException e) {
 			success = false;
@@ -208,17 +253,18 @@ public class SQLController {
 
 	// Controls the execution of an insert query.
 	// Functionality: Insert a user.
-	public int insertUser(String sin, String password, byte[] salt, String name, String address, String birthdate,
+	public int insertUser(String sin, String password, byte[] salt, String name, String address, LocalDate birthdate,
 			String occupation) {
 		int rows = 0;
 		try {
-			insertUser.setString(1, sin);
-			insertUser.setString(2, password);
-			insertUser.setBytes(3, salt);
-			insertUser.setString(4, name);
-			insertUser.setString(5, address);
-			insertUser.setString(6, birthdate);
-			insertUser.setString(7, occupation);
+			int count = 0;
+			insertUser.setString(++count, sin);
+			insertUser.setString(++count, password);
+			insertUser.setBytes(++count, salt);
+			insertUser.setString(++count, name);
+			insertUser.setString(++count, address);
+			insertUser.setObject(++count, birthdate);
+			insertUser.setString(++count, occupation);
 			rows = insertUser.executeUpdate();
 		} catch (SQLException e) {
 			System.err.println(
@@ -242,81 +288,208 @@ public class SQLController {
 				user.salt = rs.getBytes("Salt");
 				user.name = rs.getString("Name");
 				user.address = rs.getString("Address");
-				user.birthdate = rs.getString("Birthdate");
+				user.birthdate = rs.getObject("Birthdate", LocalDate.class);
 				user.occupation = rs.getString("Occupation");
 			}
 
 			rs.close();
 		} catch (SQLException e) {
-			System.err.println(
-					"Exception triggered during selecting user by SIN! This SIN may not be attached to an account.");
+			System.err.println("Exception triggered when selecting user by SIN!");
 			e.printStackTrace();
 		}
+
+		if (sin == null) {
+			user = null;
+		}
+
 		return user;
 	}
 
 	// Controls the execution of an insert query.
-	// Functionality: Insert a Listing.
+	// Functionality: Insert a listing.
 	public int insertListing(String type, String street, int number, String postalCode, String country, String city,
 			BigDecimal latitude, BigDecimal longitude, String amenities) {
 		int rows = 0;
 		try {
-			insertListing.setString(1, type);
-			insertListing.setString(2, street);
-			insertListing.setInt(3, number);
-			insertListing.setString(4, postalCode);
-			insertListing.setString(5, country);
-			insertListing.setString(6, city);
-			insertListing.setBigDecimal(7, latitude);
-			insertListing.setBigDecimal(8, longitude);
-			insertListing.setString(9, amenities);
+			int count = 0;
+			insertListing.setString(++count, type);
+			insertListing.setString(++count, street);
+			insertListing.setInt(++count, number);
+			insertListing.setString(++count, postalCode);
+			insertListing.setString(++count, country);
+			insertListing.setString(++count, city);
+			insertListing.setBigDecimal(++count, latitude);
+			insertListing.setBigDecimal(++count, longitude);
+			insertListing.setString(++count, amenities);
 			rows = insertListing.executeUpdate();
 		} catch (SQLException e) {
-			System.err.println(
-					"Exception triggered when inserting listing! Another listing with the same type and address may already exist.");
+			System.err.println("Exception triggered when inserting listing! "
+					+ "Another listing with the same type and address may already exist.");
 			// e.printStackTrace();
 		}
 		return rows;
 	}
 
 	// Controls the execution of an insert query.
-	// Functionality: Insert an Availability.
-	public int insertAvailability(String street, int number, String postalCode, String country, int year, int month,
-			int day, String availability, BigDecimal price) {
+	// Functionality: Insert a hosts record.
+	public int insertHosts(String sin, String street, int number, String postalCode, String country) {
 		int rows = 0;
 		try {
-			insertAvailability.setString(1, street);
-			insertAvailability.setInt(2, number);
-			insertAvailability.setString(3, postalCode);
-			insertAvailability.setString(4, country);
-			insertAvailability.setInt(5, year);
-			insertAvailability.setInt(6, month);
-			insertAvailability.setInt(7, day);
-			insertAvailability.setString(8, availability);
-			insertAvailability.setBigDecimal(9, price);
-			rows = insertAvailability.executeUpdate();
+			int count = 0;
+			insertHosts.setString(++count, sin);
+			insertHosts.setString(++count, street);
+			insertHosts.setInt(++count, number);
+			insertHosts.setString(++count, postalCode);
+			insertHosts.setString(++count, country);
+			rows = insertHosts.executeUpdate();
 		} catch (SQLException e) {
-			System.err.println(
-					"Exception triggered when inserting availability! Another availiability with the same date and address may already exist.");
+			System.err.println("Exception triggered when inserting hosts! "
+					+ "Another host with the same address may already exist.");
 			e.printStackTrace();
 		}
 		return rows;
 	}
 
+	// Controls the execution of a select query.
+	// Functionality: Select all hosts records by SIN.
+	public ArrayList<Listing> selectHostsBySIN(String sin) {
+		ArrayList<Listing> hostedListings = new ArrayList<>();
+		try {
+			selectHostsBySIN.setString(1, sin);
+			ResultSet rs = selectHostsBySIN.executeQuery();
+
+			while (rs.next()) {
+				Listing temp = new Listing();
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				hostedListings.add(temp);
+			}
+
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting hosts by SIN!");
+			e.printStackTrace();
+		}
+		return hostedListings;
+	}
+
 	// Controls the execution of an insert query.
-	// Functionality: Insert a Hosts.
-	public int insertHosts(String sin, String street, int number, String postalCode, String country) {
+	// Functionality: Insert an availability.
+	public int insertAvailability(String street, int number, String postalCode, String country, LocalDate date,
+			boolean available, BigDecimal price) {
 		int rows = 0;
 		try {
-			insertHosts.setString(1, sin);
-			insertHosts.setString(2, street);
-			insertHosts.setInt(3, number);
-			insertHosts.setString(4, postalCode);
-			insertHosts.setString(5, country);
-			rows = insertHosts.executeUpdate();
+			int count = 0;
+			insertAvailability.setString(++count, street);
+			insertAvailability.setInt(++count, number);
+			insertAvailability.setString(++count, postalCode);
+			insertAvailability.setString(++count, country);
+			insertAvailability.setObject(++count, date);
+			insertAvailability.setBoolean(++count, available);
+			insertAvailability.setBigDecimal(++count, price);
+			rows = insertAvailability.executeUpdate();
 		} catch (SQLException e) {
-			System.err.println(
-					"Exception triggered when inserting hosts! Another host with the same address may already exist.");
+			System.err.println("Exception triggered when inserting availability! "
+					+ "Another availiability with the same date and address may already exist.");
+			e.printStackTrace();
+		}
+		return rows;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select availabilities by date.
+	public ArrayList<Availability> selectAvailBetweenDate(String street, int number, String postalCode, String country,
+			LocalDate to, LocalDate from) {
+		ArrayList<Availability> availabilities = new ArrayList<>();
+		try {
+			int count = 0;
+			selectAllAvailBetweenDate.setString(++count, street);
+			selectAllAvailBetweenDate.setInt(++count, number);
+			selectAllAvailBetweenDate.setString(++count, postalCode);
+			selectAllAvailBetweenDate.setString(++count, country);
+			selectAllAvailBetweenDate.setObject(++count, to);
+			selectAllAvailBetweenDate.setObject(++count, from);
+
+			ResultSet rs = selectAllAvailBetweenDate.executeQuery();
+
+			count = 0;
+			while (rs.next()) {
+				Availability temp = new Availability();
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				temp.date = rs.getObject("Date", LocalDate.class);
+				temp.available = rs.getBoolean("Available");
+				temp.price = rs.getBigDecimal("Price");
+				availabilities.add(temp);
+			}
+
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting availabilities by date!");
+			e.printStackTrace();
+		}
+		return availabilities;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select availabilities by date and available.
+	public ArrayList<Availability> selectAvailBetweenDate(String street, int number, String postalCode, String country,
+			LocalDate to, LocalDate from, boolean available) {
+		ArrayList<Availability> availabilities = new ArrayList<>();
+		try {
+			int count = 0;
+			selectAvailBetweenDate.setString(++count, street);
+			selectAvailBetweenDate.setInt(++count, number);
+			selectAvailBetweenDate.setString(++count, postalCode);
+			selectAvailBetweenDate.setString(++count, country);
+			selectAvailBetweenDate.setObject(++count, to);
+			selectAvailBetweenDate.setObject(++count, from);
+			selectAvailBetweenDate.setBoolean(++count, available);
+
+			ResultSet rs = selectAvailBetweenDate.executeQuery();
+
+			count = 0;
+			while (rs.next()) {
+				Availability temp = new Availability();
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				temp.date = rs.getObject("Date", LocalDate.class);
+				temp.available = rs.getBoolean("Available");
+				temp.price = rs.getBigDecimal("Price");
+				availabilities.add(temp);
+			}
+
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting availabilities by date and availability!");
+			e.printStackTrace();
+		}
+		return availabilities;
+	}
+
+	// Controls the execution of a delete query.
+	// Functionality: Delete availabilities by date and available.
+	public int deleteAvailBetweenDate(String street, int number, String postalCode, String country, LocalDate to,
+			LocalDate from, boolean available) {
+		int rows = 0;
+		try {
+			int count = 0;
+			deleteAvailBetweenDate.setString(++count, street);
+			deleteAvailBetweenDate.setInt(++count, number);
+			deleteAvailBetweenDate.setString(++count, postalCode);
+			deleteAvailBetweenDate.setString(++count, country);
+			deleteAvailBetweenDate.setObject(++count, to);
+			deleteAvailBetweenDate.setObject(++count, from);
+			deleteAvailBetweenDate.setBoolean(++count, available);
+			rows = deleteAvailBetweenDate.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when deleting availabilities by date and availability!");
 			e.printStackTrace();
 		}
 		return rows;
@@ -354,38 +527,36 @@ public class SQLController {
 
 			rs.close();
 		} catch (SQLException e) {
-			System.err.println(
-					"Exception triggered during selecting listing by address! This address may not be attached to an account.");
+			System.err.println("Exception triggered when selecting listing by address!");
 			e.printStackTrace();
 		}
 		return listings;
 	}
 
-  // Controls the execution of a select query.
+	// Controls the execution of a select query.
 	// Functionality: Select all listings.
-  public ArrayList<Listing> searchAllListing() {
+	public ArrayList<Listing> searchAllListing() {
 		ArrayList<Listing> listings = new ArrayList<>();
 		try {
 			ResultSet rs = selectAllListing.executeQuery();
 
-      while (rs.next()) {
-        Listing temp = new Listing();
-        temp.type = rs.getString("Type");
-        temp.street = rs.getString("Street");
-        temp.number = rs.getInt("Number");
-        temp.postalCode = rs.getString("PostalCode");
-        temp.country = rs.getString("Country");
-        temp.city = rs.getString("City");
-        temp.latitude = rs.getBigDecimal("Latitude");
-        temp.longitude = rs.getBigDecimal("Longitude");
-        temp.amenities = rs.getString("Amenities");
-        listings.add(temp);
-      }
+			while (rs.next()) {
+				Listing temp = new Listing();
+				temp.type = rs.getString("Type");
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				temp.city = rs.getString("City");
+				temp.latitude = rs.getBigDecimal("Latitude");
+				temp.longitude = rs.getBigDecimal("Longitude");
+				temp.amenities = rs.getString("Amenities");
+				listings.add(temp);
+			}
 
 			rs.close();
 		} catch (SQLException e) {
-			System.err.println(
-					"Exception triggered during selecting listing by address! This address may not be attached to an account.");
+			System.err.println("Exception triggered when selecting listing by address!");
 			e.printStackTrace();
 		}
 		return listings;
