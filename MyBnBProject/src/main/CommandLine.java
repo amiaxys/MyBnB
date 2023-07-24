@@ -132,7 +132,7 @@ public class CommandLine {
 
 	// Print signed in menu (user menu) options
 	private static void userMenu() {
-		System.out.println("=========USER MENU=========");
+		System.out.println("\n=========USER MENU=========");
 		System.out.println("0. Exit.");
 		System.out.println("1. Create a listing.");
 		System.out.println("2. Search for listings.");
@@ -143,11 +143,11 @@ public class CommandLine {
 
 	// Print search options
 	private static void searchOptions() {
-		System.out.println("*********SEARCH OPTIONS*********");
+		System.out.println("\n*********SEARCH OPTIONS*********");
 		System.out.println("0. Back.");
 		System.out.println("1. Search by exact address.");
 		System.out.println("2. Search by latitude and longitude.");
-		System.out.println("3. Search by postal code. [not implemented]");
+		System.out.println("3. Search by postal code.");
 		System.out.print("Choose one of the previous options [0-3]: ");
 	}
 
@@ -227,6 +227,7 @@ public class CommandLine {
         this.searchListingByCoord();
 				break;
 			case 3:
+        this.searchListingByPostalCode();
 				break;
 			default:
 				System.out.println("That's not an option, please try again!");
@@ -411,6 +412,7 @@ public class CommandLine {
 
 	private void signOut() {
 		String input = "";
+    System.out.println();
 		while (!input.equalsIgnoreCase("y")) {
 			System.out.print("Are you sure you want to sign out? [y/n]: ");
 			input = sc.nextLine().strip();
@@ -469,6 +471,7 @@ public class CommandLine {
 		String traits = null;
 		String temp;
 
+    System.out.println();
 		// insert new row to table Listing
 		while (type == null || postalCode == null || latitude == null || longitude == null) {
 			System.out.print("Enter a type of listing (apartment, house, or room): ");
@@ -561,23 +564,25 @@ public class CommandLine {
 		int count = 0;
 		System.out.println("\nResult: " + listings.size() + " listings\n");
 		System.out.println(
-				"---------------------------------------------------------------------------------------------------------------------------------------------");
-		System.out.printf("| %-14s | %-97s | %-8s | %-9s |%n", "Type", "Address", "Latitude", "Longitude");
+				"----------------------------------------------------------------------------------------------------------------------------");
+		System.out.printf("| %-14s | %-80s | %-8s | %-9s |%n", "Type", "Address", "Latitude", "Longitude");
 		System.out.println(
-				"=============================================================================================================================================");
+				"============================================================================================================================");
 		for (Listing listing : listings) {
 			count++;
-			System.out.printf("| %d. %-11s | %d %-29s %-20s %-30s %-10s | %.4f  | %.4f   |%n", count, listing.type, listing.number,
-					listing.street, listing.city, listing.country, listing.postalCode,listing.latitude.doubleValue(),listing.longitude.doubleValue());
+			System.out.printf("| %d. %-11s | %-80s | %.4f  | %.4f   |%n", count, listing.type, listing.number+" "+listing.street+", "+
+        listing.city+", "+listing.country+" "+listing.postalCode,listing.latitude.doubleValue(),listing.longitude.doubleValue());
 		}
 		System.out.println(
-				"---------------------------------------------------------------------------------------------------------------------------------------------\n");
+				"----------------------------------------------------------------------------------------------------------------------------\n");
 	}
 
 	private void searchListingByAddress() {
 		String street, postalCode, country, city;
 		int number = -1;
 
+    System.out.println();
+    System.out.println("Search for listings by entering the exact address");
 		System.out.print("Enter a street name: ");
 		street = sc.nextLine();
 
@@ -641,7 +646,6 @@ public class CommandLine {
       double calDistance = radius * c;
 
       if (calDistance <= distance) {
-        //filtered.add(listing);
         addOrderByDistance(filtered, distArr, listing, (Double)calDistance);
       }
     }
@@ -652,6 +656,8 @@ public class CommandLine {
     BigDecimal latitude = null, longitude = null;
     double distance = -1;
     
+    System.out.println();
+    System.out.println("Search for listings within a distance from a specified latitude and longitude, ranked by the distance");
     while (distance == -1) {
       try {
         System.out.print("Enter a latitude (in decimal values): ");
@@ -676,6 +682,19 @@ public class CommandLine {
 
     ArrayList<Listing> listings = sqlMngr.searchAllListing();
     listings = calDistance(listings, latitude.doubleValue(), longitude.doubleValue(), distance);
+    printListings(listings);
+  }
+
+  private void searchListingByPostalCode() {
+    String postalCode;
+
+    System.out.println();
+    System.out.println("Search for nearby listings by entering a postal code");
+    System.out.print("Enter a postal code: ");
+    postalCode = sc.nextLine();
+
+    String pattern = postalCode.substring(0, postalCode.length()-1) + "_";
+    ArrayList<Listing> listings = sqlMngr.searchListingPostalCode(pattern);
     printListings(listings);
   }
 
