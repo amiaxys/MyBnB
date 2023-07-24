@@ -19,8 +19,9 @@ public class SQLController {
 	private PreparedStatement insertUser = null;
 	private PreparedStatement selectUserBySIN = null;
 	private PreparedStatement insertListing = null;
-	private PreparedStatement selectListingAddr = null;
 	private PreparedStatement selectAllListing = null;
+	private PreparedStatement selectListingAddr = null;
+	private PreparedStatement selectListingPostalCode = null;
 	private PreparedStatement insertHosts = null;
 	private PreparedStatement selectHostsBySIN = null;
 	private PreparedStatement insertAvailability = null;
@@ -218,9 +219,10 @@ public class SQLController {
 			insertListing = conn.prepareStatement("INSERT INTO Listing"
 					+ " (Type, Street, Number, PostalCode, Country, City, Latitude, Longitude, Amenities)" 
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+			selectAllListing = conn.prepareStatement("SELECT * FROM Listing");
 			selectListingAddr = conn.prepareStatement("SELECT * FROM Listing WHERE Street=? AND"
 					+ " Number=? AND PostalCode=? AND Country=? AND City=?");
-			selectAllListing = conn.prepareStatement("SELECT * FROM Listing");
+			selectListingPostalCode = conn.prepareStatement("SELECT * FROM Listing WHERE PostalCode LIKE ?");
 			// Hosts statements
 			insertHosts = conn.prepareStatement("INSERT INTO Hosts"
 					+ " (SIN, Street, Number, PostalCode, Country)" 
@@ -507,10 +509,8 @@ public class SQLController {
 			selectListingAddr.setString(++count, postalCode);
 			selectListingAddr.setString(++count, country);
 			selectListingAddr.setString(++count, city);
-
 			ResultSet rs = selectListingAddr.executeQuery();
 
-			count = 0;
 			while (rs.next()) {
 				Listing temp = new Listing();
 				temp.type = rs.getString("Type");
@@ -554,6 +554,35 @@ public class SQLController {
 				listings.add(temp);
 			}
 
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting listing by address!");
+			e.printStackTrace();
+		}
+		return listings;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select listings by postal code.
+	public ArrayList<Listing> searchListingPostalCode(String pattern) {
+		ArrayList<Listing> listings = new ArrayList<>();
+		try {
+			selectListingPostalCode.setString(1, pattern);
+			ResultSet rs = selectListingPostalCode.executeQuery();
+
+			while (rs.next()) {
+				Listing temp = new Listing();
+				temp.type = rs.getString("Type");
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				temp.city = rs.getString("City");
+				temp.latitude = rs.getBigDecimal("Latitude");
+				temp.longitude = rs.getBigDecimal("Longitude");
+				temp.amenities = rs.getString("Amenities");
+				listings.add(temp);
+			}
 			rs.close();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when selecting listing by address!");
