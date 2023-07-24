@@ -21,6 +21,7 @@ public class SQLController {
 	private PreparedStatement insertHosts = null;
 	private PreparedStatement insertAvailability = null;
 	private PreparedStatement selectListingAddr = null;
+  private PreparedStatement selectAllListing = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -195,6 +196,7 @@ public class SQLController {
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 			selectListingAddr = conn.prepareStatement("SELECT * FROM Listing WHERE Street=? AND"
 					+ " Number=? AND PostalCode=? AND Country=? AND City=?");
+      selectAllListing = conn.prepareStatement("SELECT * FROM Listing");
 			// @formatter:on
 		} catch (SQLException e) {
 			success = false;
@@ -349,6 +351,36 @@ public class SQLController {
 				temp.amenities = rs.getString("Amenities");
 				listings.add(temp);
 			}
+
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println(
+					"Exception triggered during selecting listing by address! This address may not be attached to an account.");
+			e.printStackTrace();
+		}
+		return listings;
+	}
+
+  // Controls the execution of a select query.
+	// Functionality: Select all listings.
+  public ArrayList<Listing> searchAllListing() {
+		ArrayList<Listing> listings = new ArrayList<>();
+		try {
+			ResultSet rs = selectAllListing.executeQuery();
+
+      while (rs.next()) {
+        Listing temp = new Listing();
+        temp.type = rs.getString("Type");
+        temp.street = rs.getString("Street");
+        temp.number = rs.getInt("Number");
+        temp.postalCode = rs.getString("PostalCode");
+        temp.country = rs.getString("Country");
+        temp.city = rs.getString("City");
+        temp.latitude = rs.getBigDecimal("Latitude");
+        temp.longitude = rs.getBigDecimal("Longitude");
+        temp.amenities = rs.getString("Amenities");
+        listings.add(temp);
+      }
 
 			rs.close();
 		} catch (SQLException e) {

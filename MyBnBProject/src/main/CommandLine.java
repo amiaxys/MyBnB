@@ -22,6 +22,8 @@ public class CommandLine {
 	// current user, if signed in
 	private User currentUser = null;
 
+  DecimalFormat coordinatesDf = new DecimalFormat("#.####");
+
 	private ArrayList<String> amenities = new ArrayList<>(Arrays.asList("wifi", "kitchen", "washer", "dryer",
 			"air conditioning", "heating", "dedicated workspace", "tv", "hair dryer", "iron", "pool", "hot tub",
 			"free parking", "ev charger", "crib", "gym", "bbq grill", "breakfast", "indoor fireplace",
@@ -144,7 +146,7 @@ public class CommandLine {
 		System.out.println("*********SEARCH OPTIONS*********");
 		System.out.println("0. Back.");
 		System.out.println("1. Search by exact address.");
-		System.out.println("2. Search by latitude and longitude. [not implemented]");
+		System.out.println("2. Search by latitude and longitude.");
 		System.out.println("3. Search by postal code. [not implemented]");
 		System.out.print("Choose one of the previous options [0-3]: ");
 	}
@@ -222,6 +224,7 @@ public class CommandLine {
 				this.searchListingByAddress();
 				break;
 			case 2:
+        this.searchListingByCoord();
 				break;
 			case 3:
 				break;
@@ -409,7 +412,7 @@ public class CommandLine {
 	private void signOut() {
 		String input = "";
 		while (!input.equalsIgnoreCase("y")) {
-			System.out.print("Are you sure you want to sign out? [y/n]");
+			System.out.print("Are you sure you want to sign out? [y/n]: ");
 			input = sc.nextLine().strip();
 			if (input.equalsIgnoreCase("n")) {
 				break;
@@ -445,12 +448,12 @@ public class CommandLine {
 	}
 
 	private void printAmenities() {
-		System.out.println("Wifi\t\t\t\t\tKitchen\t\t\t\t\tWasher\nDryer"
-				+ "\t\t\t\t\tAir conditioning\t\t\t\t\tHeating\nDedicated workspace\t\t\t\t\tTV"
-				+ "\t\t\t\t\tHair dryer\nIron\t\t\t\t\tPool\t\t\t\t\tHot tub\nFree parking"
-				+ "\t\t\t\t\tEV charger\t\t\t\t\tCrib\nGym\t\t\t\t\tBBQ grill\t\t\t\t\tBreakfast"
-				+ "\nIndoor fireplace\t\t\t\t\tSmoking allowed\t\t\t\t\tBeachfront"
-				+ "\nWaterfront\t\t\t\t\tSki-in/ski-out\t\t\t\t\tSmoke alarm\nCarbon monoxide alarm");
+		System.out.println("Wifi\t\t\t\tKitchen\t\t\tWasher\nDryer"+
+        "\t\t\t\tAir conditioning\tHeating\nDedicated workspace\t\tTV"+
+        "\t\t\tHair dryer\nIron\t\t\t\tPool\t\t\tHot tub\nFree parking"+
+        "\t\t\tEV charger\t\tCrib\nGym\t\t\t\tBBQ grill\t\tBreakfast"+
+        "\nIndoor fireplace\t\tSmoking allowed\t\tBeachfront"+
+        "\nWaterfront\t\t\tSki-in/ski-out\t\tSmoke alarm\nCarbon monoxide alarm");
 	}
 
 	// Function that handles the feature: "Create a listing."
@@ -512,20 +515,19 @@ public class CommandLine {
 				}
 				city = temp;
 
-				DecimalFormat df = new DecimalFormat("#.####");
-				System.out.print("Enter the latitude: ");
+				System.out.print("Enter the latitude (in decimal values): ");
 				temp = sc.nextLine();
 				if (!isValid(temp, 7)) {
 					continue;
 				}
-				latitude = new BigDecimal(df.format(Double.parseDouble(temp)));
+				latitude = new BigDecimal(coordinatesDf.format(Double.parseDouble(temp)));
 
-				System.out.print("Enter the longitude: ");
+				System.out.print("Enter the longitude (in decimal values): ");
 				temp = sc.nextLine();
 				if (!isValid(temp, 8)) {
 					continue;
 				}
-				longitude = new BigDecimal(df.format(Double.parseDouble(temp)));
+				longitude = new BigDecimal(coordinatesDf.format(Double.parseDouble(temp)));
 			} catch (NumberFormatException e) {
 				System.out.println("That's not a number, please try again!");
 			}
@@ -533,7 +535,7 @@ public class CommandLine {
 
 		System.out.println("\nSelect any of the following amenities/characteristics:\n");
 		printAmenities();
-		System.out.println("\n");
+		System.out.println();
 		while (traits == null) {
 			System.out.print(
 					"Enter a list of amenities above separated by commas, no space in between! (e.g., Wifi,Hot tub,Gym): ");
@@ -559,17 +561,17 @@ public class CommandLine {
 		int count = 0;
 		System.out.println("\nResult: " + listings.size() + " listings\n");
 		System.out.println(
-				"---------------------------------------------------------------------------------------------------------------------------");
-		System.out.printf("| %-14s | %-102s |%n", "Type", "Address");
+				"---------------------------------------------------------------------------------------------------------------------------------------------");
+		System.out.printf("| %-14s | %-97s | %-8s | %-9s |%n", "Type", "Address", "Latitude", "Longitude");
 		System.out.println(
-				"===========================================================================================================================");
+				"=============================================================================================================================================");
 		for (Listing listing : listings) {
 			count++;
-			System.out.printf("| %d. %-11s | %d %-30s %-25s %-30s %-10s |", count, listing.type, listing.number,
-					listing.street, listing.city, listing.country, listing.postalCode);
+			System.out.printf("| %d. %-11s | %d %-29s %-20s %-30s %-10s | %.4f  | %.4f   |%n", count, listing.type, listing.number,
+					listing.street, listing.city, listing.country, listing.postalCode,listing.latitude.doubleValue(),listing.longitude.doubleValue());
 		}
 		System.out.println(
-				"\n---------------------------------------------------------------------------------------------------------------------------\n");
+				"---------------------------------------------------------------------------------------------------------------------------------------------\n");
 	}
 
 	private void searchListingByAddress() {
@@ -599,6 +601,62 @@ public class CommandLine {
 
 		printListings(listings); // print result
 	}
+
+  // Calculation code from:
+  // https://stackoverflow.com/questions/3694380/calculating-distance-between-two-points-using-latitude-longitude
+  private ArrayList<Listing> calDistance(ArrayList<Listing> listings, double lat1, double long1, double distance) {
+    ArrayList<Listing> filtered = new ArrayList<>();
+    final int radius = 6371; // radius of earth in km
+
+    for (Listing listing: listings) {
+      double lat2 = listing.latitude.doubleValue();
+      double long2 = listing.longitude.doubleValue();
+
+      double latDistance = Math.toRadians(lat2 - lat1);
+      double lonDistance = Math.toRadians(long2 - long1);
+      double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+            + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+            * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+      double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      double calDistance = radius * c;
+
+      if (calDistance <= distance) {
+        filtered.add(listing);
+      }
+    }
+    return filtered;
+  }
+
+  private void searchListingByCoord() {
+    BigDecimal latitude = null, longitude = null;
+    double distance = -1;
+    
+    while (distance == -1) {
+      try {
+        System.out.print("Enter a latitude (in decimal values): ");
+        latitude = new BigDecimal(coordinatesDf.format(Double.parseDouble(sc.nextLine())));
+
+        System.out.print("Enter a longitude (in decimal values): ");
+        longitude = new BigDecimal(coordinatesDf.format(Double.parseDouble(sc.nextLine())));
+
+        String input;
+        System.out.print("Enter distance (in km) to the specified coordinates (Leave input empty for default value of 124km): ");
+        input = sc.nextLine();
+        if (input.strip().equals("")) {
+          distance = 124;
+        }
+        else {
+          distance = Double.parseDouble(input);
+        }
+      } catch (NumberFormatException e) {
+        System.out.println("That's not a numeral value, please try again!");
+      }
+    }
+
+    ArrayList<Listing> listings = sqlMngr.searchAllListing();
+    listings = calDistance(listings, latitude.doubleValue(), longitude.doubleValue(), distance);
+    printListings(listings);
+  }
 
 	/*
 	 * // Function that handles the feature: "3. Print schema." private void
