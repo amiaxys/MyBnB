@@ -167,7 +167,7 @@ public class CommandLine {
 		System.out.println("2. Search for listings.");
 		System.out.println("3. Add availabilities to listings.");
 		System.out.println("10. Sign out.");
-		// add delete account + sign out here later
+		// add delete account later
 		System.out.print("Choose one of the previous options [0-10]: ");
 	}
 
@@ -192,6 +192,7 @@ public class CommandLine {
 					break;
 				case 3:
 					this.addAvailabilities();
+					break;
 				case 10:
 					this.signOut();
 					break;
@@ -441,7 +442,6 @@ public class CommandLine {
 				System.out.println("That's not proper input, please try again!");
 			}
 		}
-
 	}
 
 	private boolean isValid(String input, int max) {
@@ -742,6 +742,7 @@ public class CommandLine {
 		BigDecimal price = null;
 		String input;
 		int choice = -1;
+
 		while (!hostedListings.isEmpty() && (fromDate == null || toDate == null)) {
 			System.out.println("\nType \"0\" to exit");
 			printHostedListings(hostedListings);
@@ -813,7 +814,7 @@ public class CommandLine {
 				LocalDate tempDate = fromDate;
 				int rows = 0;
 				while (tempDate.isBefore(toDate) || tempDate.isEqual(toDate)) {
-					rows += sqlMngr.insertAvailability(listing.street, listing.number, listing.postalCode,
+					rows += sqlMngr.insertOrUpdateAvailability(listing.street, listing.number, listing.postalCode,
 							listing.country,
 							tempDate, available, price);
 					tempDate = tempDate.plusDays(1);

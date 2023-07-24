@@ -25,6 +25,7 @@ public class SQLController {
 	private PreparedStatement insertHosts = null;
 	private PreparedStatement selectHostsBySIN = null;
 	private PreparedStatement insertAvailability = null;
+	private PreparedStatement insertOrUpdateAvailability = null;
 	private PreparedStatement selectAllAvailBetweenDate = null;
 	private PreparedStatement selectAvailBetweenDate = null;
 	private PreparedStatement deleteAvailBetweenDate = null;
@@ -232,6 +233,9 @@ public class SQLController {
 			insertAvailability = conn.prepareStatement("INSERT INTO Availability"
 					+ " (Street, Number, PostalCode, Country, Date, Available, Price)" 
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?)");
+			insertOrUpdateAvailability = conn.prepareStatement("INSERT INTO Availability"
+					+ " (Street, Number, PostalCode, Country, Date, Available, Price)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE Available=?, Price=?");
 			selectAllAvailBetweenDate = conn.prepareStatement("SELECT * FROM Availability WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND Date BETWEEN ? AND ?");
 			selectAvailBetweenDate = conn.prepareStatement("SELECT * FROM Availability WHERE"
@@ -395,6 +399,30 @@ public class SQLController {
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when inserting availability! "
 					+ "Another availiability with the same date and address may already exist.");
+			e.printStackTrace();
+		}
+		return rows;
+	}
+
+	// Controls the execution of an insert or update query.
+	// Functionality: Insert or update an availability.
+	public int insertOrUpdateAvailability(String street, int number, String postalCode, String country, LocalDate date,
+			boolean available, BigDecimal price) {
+		int rows = 0;
+		try {
+			int count = 0;
+			insertOrUpdateAvailability.setString(++count, street);
+			insertOrUpdateAvailability.setInt(++count, number);
+			insertOrUpdateAvailability.setString(++count, postalCode);
+			insertOrUpdateAvailability.setString(++count, country);
+			insertOrUpdateAvailability.setObject(++count, date);
+			insertOrUpdateAvailability.setBoolean(++count, available);
+			insertOrUpdateAvailability.setBigDecimal(++count, price);
+			insertOrUpdateAvailability.setBoolean(++count, available);
+			insertOrUpdateAvailability.setBigDecimal(++count, price);
+			rows = insertOrUpdateAvailability.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when inserting or updating availability!");
 			e.printStackTrace();
 		}
 		return rows;
