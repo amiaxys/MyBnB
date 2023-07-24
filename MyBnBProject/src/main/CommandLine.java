@@ -602,10 +602,30 @@ public class CommandLine {
 		printListings(listings); // print result
 	}
 
+  public void addOrderByDistance(ArrayList<Listing> listings, ArrayList<Double> distList, Listing listing, Double distance) {
+    if (listings.size() == 0) {
+      listings.add(listing);
+      distList.add(distance);
+      return;
+    }
+
+    for (int i = 0; i < distList.size(); i++) {
+      if (distance < distList.get(i)) {
+        listings.add(i, listing);
+        distList.add(i, distance);
+        return;
+      }
+    }
+    // insert at the end of the list
+    listings.add(listing);
+    distList.add(distance);
+  }
+
   // Calculation code from:
   // https://stackoverflow.com/questions/3694380/calculating-distance-between-two-points-using-latitude-longitude
   private ArrayList<Listing> calDistance(ArrayList<Listing> listings, double lat1, double long1, double distance) {
     ArrayList<Listing> filtered = new ArrayList<>();
+    ArrayList<Double> distArr = new ArrayList<>();
     final int radius = 6371; // radius of earth in km
 
     for (Listing listing: listings) {
@@ -621,7 +641,8 @@ public class CommandLine {
       double calDistance = radius * c;
 
       if (calDistance <= distance) {
-        filtered.add(listing);
+        //filtered.add(listing);
+        addOrderByDistance(filtered, distArr, listing, (Double)calDistance);
       }
     }
     return filtered;
