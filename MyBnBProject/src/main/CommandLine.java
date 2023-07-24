@@ -744,7 +744,7 @@ public class CommandLine {
 		int choice = -1;
 
 		while (!hostedListings.isEmpty() && (fromDate == null || toDate == null)) {
-			System.out.println("\nType \"0\" to exit");
+			System.out.println("Type \"0\" to exit");
 			printHostedListings(hostedListings);
 			System.out.printf("Choose a listing to add availabilities to [1-%d]: ", hostedListings.size());
 			input = sc.nextLine().strip();
@@ -756,6 +756,11 @@ public class CommandLine {
 			}
 			if (choice == 0) {
 				break;
+			}
+			
+			if (choice < 1 || choice > hostedListings.size()) {
+				System.out.println("That's not an option, please try again!");
+				continue;
 			}
 
 			Listing listing = hostedListings.get(choice - 1);
