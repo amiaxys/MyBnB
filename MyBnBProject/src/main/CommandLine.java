@@ -22,20 +22,19 @@ public class CommandLine {
 	// current user, if signed in
 	private User currentUser = null;
 
-  private ArrayList<String> amenities = new ArrayList<>(
-      Arrays.asList("wifi","kitchen","washer","dryer",
-        "air conditioning","heating","dedicated workspace", "tv",
-        "hair dryer","iron","pool","hot tub","free parking",
-        "ev charger","crib","gym","bbq grill","breakfast",
-        "indoor fireplace","smoking allowed","beachfront",
-        "waterfront","ski-in/ski-out","smoke alarm","carbon monoxide alarm"));
-  /*private ArrayList<String> amenities = new ArrayList<>(
-      Arrays.asList("Wifi","Kitchen","Washer","Dryer",
-        "Air conditioning","Heating","Dedicated workspace", "TV",
-        "Hair dryer","Iron","Pool","Hot tub","Free parking",
-        "EV charger","Crib","Gym","BBQ grill","Breakfast",
-        "Indoor fireplace","Smoking allowed","Beachfront",
-        "Waterfront","Ski-in/ski-out","Smoke alarm","Carbon monoxide alarm"));*/
+	private ArrayList<String> amenities = new ArrayList<>(Arrays.asList("wifi", "kitchen", "washer", "dryer",
+			"air conditioning", "heating", "dedicated workspace", "tv", "hair dryer", "iron", "pool", "hot tub",
+			"free parking", "ev charger", "crib", "gym", "bbq grill", "breakfast", "indoor fireplace",
+			"smoking allowed", "beachfront", "waterfront", "ski-in/ski-out", "smoke alarm", "carbon monoxide alarm"));
+	/*
+	 * private ArrayList<String> amenities = new ArrayList<>(
+	 * Arrays.asList("Wifi","Kitchen","Washer","Dryer",
+	 * "Air conditioning","Heating","Dedicated workspace", "TV",
+	 * "Hair dryer","Iron","Pool","Hot tub","Free parking",
+	 * "EV charger","Crib","Gym","BBQ grill","Breakfast",
+	 * "Indoor fireplace","Smoking allowed","Beachfront",
+	 * "Waterfront","Ski-in/ski-out","Smoke alarm","Carbon monoxide alarm"));
+	 */
 
 	/*
 	 * ------------ Public functions - CommandLine State Functions ------------
@@ -134,18 +133,19 @@ public class CommandLine {
 		System.out.println("=========USER MENU=========");
 		System.out.println("0. Exit.");
 		System.out.println("1. Create a listing.");
-    System.out.println("2. Search for listings.");
+		System.out.println("2. Search for listings.");
+		System.out.println("10. Sign out.");
 		// add delete account + sign out here later
 		System.out.print("Choose one of the previous options [0-2]: ");
 	}
 
-  // Print search options
-  private static void searchOptions() {
+	// Print search options
+	private static void searchOptions() {
 		System.out.println("*********SEARCH OPTIONS*********");
 		System.out.println("0. Back.");
 		System.out.println("1. Search by exact address.");
-    System.out.println("2. Search by latitude and longitude. [not implemented]");
-    System.out.println("3. Search by postal code. [not implemented]");
+		System.out.println("2. Search by latitude and longitude. [not implemented]");
+		System.out.println("3. Search by postal code. [not implemented]");
 		System.out.print("Choose one of the previous options [0-3]: ");
 	}
 
@@ -172,7 +172,7 @@ public class CommandLine {
 		} catch (NumberFormatException e) {
 			input = "-1";
 		}
-		
+
 		return input;
 	}
 
@@ -189,12 +189,15 @@ public class CommandLine {
 			case 1:
 				this.createListing();
 				break;
-      case 2:
-        String searchInput;
-        do {
-				  searchInput = this.runSearchOptions();
-			  } while (searchInput.compareTo("0") != 0);
-        break;
+			case 2:
+				String searchInput;
+				do {
+					searchInput = this.runSearchOptions();
+				} while (searchInput.compareTo("0") != 0);
+				break;
+			case 10:
+				this.signOut();
+				break;
 			default:
 				System.out.println("That's not an option, please try again!");
 				break;
@@ -202,12 +205,12 @@ public class CommandLine {
 		} catch (NumberFormatException e) {
 			input = "-1";
 		}
-		
+
 		return input;
 	}
 
-  private String runSearchOptions() {
-    searchOptions(); // Print search options
+	private String runSearchOptions() {
+		searchOptions(); // Print search options
 		String input = sc.nextLine();
 		try {
 			int choice = Integer.parseInt(input);
@@ -218,10 +221,10 @@ public class CommandLine {
 			case 1:
 				this.searchListingByAddress();
 				break;
-      case 2:
-        break;
-      case 3:
-        break;
+			case 2:
+				break;
+			case 3:
+				break;
 			default:
 				System.out.println("That's not an option, please try again!");
 				break;
@@ -229,9 +232,9 @@ public class CommandLine {
 		} catch (NumberFormatException e) {
 			input = "-1";
 		}
-		
+
 		return input;
-  }
+	}
 
 	// Called during the initialization of an instance of the current class
 	// in order to retrieve from the user the credentials with which our program
@@ -292,60 +295,61 @@ public class CommandLine {
 		boolean repeat = false;
 		User user = new User();
 		user.salt = getSalt();
-		String temp = "";
-		while ((user.sin == null || user.password == null || repeat) && !temp.equalsIgnoreCase("exit")) {
+		String input = "";
+		System.out.println("Type \"exit\" to exit anytime in the process.");
+		while ((user.sin == null || user.password == null || repeat) && !input.equalsIgnoreCase("exit")) {
 			repeat = false;
 			try {
 				System.out.print("Enter SIN: ");
-				temp = sc.nextLine().strip();
-				if (temp.length() != 9) {
+				input = sc.nextLine().strip();
+				if (input.length() != 9) {
 					System.out.println("That's not a SIN, please try again!");
 					continue;
 				}
-				int tempInt = Integer.parseInt(temp);
+				int tempInt = Integer.parseInt(input);
 				if (tempInt < 0) {
 					System.out.println("That's not a SIN, please try again!");
 					continue;
 				}
-				user.sin = temp;
+				user.sin = input;
 				System.out.print("Enter password (8-250 characters): ");
-				temp = sc.nextLine();
-				int tempLen = temp.length();
+				input = sc.nextLine();
+				int tempLen = input.length();
 				if (tempLen >= 8 && tempLen <= 250) {
-					user.password = getSaltHashedPassword(temp, user.salt);
+					user.password = getSaltHashedPassword(input, user.salt);
 				} else if (tempLen < 8) {
 					System.out.println("Your password is not 8 characters long, try again!");
 					continue;
 				} else if (tempLen > 250) {
-					System.out.println("Your password is too long, try again!");
+					System.out.println("Your password is too long, please try again!");
 					continue;
 				}
 				System.out.print("Enter name: ");
-				temp = sc.nextLine().strip();
-				if (temp.length() != 0) {
-					user.name = temp;
+				input = sc.nextLine().strip();
+				if (input.length() != 0) {
+					user.name = input;
 				}
 				System.out.print("Enter address: ");
-				temp = sc.nextLine().strip();
-				if (temp.length() != 0) {
-					user.address = temp;
+				input = sc.nextLine().strip();
+				if (input.length() != 0) {
+					user.address = input;
 				}
 				System.out.print("Enter birthdate (YYYY-MM-DD): ");
-				temp = sc.nextLine().strip();
-				if (temp.length() != 0) {
-					if (checkValidDate(temp)) {
-						user.birthdate = temp;
+				input = sc.nextLine().strip();
+				if (input.length() != 0) {
+					if (checkValidDate(input)) {
+						user.birthdate = input;
 					} else {
-						System.out.println("That's not a proper birthdate, try again!");
+						System.out.println("That's not a proper birthdate, please try again!");
 						repeat = true;
 						continue;
 					}
 				}
 
 				System.out.print("Enter occupation: ");
-				temp = sc.nextLine().strip();
-				if (temp.length() != 0) {
-					user.occupation = temp;
+				input = sc.nextLine().strip();
+				if (input.length() != 0) {
+					user.occupation = input;
 				}
 			} catch (NumberFormatException e) {
 				System.out.println("That's not a SIN, please try again!");
@@ -364,21 +368,22 @@ public class CommandLine {
 	private void signIn() {
 		User user = null;
 		String sin = null;
-		String temp = "";
-		while (user == null && !temp.equalsIgnoreCase("exit")) {
-			while (sin == null && !temp.equalsIgnoreCase("exit")) {
+		String input = "";
+		System.out.println("Type \"exit\" to exit anytime in the process.");
+		while (user == null && !input.equalsIgnoreCase("exit")) {
+			while (sin == null && !input.equalsIgnoreCase("exit")) {
 				System.out.print("Enter SIN: ");
-				temp = sc.nextLine().strip();
-				if (temp.length() != 9) {
+				input = sc.nextLine().strip();
+				if (input.length() != 9) {
 					System.out.println("That's not a SIN, please try again!");
 					continue;
 				}
-				int tempInt = Integer.parseInt(temp);
+				int tempInt = Integer.parseInt(input);
 				if (tempInt < 0) {
 					System.out.println("That's not a SIN, please try again!");
 					continue;
 				}
-				sin = temp;
+				sin = input;
 			}
 
 			user = sqlMngr.selectUserBySIN(sin);
@@ -390,8 +395,8 @@ public class CommandLine {
 
 		String password = null;
 		System.out.print("Enter password: ");
-		temp = sc.nextLine();
-		password = getSaltHashedPassword(temp, user.salt);
+		input = sc.nextLine();
+		password = getSaltHashedPassword(input, user.salt);
 
 		if (password.equals(user.password)) {
 			System.out.println("You are signed in!");
@@ -401,175 +406,199 @@ public class CommandLine {
 		}
 	}
 
-  private boolean isValid(String input, int max) {
-    if (input.strip().equals("")) {
-      System.out.println("Input should be nonempty, please try again!");
-			return false;
-    }
-    if (input.length() > max) {
-      System.out.println("Length of input should not be more than " + max +" characters, please try again!");
-			return false;
-    }
-    return true;
-  }
-
-  private boolean isValidAmenities(String list) {
-    String[] splStrings = list.split(",");
-    for (String word: splStrings) {
-      if (!amenities.contains(word.strip().toLowerCase())) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private void printAmenities() {
-    System.out.println("Wifi\t\t\t\t\tKitchen\t\t\t\t\tWasher\nDryer"+
-        "\t\t\t\t\tAir conditioning\t\t\t\t\tHeating\nDedicated workspace\t\t\t\t\tTV"+
-        "\t\t\t\t\tHair dryer\nIron\t\t\t\t\tPool\t\t\t\t\tHot tub\nFree parking"+
-        "\t\t\t\t\tEV charger\t\t\t\t\tCrib\nGym\t\t\t\t\tBBQ grill\t\t\t\t\tBreakfast"+
-        "\nIndoor fireplace\t\t\t\t\tSmoking allowed\t\t\t\t\tBeachfront"+
-        "\nWaterfront\t\t\t\t\tSki-in/ski-out\t\t\t\t\tSmoke alarm\nCarbon monoxide alarm");
-  }
-
-  // Function that handles the feature: "Create a listing."
-  private void createListing() {
-		String type = null;
-    String street = null; int number = 0; String postalCode = null;
-		String country = null; String city = null;
-		BigDecimal latitude = null; BigDecimal longitude = null;
-    String traits = null;
-    String temp;
+	private void signOut() {
+		String input = "";
+		while (!input.equalsIgnoreCase("y")) {
+			System.out.print("Are you sure you want to sign out? [y/n]");
+			input = sc.nextLine().strip();
+			if (input.equalsIgnoreCase("n")) {
+				break;
+			} else if (input.equalsIgnoreCase("y")) {
+				this.currentUser = null;
+			} else {
+				System.out.println("That's not proper input, please try again!");
+			}
+		}
 		
-    // insert new row to table Listing
+	}
+
+	private boolean isValid(String input, int max) {
+		if (input.strip().equals("")) {
+			System.out.println("Input should be non-empty, please try again!");
+			return false;
+		}
+		if (input.length() > max) {
+			System.out.println("Length of input should not be more than " + max + " characters, please try again!");
+			return false;
+		}
+		return true;
+	}
+
+	private boolean isValidAmenities(String list) {
+		String[] splStrings = list.split(",");
+		for (String word : splStrings) {
+			if (!amenities.contains(word.strip().toLowerCase())) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private void printAmenities() {
+		System.out.println("Wifi\t\t\t\t\tKitchen\t\t\t\t\tWasher\nDryer"
+				+ "\t\t\t\t\tAir conditioning\t\t\t\t\tHeating\nDedicated workspace\t\t\t\t\tTV"
+				+ "\t\t\t\t\tHair dryer\nIron\t\t\t\t\tPool\t\t\t\t\tHot tub\nFree parking"
+				+ "\t\t\t\t\tEV charger\t\t\t\t\tCrib\nGym\t\t\t\t\tBBQ grill\t\t\t\t\tBreakfast"
+				+ "\nIndoor fireplace\t\t\t\t\tSmoking allowed\t\t\t\t\tBeachfront"
+				+ "\nWaterfront\t\t\t\t\tSki-in/ski-out\t\t\t\t\tSmoke alarm\nCarbon monoxide alarm");
+	}
+
+	// Function that handles the feature: "Create a listing."
+	private void createListing() {
+		String type = null;
+		String street = null;
+		int number = 0;
+		String postalCode = null;
+		String country = null;
+		String city = null;
+		BigDecimal latitude = null;
+		BigDecimal longitude = null;
+		String traits = null;
+		String temp;
+
+		// insert new row to table Listing
 		while (type == null || postalCode == null || latitude == null || longitude == null) {
 			System.out.print("Enter a type of listing (apartment, house, or room): ");
 			temp = sc.nextLine();
-      if (!temp.equals("apartment") && !temp.equals("house") && !temp.equals("room")) {
-        System.out.println("That's not a valid type of listing, please try again!");
+			if (!temp.equals("apartment") && !temp.equals("house") && !temp.equals("room")) {
+				System.out.println("That's not a valid type of listing, please try again!");
 				continue;
-      }
-      type = temp;
+			}
+			type = temp;
 
-      System.out.print("Enter the street name: ");
+			System.out.print("Enter the street name: ");
 			temp = sc.nextLine();
-      if (!isValid(temp, 40)) {
+			if (!isValid(temp, 40)) {
 				continue;
-      }
-      street = temp;
+			}
+			street = temp;
 
-      try {
-        System.out.print("Enter the street number: ");
-			  temp = sc.nextLine();
-        if (!isValid(temp, 6)) {
-				  continue;
-        }
-        number = Integer.parseInt(temp);
+			try {
+				System.out.print("Enter the street number: ");
+				temp = sc.nextLine();
+				if (!isValid(temp, 6)) {
+					continue;
+				}
+				number = Integer.parseInt(temp);
 
-        System.out.print("Enter the postal code: ");
-			  temp = sc.nextLine();
-        if (!isValid(temp, 10)) {
-				  continue;
-        }
-        postalCode = temp;
+				System.out.print("Enter the postal code: ");
+				temp = sc.nextLine();
+				if (!isValid(temp, 10)) {
+					continue;
+				}
+				postalCode = temp;
 
-        System.out.print("Enter the country: ");
-			  temp = sc.nextLine();
-        if (!isValid(temp, 56)) {
-				  continue;
-        }
-        country = temp;
+				System.out.print("Enter the country: ");
+				temp = sc.nextLine();
+				if (!isValid(temp, 56)) {
+					continue;
+				}
+				country = temp;
 
-        System.out.print("Enter the city: ");
-			  temp = sc.nextLine();
-        if (!isValid(temp, 20)) {
-				  continue;
-        }
-        city = temp;
+				System.out.print("Enter the city: ");
+				temp = sc.nextLine();
+				if (!isValid(temp, 20)) {
+					continue;
+				}
+				city = temp;
 
-        DecimalFormat df = new DecimalFormat("#.####");
-        System.out.print("Enter the latitude: ");
-			  temp = sc.nextLine();
-        if (!isValid(temp, 7)) {
-				  continue;
-        }
-        latitude = new BigDecimal(df.format(Double.parseDouble(temp)));
+				DecimalFormat df = new DecimalFormat("#.####");
+				System.out.print("Enter the latitude: ");
+				temp = sc.nextLine();
+				if (!isValid(temp, 7)) {
+					continue;
+				}
+				latitude = new BigDecimal(df.format(Double.parseDouble(temp)));
 
-        System.out.print("Enter the longitude: ");
-			  temp = sc.nextLine();
-        if (!isValid(temp, 8)) {
-				  continue;
-        }
-        longitude = new BigDecimal(df.format(Double.parseDouble(temp)));
-      } catch (NumberFormatException e) {
-        System.out.println("That's not a numeral value, please try again!");
-      }
+				System.out.print("Enter the longitude: ");
+				temp = sc.nextLine();
+				if (!isValid(temp, 8)) {
+					continue;
+				}
+				longitude = new BigDecimal(df.format(Double.parseDouble(temp)));
+			} catch (NumberFormatException e) {
+				System.out.println("That's not a number, please try again!");
+			}
 		}
 
-    System.out.println("\nSelect any of the following amenities/characteristics:\n");
-    printAmenities();
-    System.out.println("\n");
-    while (traits == null) {
-      System.out.print("Enter a list of amenities above separated by commas, no space in between! (e.g., Wifi,Hot tub,Gym): ");
-		  temp = sc.nextLine();
-      if (!isValidAmenities(temp)) {
-        System.out.println("That's an invalid list, please try again!");
-        continue;
-      }
-	    traits = temp;
-    }
-		
+		System.out.println("\nSelect any of the following amenities/characteristics:\n");
+		printAmenities();
+		System.out.println("\n");
+		while (traits == null) {
+			System.out.print(
+					"Enter a list of amenities above separated by commas, no space in between! (e.g., Wifi,Hot tub,Gym): ");
+			temp = sc.nextLine();
+			if (!isValidAmenities(temp)) {
+				System.out.println("That's an invalid list, please try again!");
+				continue;
+			}
+			traits = temp;
+		}
+
 		int rows = sqlMngr.insertListing(type, street, number, postalCode, country, city, latitude, longitude, traits);
-		System.out.println("\nRows affected: " + rows +"\n");	
-    // inserting to Listing failed.
-    if (rows == 0) {
-      return;
-    }
-    //insert new row to table Hosts
-    rows = sqlMngr.insertHosts(currentUser.sin, street, number, postalCode, country);
+		System.out.println("\nRows affected: " + rows + "\n");
+		// inserting to Listing failed.
+		if (rows == 0) {
+			return;
+		}
+		// insert new row to table Hosts
+		rows = sqlMngr.insertHosts(currentUser.sin, street, number, postalCode, country);
 	}
 
-  private void printListings(ArrayList<Listing> listings) {
-    int count = 0;
-    System.out.println("\nResult: " + listings.size() + " listings\n");
-    System.out.println("---------------------------------------------------------------------------------------------------------------------------");
-    System.out.printf("| %-14s | %-102s |%n", "Type", "Address");
-    System.out.println("===========================================================================================================================");
-    for (Listing listing: listings) {
-      count++;
-      System.out.printf("| %d. %-11s | %d %-30s %-25s %-30s %-10s |", count,listing.type,listing.number,listing.street,
-        listing.city,listing.country,listing.postalCode);
-    }
-    System.out.println("\n---------------------------------------------------------------------------------------------------------------------------\n");
-  } 
+	private void printListings(ArrayList<Listing> listings) {
+		int count = 0;
+		System.out.println("\nResult: " + listings.size() + " listings\n");
+		System.out.println(
+				"---------------------------------------------------------------------------------------------------------------------------");
+		System.out.printf("| %-14s | %-102s |%n", "Type", "Address");
+		System.out.println(
+				"===========================================================================================================================");
+		for (Listing listing : listings) {
+			count++;
+			System.out.printf("| %d. %-11s | %d %-30s %-25s %-30s %-10s |", count, listing.type, listing.number,
+					listing.street, listing.city, listing.country, listing.postalCode);
+		}
+		System.out.println(
+				"\n---------------------------------------------------------------------------------------------------------------------------\n");
+	}
 
-  private void searchListingByAddress() {
-    String street, postalCode, country, city;
-    int number = -1;
+	private void searchListingByAddress() {
+		String street, postalCode, country, city;
+		int number = -1;
 
-    System.out.print("Enter a street name: ");
-    street = sc.nextLine();
+		System.out.print("Enter a street name: ");
+		street = sc.nextLine();
 
-    while (number == -1) {
-      try {
-        System.out.print("Enter a street number: ");
-        number = Integer.parseInt(sc.nextLine());
-      } catch (NumberFormatException e) {
-        System.out.println("That's not a numeral value, please try again!");
-        continue;
-      }
-    }
-    System.out.print("Enter a postal code: ");
-    postalCode = sc.nextLine();
-    System.out.print("Enter a country: ");
-    country = sc.nextLine();
-    System.out.print("Enter a city: ");
-    city = sc.nextLine();
-    
-    ArrayList<Listing> listings = sqlMngr.searchListingAddr(street, number, postalCode, country, city);
+		while (number == -1) {
+			try {
+				System.out.print("Enter a street number: ");
+				number = Integer.parseInt(sc.nextLine());
+			} catch (NumberFormatException e) {
+				System.out.println("That's not a numeral value, please try again!");
+				continue;
+			}
+		}
+		System.out.print("Enter a postal code: ");
+		postalCode = sc.nextLine();
+		System.out.print("Enter a country: ");
+		country = sc.nextLine();
+		System.out.print("Enter a city: ");
+		city = sc.nextLine();
 
-    printListings(listings); //print result
-  }
+		ArrayList<Listing> listings = sqlMngr.searchListingAddr(street, number, postalCode, country, city);
+
+		printListings(listings); // print result
+	}
 
 	/*
 	 * // Function that handles the feature: "3. Print schema." private void
