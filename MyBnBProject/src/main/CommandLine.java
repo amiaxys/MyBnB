@@ -595,8 +595,72 @@ public class CommandLine {
 				"----------------------------------------------------------------------------------------------------------------------------\n");
 	}
 
+  private ArrayList<Listing> filterByAmenities(ArrayList<Listing> listings, String amenities) {
+    ArrayList<Listing> filtered = new ArrayList<>();
+    boolean contains = true;
+    String temp;
+
+    for (Listing listing: listings) {
+      for (String word: amenities.split(",")) {
+        if (word.equalsIgnoreCase("TV")) {
+          temp = "TV";
+        }
+        else if (word.equalsIgnoreCase("EV charger")) {
+          temp = "EV charger";
+        }
+        else if (word.equalsIgnoreCase("BBQ grill")) {
+          temp = "BBQ grill";
+        }
+        else {
+          temp = word.substring(0, 1).toUpperCase() + word.substring(1);
+        }
+
+        if (!listing.amenities.contains(temp)) {
+          contains = false;
+          break;
+        }
+      }
+      if (contains) {
+        filtered.add(listing);
+      }
+      contains = true;
+    }
+
+    return filtered;
+  }
+
+  private String askFilterAmenities() {
+    String amenities = null, input;
+
+    while (amenities == null) {
+      System.out.print("Do you want to use an amenities filter? [y/n]: ");
+			input = sc.nextLine().strip();
+			if (input.equalsIgnoreCase("y")) {
+				System.out.println();
+        printAmenities();
+        System.out.println();
+
+        while (amenities == null) {
+			    System.out.print("Enter a list of amenities above separated by commas. (E.g., \"Wifi, Hot tub, Gym\"): ");
+			    input = sc.nextLine().strip().replaceAll("((?<=,)\\s||\\s(?=,))", "");
+			    if (!isValidAmenities(input)) {
+				    System.out.println("That's an invalid list, please try again!");
+				    continue;
+			    }
+			    amenities = input;
+		    }
+			} else if (input.equalsIgnoreCase("n")) {
+				return null;
+			} else {
+				System.out.println("That's not a proper input, please try again!");
+				continue;
+			}
+    }
+    return amenities;
+  }
+
 	private void searchListingByAddress() {
-		String street, postalCode, country, city;
+		String street, postalCode, country, city, amenities;
 		int number = -1;
 
 		System.out.println();
@@ -620,8 +684,13 @@ public class CommandLine {
 		System.out.print("Enter a city: ");
 		city = sc.nextLine();
 
+    amenities = askFilterAmenities();
+
 		ArrayList<Listing> listings = sqlMngr.searchListingAddr(street, number, postalCode, country, city);
 
+    if (amenities != null) {
+      listings = filterByAmenities(listings, amenities);
+    }
 		printListings(listings); // print result
 	}
 
@@ -699,21 +768,33 @@ public class CommandLine {
 			}
 		}
 
+    String amenities = askFilterAmenities();
+
 		ArrayList<Listing> listings = sqlMngr.searchAllListing();
 		listings = calDistance(listings, latitude.doubleValue(), longitude.doubleValue(), distance);
+
+    if (amenities != null) {
+      listings = filterByAmenities(listings, amenities);
+    }
 		printListings(listings);
 	}
 
 	private void searchListingByPostalCode() {
-		String postalCode;
+		String postalCode, amenities;
 
 		System.out.println();
 		System.out.println("Search for nearby listings by entering a postal code");
 		System.out.print("Enter a postal code: ");
 		postalCode = sc.nextLine();
+    
+    amenities = askFilterAmenities();
 
 		String pattern = postalCode.substring(0, postalCode.length() - 1) + "_";
 		ArrayList<Listing> listings = sqlMngr.searchListingPostalCode(pattern);
+
+    if (amenities != null) {
+      listings = filterByAmenities(listings, amenities);
+    }
 		printListings(listings);
 	}
 
