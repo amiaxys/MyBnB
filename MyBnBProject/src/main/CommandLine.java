@@ -29,15 +29,8 @@ public class CommandLine {
 			"air conditioning", "heating", "dedicated workspace", "tv", "hair dryer", "iron", "pool", "hot tub",
 			"free parking", "ev charger", "crib", "gym", "bbq grill", "breakfast", "indoor fireplace",
 			"smoking allowed", "beachfront", "waterfront", "ski-in/ski-out", "smoke alarm", "carbon monoxide alarm"));
-	/*
-	 * private ArrayList<String> amenities = new ArrayList<>(
-	 * Arrays.asList("Wifi","Kitchen","Washer","Dryer",
-	 * "Air conditioning","Heating","Dedicated workspace", "TV",
-	 * "Hair dryer","Iron","Pool","Hot tub","Free parking",
-	 * "EV charger","Crib","Gym","BBQ grill","Breakfast",
-	 * "Indoor fireplace","Smoking allowed","Beachfront",
-	 * "Waterfront","Ski-in/ski-out","Smoke alarm","Carbon monoxide alarm"));
-	 */
+
+	private ArrayList<String> paymentMethods = new ArrayList<>(Arrays.asList("credit card", "debit card", "cash"));
 
 	/*
 	 * ------------ Public functions - CommandLine State Functions ------------
@@ -100,7 +93,6 @@ public class CommandLine {
 				} else {
 					input = runUserMenuOptions();
 				}
-
 			} while (input.compareTo("0") != 0);
 
 			return true;
@@ -221,6 +213,7 @@ public class CommandLine {
 	private String runSearchOptions() {
 		searchOptions(); // Print search options
 		String input = sc.nextLine();
+		ArrayList<Listing> listings = null;
 		try {
 			int choice = Integer.parseInt(input);
 			// Activate the desired functionality
@@ -228,13 +221,13 @@ public class CommandLine {
 				case 0:
 					break;
 				case 1:
-					this.searchListingByAddress();
+					listings = this.searchListingByAddress();
 					break;
 				case 2:
-					this.searchListingByCoord();
+					listings = this.searchListingByCoord();
 					break;
 				case 3:
-					this.searchListingByPostalCode();
+					listings = this.searchListingByPostalCode();
 					break;
 				default:
 					System.out.println("That's not an option, please try again!");
@@ -242,6 +235,11 @@ public class CommandLine {
 			}
 		} catch (NumberFormatException e) {
 			input = "-1";
+			System.out.println("That's not a number, please try again!");
+		}
+
+		if (listings != null) {
+			this.bookListing(listings);
 		}
 
 		return input;
@@ -595,71 +593,69 @@ public class CommandLine {
 				"----------------------------------------------------------------------------------------------------------------------------\n");
 	}
 
-  private ArrayList<Listing> filterByAmenities(ArrayList<Listing> listings, String amenities) {
-    ArrayList<Listing> filtered = new ArrayList<>();
-    boolean contains = true;
-    String temp;
+	private ArrayList<Listing> filterByAmenities(ArrayList<Listing> listings, String amenities) {
+		ArrayList<Listing> filtered = new ArrayList<>();
+		boolean contains = true;
+		String temp;
 
-    for (Listing listing: listings) {
-      for (String word: amenities.split(",")) {
-        if (word.equalsIgnoreCase("TV")) {
-          temp = "TV";
-        }
-        else if (word.equalsIgnoreCase("EV charger")) {
-          temp = "EV charger";
-        }
-        else if (word.equalsIgnoreCase("BBQ grill")) {
-          temp = "BBQ grill";
-        }
-        else {
-          temp = word.substring(0, 1).toUpperCase() + word.substring(1);
-        }
+		for (Listing listing : listings) {
+			for (String word : amenities.split(",")) {
+				if (word.equalsIgnoreCase("TV")) {
+					temp = "TV";
+				} else if (word.equalsIgnoreCase("EV charger")) {
+					temp = "EV charger";
+				} else if (word.equalsIgnoreCase("BBQ grill")) {
+					temp = "BBQ grill";
+				} else {
+					temp = word.substring(0, 1).toUpperCase() + word.substring(1);
+				}
 
-        if (!listing.amenities.contains(temp)) {
-          contains = false;
-          break;
-        }
-      }
-      if (contains) {
-        filtered.add(listing);
-      }
-      contains = true;
-    }
+				if (!listing.amenities.contains(temp)) {
+					contains = false;
+					break;
+				}
+			}
+			if (contains) {
+				filtered.add(listing);
+			}
+			contains = true;
+		}
 
-    return filtered;
-  }
+		return filtered;
+	}
 
-  private String askFilterAmenities() {
-    String amenities = null, input;
+	private String askFilterAmenities() {
+		String amenities = null, input;
 
-    while (amenities == null) {
-      System.out.print("Do you want to use an amenities filter? [y/n]: ");
+		while (amenities == null) {
+			System.out.print("Do you want to use an amenities filter? [y/n]: ");
 			input = sc.nextLine().strip();
 			if (input.equalsIgnoreCase("y")) {
 				System.out.println();
-        printAmenities();
-        System.out.println();
+				printAmenities();
+				System.out.println();
 
-        while (amenities == null) {
-			    System.out.print("Enter a list of amenities above separated by commas. (E.g., \"Wifi, Hot tub, Gym\"): ");
-			    input = sc.nextLine().strip().replaceAll("((?<=,)\\s||\\s(?=,))", "");
-			    if (!isValidAmenities(input)) {
-				    System.out.println("That's an invalid list, please try again!");
-				    continue;
-			    }
-			    amenities = input;
-		    }
+				while (amenities == null) {
+					System.out.print(
+							"Enter a list of amenities above separated by commas. (E.g., \"Wifi, Hot tub, Gym\"): ");
+					input = sc.nextLine().strip().replaceAll("((?<=,)\\s||\\s(?=,))", "");
+					if (!isValidAmenities(input)) {
+						System.out.println("That's an invalid list, please try again!");
+						continue;
+					}
+					amenities = input;
+				}
 			} else if (input.equalsIgnoreCase("n")) {
 				return null;
 			} else {
 				System.out.println("That's not a proper input, please try again!");
 				continue;
 			}
-    }
-    return amenities;
-  }
+		}
+		return amenities;
+	}
 
-	private void searchListingByAddress() {
+	private ArrayList<Listing> searchListingByAddress() {
 		String street, postalCode, country, city, amenities;
 		int number = -1;
 
@@ -684,14 +680,16 @@ public class CommandLine {
 		System.out.print("Enter a city: ");
 		city = sc.nextLine();
 
-    amenities = askFilterAmenities();
+		amenities = askFilterAmenities();
 
 		ArrayList<Listing> listings = sqlMngr.searchListingAddr(street, number, postalCode, country, city);
 
-    if (amenities != null) {
-      listings = filterByAmenities(listings, amenities);
-    }
+		if (amenities != null) {
+			listings = filterByAmenities(listings, amenities);
+		}
 		printListings(listings); // print result
+
+		return listings;
 	}
 
 	public void addOrderByDistance(ArrayList<Listing> listings, ArrayList<Double> distList, Listing listing,
@@ -739,7 +737,7 @@ public class CommandLine {
 		return filtered;
 	}
 
-	private void searchListingByCoord() {
+	private ArrayList<Listing> searchListingByCoord() {
 		BigDecimal latitude = null, longitude = null;
 		double distance = -1;
 
@@ -768,34 +766,75 @@ public class CommandLine {
 			}
 		}
 
-    String amenities = askFilterAmenities();
+		String amenities = askFilterAmenities();
 
 		ArrayList<Listing> listings = sqlMngr.searchAllListing();
 		listings = calDistance(listings, latitude.doubleValue(), longitude.doubleValue(), distance);
 
-    if (amenities != null) {
-      listings = filterByAmenities(listings, amenities);
-    }
+		if (amenities != null) {
+			listings = filterByAmenities(listings, amenities);
+		}
 		printListings(listings);
+
+		return listings;
 	}
 
-	private void searchListingByPostalCode() {
+	private ArrayList<Listing> searchListingByPostalCode() {
 		String postalCode, amenities;
 
 		System.out.println();
 		System.out.println("Search for nearby listings by entering a postal code");
 		System.out.print("Enter a postal code: ");
 		postalCode = sc.nextLine();
-    
-    amenities = askFilterAmenities();
+
+		amenities = askFilterAmenities();
 
 		String pattern = postalCode.substring(0, postalCode.length() - 1) + "_";
 		ArrayList<Listing> listings = sqlMngr.searchListingPostalCode(pattern);
 
-    if (amenities != null) {
-      listings = filterByAmenities(listings, amenities);
-    }
+		if (amenities != null) {
+			listings = filterByAmenities(listings, amenities);
+		}
 		printListings(listings);
+
+		return listings;
+	}
+
+	private boolean checkInputArrayList(String input, ArrayList<Listing> listings) {
+		int choice = -1;
+		try {
+			choice = Integer.parseInt(input);
+		} catch (NumberFormatException e) {
+			System.out.println("That's not a number, please try again!");
+			return false;
+		}
+
+		if (choice == 0) {
+			return true;
+		}
+
+		if (choice < 1 || choice > listings.size()) {
+			System.out.println("That's not an option, please try again!");
+			return false;
+		}
+
+		return true;
+	}
+
+	private LocalDate[] checkFromToDates(String input) {
+		String[] dates = input.split(",");
+		if (dates.length != 2) {
+			System.out.println("That's not the right number of dates, please try again.");
+			return null;
+		}
+		LocalDate[] dateFromTo = new LocalDate[2];
+		dateFromTo[0] = checkValidAvailDate(dates[0]);
+		dateFromTo[1] = checkValidAvailDate(dates[1]);
+		if (dateFromTo[0] == null || dateFromTo[1] == null || dateFromTo[0].isAfter(dateFromTo[1])) {
+			System.out.println("Those aren't proper dates, please try again!");
+			return null;
+		}
+		return dateFromTo;
 	}
 
 	private void printHostedListings(ArrayList<Listing> hostedListings) {
@@ -803,12 +842,13 @@ public class CommandLine {
 		System.out.println("Listings You Host: " + hostedListings.size() + " listings\n");
 		System.out.println("-----------------------------------------------------------------------"
 				+ "----------------------------------------------------------------------");
-		System.out.printf("| %-97s |%n", "Address of Listing");
+		System.out.printf("| %-2s | %-97s |%n", "#", "Address of Listing");
 		System.out.println("======================================================================="
 				+ "======================================================================");
 		for (Listing listing : hostedListings) {
 			count++;
-			System.out.printf("| %d. %d %-29s %-30s %-10s |%n", count, listing.number, listing.street, listing.country,
+			System.out.printf("| %d.\t %d\t %-29s %-30s %-10s |%n", count, listing.number, listing.street,
+					listing.country,
 					listing.postalCode);
 		}
 		System.out.println("-----------------------------------------------------------------------"
@@ -817,31 +857,24 @@ public class CommandLine {
 
 	private void addAvailabilities() {
 		ArrayList<Listing> hostedListings = sqlMngr.selectHostsBySIN(this.currentUser.sin);
-		LocalDate fromDate = null;
-		LocalDate toDate = null;
+		LocalDate[] dateFromTo = null;
 		boolean available = true;
 		BigDecimal price = null;
 		String input;
 		int choice = -1;
 
-		while (!hostedListings.isEmpty() && (fromDate == null || toDate == null)) {
+		while (!hostedListings.isEmpty() && dateFromTo == null) {
 			System.out.println("Type \"0\" to exit");
 			printHostedListings(hostedListings);
 			System.out.printf("Choose a listing to add availabilities to [1-%d]: ", hostedListings.size());
 			input = sc.nextLine().strip();
-			try {
-				choice = Integer.parseInt(input);
-			} catch (NumberFormatException e) {
-				input = "-1";
-				System.out.println("That's not a number, please try again!");
+			if (!checkInputArrayList(input, hostedListings)) {
+				continue;
 			}
+
+			choice = Integer.parseInt(input);
 			if (choice == 0) {
 				break;
-			}
-			
-			if (choice < 1 || choice > hostedListings.size()) {
-				System.out.println("That's not an option, please try again!");
-				continue;
 			}
 
 			Listing listing = hostedListings.get(choice - 1);
@@ -849,23 +882,14 @@ public class CommandLine {
 					+ " (E.g., \"2023-09-10, 2023-09-20\"): ");
 			input = sc.nextLine().replaceAll("\\s", "");
 
-			String[] dates = input.split(",");
-			if (dates.length != 2) {
-				System.out.println("That's not the right number of dates, please try again.");
-				continue;
-			}
-
-			fromDate = checkValidAvailDate(dates[0]);
-			toDate = checkValidAvailDate(dates[1]);
-			if (fromDate == null || toDate == null || fromDate.isAfter(toDate)) {
-				System.out.println("Those aren't proper dates, please try again!");
-				fromDate = null;
-				toDate = null;
+			dateFromTo = checkFromToDates(input);
+			if (dateFromTo == null) {
+				dateFromTo = null;
 				continue;
 			}
 
 			ArrayList<Availability> availabilities = sqlMngr.selectAvailBetweenDate(listing.street, listing.number,
-					listing.postalCode, listing.country, toDate, fromDate, false);
+					listing.postalCode, listing.country, dateFromTo[0], dateFromTo[1], false);
 
 			if (!availabilities.isEmpty()) {
 				System.out.println("Those dates overlap with existing bookings, please try again!");
@@ -880,8 +904,7 @@ public class CommandLine {
 				available = false;
 			} else {
 				System.out.println("That's not a proper input, please try again!");
-				fromDate = null;
-				toDate = null;
+				dateFromTo = null;
 				continue;
 			}
 
@@ -892,30 +915,161 @@ public class CommandLine {
 					price = new BigDecimal(priceDf.format(Double.parseDouble(input)));
 				} catch (NumberFormatException e) {
 					System.out.println("That's not a decimal, please try again!");
-					fromDate = null;
-					toDate = null;
+					dateFromTo = null;
 					continue;
 				}
 
-				LocalDate tempDate = fromDate;
+				LocalDate tempDate = dateFromTo[0];
 				int rows = 0;
-				while (tempDate.isBefore(toDate) || tempDate.isEqual(toDate)) {
+				while (tempDate.isBefore(dateFromTo[1]) || tempDate.isEqual(dateFromTo[1])) {
 					rows += sqlMngr.insertOrUpdateAvailability(listing.street, listing.number, listing.postalCode,
-							listing.country,
-							tempDate, available, price);
+							listing.country, tempDate, available, price);
 					tempDate = tempDate.plusDays(1);
 				}
 				System.out.println("Availability rows affected: " + rows);
 			} else {
 				int rows = sqlMngr.deleteAvailBetweenDate(listing.street, listing.number, listing.postalCode,
-						listing.country,
-						toDate, fromDate, true);
+						listing.country, dateFromTo[0], dateFromTo[1], true);
 				System.out.println("Availability rows deleted: " + rows);
 			}
 		}
 
 		if (hostedListings.isEmpty()) {
 			System.out.println("You host no listings to add availabilities to!");
+		}
+	}
+
+	private void printAvailabilities(ArrayList<Availability> availabilities) {
+		int count = 0;
+		System.out.println("Availability: " + availabilities.size() + " days available\n");
+		System.out.println("-----------------------------------------------------------------------");
+		System.out.printf("| %-2s | %-10s | %-10s |%n", "#", "Date", "Price");
+		System.out.println("=======================================================================");
+		for (Availability availability : availabilities) {
+			count++;
+			System.out.printf("| %d.   %-10s   %-10s |%n", count, availability.date.toString(), availability.price);
+		}
+		System.out.println("-----------------------------------------------------------------------\n");
+	}
+
+	private boolean isValidPaymentMethod(String input) {
+		if (paymentMethods.contains(input.toLowerCase())) {
+			return true;
+		}
+		return false;
+	}
+
+	private void printPaymentMethods() {
+		System.out.print("Payment methods: ");
+		for (String method : paymentMethods) {
+			System.out.print(method + ", ");
+		}
+		System.out.println("");
+	}
+
+	private void bookListing(ArrayList<Listing> listings) {
+		String input = "";
+		while (!listings.isEmpty()) {
+			System.out.print("Do you want to book a listing? [y/n]: ");
+			input = sc.nextLine().strip();
+			if (input.equalsIgnoreCase("n") || input.equalsIgnoreCase("y")) {
+				break;
+			} else {
+				System.out.println("That's not proper input, please try again!");
+			}
+		}
+
+		int choice = -1;
+		if (input.equalsIgnoreCase("y")) {
+			int rows = 0;
+			while (rows == 0) {
+				System.out.printf("Choose a listing to book [1-%d]: ", listings.size());
+				input = sc.nextLine().strip();
+				if (!checkInputArrayList(input, listings)) {
+					continue;
+				}
+				choice = Integer.parseInt(input);
+				if (choice == 0) {
+					break;
+				}
+
+				Listing listing = listings.get(choice - 1);
+
+				System.out.print(
+						"Enter a \"from\" date and a \"to\" date (YYYY-MM-DD) seperated by commas to check for availability."
+								+ " (E.g., \"2023-09-10, 2023-09-20\"): ");
+				input = sc.nextLine().replaceAll("\\s", "");
+
+				LocalDate[] dateFromTo = checkFromToDates(input);
+				if (dateFromTo == null) {
+					continue;
+				}
+
+				ArrayList<Availability> availabilities = sqlMngr.selectAvailBetweenDate(listing.street, listing.number,
+						listing.postalCode, listing.country, dateFromTo[0], dateFromTo[1], true);
+				printAvailabilities(availabilities);
+
+				if (availabilities.isEmpty()) {
+					System.out.println("There are no availabilities for those dates, please try again!");
+					continue;
+				}
+
+				System.out.print("Enter a \"from\" date and a \"to\" date (YYYY-MM-DD) seperated by commas to book."
+						+ " (E.g., \"2023-09-10, 2023-09-20\"): ");
+				input = sc.nextLine().replaceAll("\\s", "");
+
+				dateFromTo = checkFromToDates(input);
+				if (dateFromTo == null) {
+					continue;
+				}
+
+				LocalDate tempDate = dateFromTo[0];
+				ArrayList<Availability> bookedAvailabilities = new ArrayList<>();
+				BigDecimal totalPrice = new BigDecimal("0");
+				boolean found = false;
+				while (tempDate.isBefore(dateFromTo[1]) || tempDate.isEqual(dateFromTo[1])) {
+					found = false;
+					for (Availability availability : availabilities) {
+						if (availability.date.isEqual(tempDate)) {
+							bookedAvailabilities.add(availability);
+							totalPrice = totalPrice.add(availability.price);
+							found = true;
+							break;
+						}
+					}
+					if (!found) {
+						System.out.println("Those dates are not available, please try again!");
+						break;
+					}
+					tempDate = tempDate.plusDays(1);
+				}
+
+				if (!found) {
+					continue;
+				}
+
+				System.out.println("Total price: " + totalPrice);
+				printPaymentMethods();
+				System.out.print("Enter a payment method: ");
+				input = sc.nextLine().strip();
+
+				if (!isValidPaymentMethod(input)) {
+					System.out.println("That's not a valid payment method, please try again!");
+					continue;
+				}
+
+				rows = sqlMngr.insertBooked(currentUser.sin, listing.street, listing.number, listing.postalCode,
+						listing.country, dateFromTo[0], dateFromTo[1], input);
+
+				System.out.println("Booking rows affected: " + rows);
+
+				rows = 0;
+				for (Availability availability : bookedAvailabilities) {
+					rows += sqlMngr.insertOrUpdateAvailability(listing.street, listing.number, listing.postalCode,
+							listing.country, availability.date, false, availability.price);
+				}
+				System.out.println("Availability rows affected: " + rows);
+			}
 		}
 	}
 	/*

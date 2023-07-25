@@ -16,19 +16,24 @@ public class SQLController {
 	// Objects which communicates with the SQL backend delivering to it the
 	// desired statement/query from our application and returning the results
 	// of this execution the same way that are received from the SQL backend.
+	// User statements
 	private PreparedStatement insertUser = null;
 	private PreparedStatement selectUserBySIN = null;
+	// Listing statements
 	private PreparedStatement insertListing = null;
 	private PreparedStatement selectAllListing = null;
 	private PreparedStatement selectListingAddr = null;
 	private PreparedStatement selectListingPostalCode = null;
+	// Hosts statements
 	private PreparedStatement insertHosts = null;
 	private PreparedStatement selectHostsBySIN = null;
+	// Availability statements
 	private PreparedStatement insertAvailability = null;
 	private PreparedStatement insertOrUpdateAvailability = null;
 	private PreparedStatement selectAllAvailBetweenDate = null;
 	private PreparedStatement selectAvailBetweenDate = null;
 	private PreparedStatement deleteAvailBetweenDate = null;
+	// Booked statements
 	private PreparedStatement insertBooked = null;
 
 	// Initialize current instance of this class.
@@ -190,7 +195,7 @@ public class SQLController {
 					+ " Country VARCHAR(56),"
 					+ " FromDate DATE,"
 					+ " ToDate DATE,"
-					+ " PaymentMethod SET('Credit card', 'Debit card', 'PayPal'),"
+					+ " PaymentMethod SET('Credit card', 'Debit card', 'Cash'),"
 					+ " PRIMARY KEY (Street, Number, PostalCode, Country, FromDate, ToDate),"
 					+ " FOREIGN KEY (SIN) REFERENCES User(SIN),"
 					+ " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES"
@@ -246,7 +251,7 @@ public class SQLController {
 					+ " (Date BETWEEN ? AND ?) AND Available=?");
 			// Booked statements
 			insertBooked = conn.prepareStatement("INSERT INTO Booked"
-					+ " (SIN, Street, Number, PostalCode, Country, From, To, PaymentMethod)" 
+					+ " (SIN, Street, Number, PostalCode, Country, FromDate, ToDate, PaymentMethod)" 
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 			// @formatter:on
 		} catch (SQLException e) {
@@ -468,7 +473,7 @@ public class SQLController {
 	// Controls the execution of a select query.
 	// Functionality: Select availabilities by date and available.
 	public ArrayList<Availability> selectAvailBetweenDate(String street, int number, String postalCode, String country,
-			LocalDate to, LocalDate from, boolean available) {
+			LocalDate from, LocalDate to, boolean available) {
 		ArrayList<Availability> availabilities = new ArrayList<>();
 		try {
 			int count = 0;
@@ -476,8 +481,8 @@ public class SQLController {
 			selectAvailBetweenDate.setInt(++count, number);
 			selectAvailBetweenDate.setString(++count, postalCode);
 			selectAvailBetweenDate.setString(++count, country);
-			selectAvailBetweenDate.setObject(++count, to);
 			selectAvailBetweenDate.setObject(++count, from);
+			selectAvailBetweenDate.setObject(++count, to);
 			selectAvailBetweenDate.setBoolean(++count, available);
 
 			ResultSet rs = selectAvailBetweenDate.executeQuery();
@@ -505,8 +510,8 @@ public class SQLController {
 
 	// Controls the execution of a delete query.
 	// Functionality: Delete availabilities by date and available.
-	public int deleteAvailBetweenDate(String street, int number, String postalCode, String country, LocalDate to,
-			LocalDate from, boolean available) {
+	public int deleteAvailBetweenDate(String street, int number, String postalCode, String country, LocalDate from,
+			LocalDate to, boolean available) {
 		int rows = 0;
 		try {
 			int count = 0;
@@ -514,8 +519,8 @@ public class SQLController {
 			deleteAvailBetweenDate.setInt(++count, number);
 			deleteAvailBetweenDate.setString(++count, postalCode);
 			deleteAvailBetweenDate.setString(++count, country);
-			deleteAvailBetweenDate.setObject(++count, to);
 			deleteAvailBetweenDate.setObject(++count, from);
+			deleteAvailBetweenDate.setObject(++count, to);
 			deleteAvailBetweenDate.setBoolean(++count, available);
 			rows = deleteAvailBetweenDate.executeUpdate();
 		} catch (SQLException e) {
@@ -617,6 +622,29 @@ public class SQLController {
 			e.printStackTrace();
 		}
 		return listings;
+	}
+
+	// Controls the execution of an insert query.
+	// Functionality: Insert a booked record.
+	public int insertBooked(String sin, String street, int number, String postalCode, String country, LocalDate from,
+			LocalDate to, String paymentMethod) {
+		int rows = 0;
+		try {
+			int count = 0;
+			insertBooked.setString(++count, sin);
+			insertBooked.setString(++count, street);
+			insertBooked.setInt(++count, number);
+			insertBooked.setString(++count, postalCode);
+			insertBooked.setString(++count, country);
+			insertBooked.setObject(++count, from);
+			insertBooked.setObject(++count, to);
+			insertBooked.setString(++count, paymentMethod);
+			rows = insertBooked.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when inserting booked record!");
+			e.printStackTrace();
+		}
+		return rows;
 	}
 
 	/*
