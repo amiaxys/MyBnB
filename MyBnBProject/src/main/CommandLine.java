@@ -578,19 +578,42 @@ public class CommandLine {
 		int count = 0;
 		System.out.println("\nResult: " + listings.size() + " listings\n");
 		System.out.println(
-				"----------------------------------------------------------------------------------------------------------------------------");
-		System.out.printf("| %-14s | %-80s | %-8s | %-9s |%n", "Type", "Address", "Latitude", "Longitude");
+				"+-----+-----------+----------------------------------------------------------------------------------+----------+-----------+");
+		System.out.printf("| %-3s | %-9s | %-80s | %-8s | %-9s |%n", "#", "Type", "Address", "Latitude", "Longitude");
 		System.out.println(
-				"============================================================================================================================");
+				"+=====+===========+==================================================================================+==========+===========+");
 		for (Listing listing : listings) {
 			count++;
-			System.out.printf("| %d. %-11s | %-80s | %.4f  | %.4f   |%n", count, listing.type,
+      String lat = coordinatesDf.format(listing.latitude.doubleValue());
+      String lon = coordinatesDf.format(listing.longitude.doubleValue());
+			System.out.printf("| %-3s | %-9s | %-80s | %-8s | %-9s |%n", count, listing.type,
 					listing.number + " " + listing.street + ", " +
-							listing.city + ", " + listing.country + " " + listing.postalCode,
-					listing.latitude.doubleValue(), listing.longitude.doubleValue());
+							listing.city + ", " + listing.country + " " + listing.postalCode, lat, lon);
 		}
 		System.out.println(
-				"----------------------------------------------------------------------------------------------------------------------------\n");
+				"+-----+-----------+----------------------------------------------------------------------------------+----------+-----------+\n");
+	}
+
+  private void printFilteredListings(ArrayList<AvailabilityListing> listings) {
+		int count = 0;
+		System.out.println("\nResult: " + listings.size() + " listings\n");
+		System.out.println(
+				"+-----+-----------+----------------------------------------------------------------------------------+----------+-----------+------------+------------+");
+		System.out.printf("| %-3s | %-9s | %-80s | %-8s | %-9s | %-10s | %-10s |%n", 
+        "#", "Type", "Address","Latitude", "Longitude", "Date", "Price");
+		System.out.println(
+				"+=====+===========+==================================================================================+==========+===========+============+============+");
+		for (AvailabilityListing listing : listings) {
+			count++;
+      String lat = coordinatesDf.format(listing.latitude.doubleValue());
+      String lon = coordinatesDf.format(listing.longitude.doubleValue());
+			System.out.printf("| %-3s | %-9s | %-80s | %-8s | %-9s | %-10s | %-10s |%n", count, listing.type,
+					listing.number + " " + listing.street + ", " +
+							listing.city + ", " + listing.country + " " + listing.postalCode, lat, lon,
+              listing.date.toString(), listing.price);
+		}
+		System.out.println(
+				"+-----+-----------+----------------------------------------------------------------------------------+----------+-----------+------------+------------+\n");
 	}
 
 	private ArrayList<Listing> filterByAmenities(ArrayList<Listing> listings, String amenities) {
@@ -660,6 +683,10 @@ public class CommandLine {
     ArrayList<Listing> listings = new ArrayList<>();
 
     for (AvailabilityListing availListing: filtered) {
+      listings.add(availListing.getListing());
+    }
+    /* 
+    for (AvailabilityListing availListing: filtered) {
       Listing temp = new Listing();
       temp.type = availListing.type; temp.street = availListing.street;
       temp.number = availListing.number; temp.postalCode = availListing.postalCode;
@@ -667,9 +694,20 @@ public class CommandLine {
       temp.latitude = availListing.latitude; temp.longitude = availListing.longitude;
       temp.amenities = availListing.amenities;
       listings.add(temp);
-    }
+    }*/
 
     return listings;
+  }
+
+  private ArrayList<AvailabilityListing> removeAvailListing(ArrayList<Listing> listings, ArrayList<AvailabilityListing> availListings) {
+    ArrayList<AvailabilityListing> newAvail = new ArrayList<>();
+    
+    for (AvailabilityListing availListing: availListings) {
+      if (listings.contains(availListing.getListing())) {
+        newAvail.add(availListing);
+      }
+    }
+    return newAvail;
   }
 
   private LocalDate[] askFilterDate() {
@@ -729,13 +767,17 @@ public class CommandLine {
     if (dateFromTo != null) {
       ArrayList<AvailabilityListing> availListings = sqlMngr.searchFilteredAddr(street, number, postalCode, country, city, 
         dateFromTo[0], dateFromTo[1]);
+      
       listings = convertToListing(availListings);
+      listings = askFilterAmenities(listings);
+      availListings = removeAvailListing(listings, availListings);
+      printFilteredListings(availListings);
     }
     else { // don't apply date filter
       listings = sqlMngr.searchListingAddr(street, number, postalCode, country, city);
+      listings = askFilterAmenities(listings);
+		  printListings(listings); // print result
     }
-    listings = askFilterAmenities(listings);
-		printListings(listings); // print result
 
 		return listings;
 	}
@@ -820,13 +862,17 @@ public class CommandLine {
     if (dateFromTo != null) {
       ArrayList<AvailabilityListing> availListings = sqlMngr.searchAllAvailListing(dateFromTo[0], dateFromTo[1]);
       listings = convertToListing(availListings);
+      listings = calDistance(listings, latitude.doubleValue(), longitude.doubleValue(), distance);
+      listings = askFilterAmenities(listings);
+      availListings = removeAvailListing(listings, availListings);
+      printFilteredListings(availListings);
     }
     else { // don't apply date filter
       listings = sqlMngr.searchAllListing();
+      listings = calDistance(listings, latitude.doubleValue(), longitude.doubleValue(), distance);
+      listings = askFilterAmenities(listings);
+		  printListings(listings);
     }
-    listings = calDistance(listings, latitude.doubleValue(), longitude.doubleValue(), distance);
-    listings = askFilterAmenities(listings);
-		printListings(listings);
 
 		return listings;
 	}
@@ -847,12 +893,15 @@ public class CommandLine {
       ArrayList<AvailabilityListing> availListings = sqlMngr.searchFilteredPostalCode(pattern, 
         dateFromTo[0], dateFromTo[1]);
       listings = convertToListing(availListings);
+      listings = askFilterAmenities(listings);
+      availListings = removeAvailListing(listings, availListings);
+      printFilteredListings(availListings);
     }
     else { // don't apply date filter
       listings = sqlMngr.searchListingPostalCode(pattern);
+      listings = askFilterAmenities(listings);
+		  printListings(listings);
     }
-    listings = askFilterAmenities(listings);
-		printListings(listings);
 
 		return listings;
 	}
@@ -897,19 +946,18 @@ public class CommandLine {
 	private void printHostedListings(ArrayList<Listing> hostedListings) {
 		int count = 0;
 		System.out.println("Listings You Host: " + hostedListings.size() + " listings\n");
-		System.out.println("-----------------------------------------------------------------------"
-				+ "----------------------------------------------------------------------");
-		System.out.printf("| %-2s | %-97s |%n", "#", "Address of Listing");
-		System.out.println("======================================================================="
-				+ "======================================================================");
+		System.out.println("+-----+----------------------------------------------------------------"
+				+ "-----------------------------------+");
+		System.out.printf("| %-3s | %-97s |%n", "#", "Address of Listing");
+		System.out.println("+=====+================================================================"
+				+ "===================================+");
 		for (Listing listing : hostedListings) {
 			count++;
-			System.out.printf("| %d.\t %d\t %-29s %-30s %-10s |%n", count, listing.number, listing.street,
-					listing.country,
-					listing.postalCode);
+			System.out.printf("| %-3s | %-97s |%n", count, listing.number+" "+listing.street+
+					", "+listing.country+", "+listing.postalCode);
 		}
-		System.out.println("-----------------------------------------------------------------------"
-				+ "----------------------------------------------------------------------\n");
+		System.out.println("+-----+----------------------------------------------------------------"
+				+ "-----------------------------------+\n");
 	}
 
 	private void addAvailabilities() {
@@ -999,14 +1047,14 @@ public class CommandLine {
 	private void printAvailabilities(ArrayList<Availability> availabilities) {
 		int count = 0;
 		System.out.println("Availability: " + availabilities.size() + " days available\n");
-		System.out.println("-----------------------------------------------------------------------");
-		System.out.printf("| %-2s | %-10s | %-10s |%n", "#", "Date", "Price");
-		System.out.println("=======================================================================");
+		System.out.println("+-----+------------+------------+");
+		System.out.printf("| %-3s | %-10s | %-10s |%n", "#", "Date", "Price");
+		System.out.println("+=====+============+============+");
 		for (Availability availability : availabilities) {
 			count++;
-			System.out.printf("| %d.   %-10s   %-10s |%n", count, availability.date.toString(), availability.price);
+			System.out.printf("| %-3s | %-10s | %-10s |%n", count, availability.date.toString(), availability.price);
 		}
-		System.out.println("-----------------------------------------------------------------------\n");
+		System.out.println("+-----+------------+------------+\n");
 	}
 
 	private boolean isValidPaymentMethod(String input) {

@@ -593,19 +593,20 @@ public class SQLController {
 			ResultSet rs = selectFilteredAddr.executeQuery();
 
 			while (rs.next()) {
-				AvailabilityListing temp = new AvailabilityListing();
-				temp.type = rs.getString("Type");
-				temp.street = rs.getString("Street");
-				temp.number = rs.getInt("Number");
-				temp.postalCode = rs.getString("PostalCode");
-				temp.country = rs.getString("Country");
-				temp.city = rs.getString("City");
-				temp.latitude = rs.getBigDecimal("Latitude");
-				temp.longitude = rs.getBigDecimal("Longitude");
-				temp.amenities = rs.getString("Amenities");
-        temp.date = rs.getObject("Date", LocalDate.class);
-				temp.available = rs.getBoolean("Available");
-				temp.price = rs.getBigDecimal("Price");
+				String tempType = rs.getString("Type");
+				String tempStreet = rs.getString("Street");
+				int tempNumber = rs.getInt("Number");
+				String tempPostalCode = rs.getString("PostalCode");
+				String tempCountry = rs.getString("Country");
+				String tempCity = rs.getString("City");
+				BigDecimal tempLatitude = rs.getBigDecimal("Latitude");
+				BigDecimal tempLongitude = rs.getBigDecimal("Longitude");
+				String tempAmenities = rs.getString("Amenities");
+        LocalDate date = rs.getObject("Date", LocalDate.class);
+				boolean available = rs.getBoolean("Available");
+				BigDecimal price = rs.getBigDecimal("Price");
+        AvailabilityListing temp = new AvailabilityListing(tempType, tempStreet, tempNumber, tempPostalCode, tempCountry,
+            tempCity, tempLatitude, tempLongitude, tempAmenities, date, available, price);
 				listings.add(temp);
 			}
 
@@ -658,19 +659,20 @@ public class SQLController {
 			ResultSet rs = selectAllAvailListing.executeQuery();
 
 			while (rs.next()) {
-				AvailabilityListing temp = new AvailabilityListing();
-				temp.type = rs.getString("Type");
-				temp.street = rs.getString("Street");
-				temp.number = rs.getInt("Number");
-				temp.postalCode = rs.getString("PostalCode");
-				temp.country = rs.getString("Country");
-				temp.city = rs.getString("City");
-				temp.latitude = rs.getBigDecimal("Latitude");
-				temp.longitude = rs.getBigDecimal("Longitude");
-				temp.amenities = rs.getString("Amenities");
-        temp.date = rs.getObject("Date", LocalDate.class);
-				temp.available = rs.getBoolean("Available");
-				temp.price = rs.getBigDecimal("Price");
+				String tempType = rs.getString("Type");
+				String tempStreet = rs.getString("Street");
+				int tempNumber = rs.getInt("Number");
+				String tempPostalCode = rs.getString("PostalCode");
+				String tempCountry = rs.getString("Country");
+				String tempCity = rs.getString("City");
+				BigDecimal tempLatitude = rs.getBigDecimal("Latitude");
+				BigDecimal tempLongitude = rs.getBigDecimal("Longitude");
+				String tempAmenities = rs.getString("Amenities");
+        LocalDate date = rs.getObject("Date", LocalDate.class);
+				boolean available = rs.getBoolean("Available");
+				BigDecimal price = rs.getBigDecimal("Price");
+        AvailabilityListing temp = new AvailabilityListing(tempType, tempStreet, tempNumber, tempPostalCode, tempCountry,
+            tempCity, tempLatitude, tempLongitude, tempAmenities, date, available, price);
 				listings.add(temp);
 			}
 			rs.close();
@@ -723,19 +725,20 @@ public class SQLController {
 			ResultSet rs = selectFilteredPostalCode.executeQuery();
 
 			while (rs.next()) {
-				AvailabilityListing temp = new AvailabilityListing();
-				temp.type = rs.getString("Type");
-				temp.street = rs.getString("Street");
-				temp.number = rs.getInt("Number");
-				temp.postalCode = rs.getString("PostalCode");
-				temp.country = rs.getString("Country");
-				temp.city = rs.getString("City");
-				temp.latitude = rs.getBigDecimal("Latitude");
-				temp.longitude = rs.getBigDecimal("Longitude");
-				temp.amenities = rs.getString("Amenities");
-        temp.date = rs.getObject("Date", LocalDate.class);
-				temp.available = rs.getBoolean("Available");
-				temp.price = rs.getBigDecimal("Price");
+				String tempType = rs.getString("Type");
+				String tempStreet = rs.getString("Street");
+				int tempNumber = rs.getInt("Number");
+				String tempPostalCode = rs.getString("PostalCode");
+				String tempCountry = rs.getString("Country");
+				String tempCity = rs.getString("City");
+				BigDecimal tempLatitude = rs.getBigDecimal("Latitude");
+				BigDecimal tempLongitude = rs.getBigDecimal("Longitude");
+				String tempAmenities = rs.getString("Amenities");
+        LocalDate date = rs.getObject("Date", LocalDate.class);
+				boolean available = rs.getBoolean("Available");
+				BigDecimal price = rs.getBigDecimal("Price");
+        AvailabilityListing temp = new AvailabilityListing(tempType, tempStreet, tempNumber, tempPostalCode, tempCountry,
+            tempCity, tempLatitude, tempLongitude, tempAmenities, date, available, price);
 				listings.add(temp);
 			}
 			rs.close();

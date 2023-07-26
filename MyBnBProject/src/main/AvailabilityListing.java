@@ -3,33 +3,25 @@ package main;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public class AvailabilityListing {
+public class AvailabilityListing extends Listing {
   
-  protected String type;
-	protected String street;
-	protected int number;
-	protected String postalCode;
-	protected String country;
-	protected String city;
-	protected BigDecimal latitude;
-	protected BigDecimal longitude;
-	protected String amenities;
+  protected Listing listing;
   protected LocalDate date;
   protected boolean available;
   protected BigDecimal price;
 
 	public AvailabilityListing() {
-		type = null;
-		street = null;
-		number = 0;
-		postalCode = null;
-		country = null;
-		city = null;
-		latitude = null;
-		longitude = null;
-		amenities = null;
+    super();
     date = null;
     available = false;
     price = null;
 	}
+
+  public AvailabilityListing(String type, String street, int number, String postalCode, String country, String city,
+  BigDecimal latitude, BigDecimal longitude, String amenities, LocalDate date, boolean available, BigDecimal price) {
+    super(type, street, number, postalCode, country, city, latitude, longitude, amenities);
+    this.date = date;
+    this.available = available;
+    this.price = price;
+  }
 }
