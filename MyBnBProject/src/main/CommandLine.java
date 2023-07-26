@@ -624,7 +624,7 @@ public class CommandLine {
 		return filtered;
 	}
 
-	private String askFilterAmenities() {
+	private ArrayList<Listing> askFilterAmenities(ArrayList<Listing> listings) {
 		String amenities = null, input;
 
 		while (amenities == null) {
@@ -645,18 +645,61 @@ public class CommandLine {
 					}
 					amenities = input;
 				}
+        return filterByAmenities(listings, amenities);
 			} else if (input.equalsIgnoreCase("n")) {
-				return null;
+				break;
 			} else {
 				System.out.println("That's not a proper input, please try again!");
 				continue;
 			}
 		}
-		return amenities;
+    return listings;
 	}
 
+  private ArrayList<Listing> convertToListing(ArrayList<AvailabilityListing> filtered) {
+    ArrayList<Listing> listings = new ArrayList<>();
+
+    for (AvailabilityListing availListing: filtered) {
+      Listing temp = new Listing();
+      temp.type = availListing.type; temp.street = availListing.street;
+      temp.number = availListing.number; temp.postalCode = availListing.postalCode;
+      temp.country = availListing.country; temp.city = availListing.city;
+      temp.latitude = availListing.latitude; temp.longitude = availListing.longitude;
+      temp.amenities = availListing.amenities;
+      listings.add(temp);
+    }
+
+    return listings;
+  }
+
+  private LocalDate[] askFilterDate() {
+    String input;
+    LocalDate[] dateFromTo = null;
+
+		while (dateFromTo == null) {
+			System.out.print("Do you want to use a date filter? [y/n]: ");
+			input = sc.nextLine().strip();
+			if (input.equalsIgnoreCase("y")) {
+        
+				while (dateFromTo == null) {
+					System.out.print("Enter a \"from\" date and a \"to\" date (YYYY-MM-DD) seperated by commas."
+					  + " (E.g., \"2023-09-10, 2023-09-20\"): ");
+			    input = sc.nextLine().replaceAll("\\s", "");
+
+			    dateFromTo = checkFromToDates(input);
+				}
+			} else if (input.equalsIgnoreCase("n")) {
+				break;
+			} else {
+				System.out.println("That's not a proper input, please try again!");
+				continue;
+			}
+		}
+    return dateFromTo;
+  }
+
 	private ArrayList<Listing> searchListingByAddress() {
-		String street, postalCode, country, city, amenities;
+		String street, postalCode, country, city;
 		int number = -1;
 
 		System.out.println();
@@ -680,13 +723,18 @@ public class CommandLine {
 		System.out.print("Enter a city: ");
 		city = sc.nextLine();
 
-		amenities = askFilterAmenities();
+		ArrayList<Listing> listings;
+		LocalDate[] dateFromTo = askFilterDate();
 
-		ArrayList<Listing> listings = sqlMngr.searchListingAddr(street, number, postalCode, country, city);
-
-		if (amenities != null) {
-			listings = filterByAmenities(listings, amenities);
-		}
+    if (dateFromTo != null) {
+      ArrayList<AvailabilityListing> availListings = sqlMngr.searchFilteredAddr(street, number, postalCode, country, city, 
+        dateFromTo[0], dateFromTo[1]);
+      listings = convertToListing(availListings);
+    }
+    else { // don't apply date filter
+      listings = sqlMngr.searchListingAddr(street, number, postalCode, country, city);
+    }
+    listings = askFilterAmenities(listings);
 		printListings(listings); // print result
 
 		return listings;
@@ -766,35 +814,44 @@ public class CommandLine {
 			}
 		}
 
-		String amenities = askFilterAmenities();
+		ArrayList<Listing> listings;
+    LocalDate[] dateFromTo = askFilterDate();
 
-		ArrayList<Listing> listings = sqlMngr.searchAllListing();
-		listings = calDistance(listings, latitude.doubleValue(), longitude.doubleValue(), distance);
-
-		if (amenities != null) {
-			listings = filterByAmenities(listings, amenities);
-		}
+    if (dateFromTo != null) {
+      ArrayList<AvailabilityListing> availListings = sqlMngr.searchAllAvailListing(dateFromTo[0], dateFromTo[1]);
+      listings = convertToListing(availListings);
+    }
+    else { // don't apply date filter
+      listings = sqlMngr.searchAllListing();
+    }
+    listings = calDistance(listings, latitude.doubleValue(), longitude.doubleValue(), distance);
+    listings = askFilterAmenities(listings);
 		printListings(listings);
 
 		return listings;
 	}
 
 	private ArrayList<Listing> searchListingByPostalCode() {
-		String postalCode, amenities;
+		String postalCode;
 
 		System.out.println();
 		System.out.println("Search for nearby listings by entering a postal code");
 		System.out.print("Enter a postal code: ");
 		postalCode = sc.nextLine();
 
-		amenities = askFilterAmenities();
-
 		String pattern = postalCode.substring(0, postalCode.length() - 1) + "_";
-		ArrayList<Listing> listings = sqlMngr.searchListingPostalCode(pattern);
+		ArrayList<Listing> listings;
+    LocalDate[] dateFromTo = askFilterDate();
 
-		if (amenities != null) {
-			listings = filterByAmenities(listings, amenities);
-		}
+    if (dateFromTo != null) {
+      ArrayList<AvailabilityListing> availListings = sqlMngr.searchFilteredPostalCode(pattern, 
+        dateFromTo[0], dateFromTo[1]);
+      listings = convertToListing(availListings);
+    }
+    else { // don't apply date filter
+      listings = sqlMngr.searchListingPostalCode(pattern);
+    }
+    listings = askFilterAmenities(listings);
 		printListings(listings);
 
 		return listings;
