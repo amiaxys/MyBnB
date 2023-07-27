@@ -682,19 +682,7 @@ public class CommandLine {
   private ArrayList<Listing> convertToListing(ArrayList<AvailabilityListing> filtered) {
     ArrayList<Listing> listings = new ArrayList<>();
 
-    for (AvailabilityListing availListing: filtered) {
-      listings.add(availListing.getListing());
-    }
-    /* 
-    for (AvailabilityListing availListing: filtered) {
-      Listing temp = new Listing();
-      temp.type = availListing.type; temp.street = availListing.street;
-      temp.number = availListing.number; temp.postalCode = availListing.postalCode;
-      temp.country = availListing.country; temp.city = availListing.city;
-      temp.latitude = availListing.latitude; temp.longitude = availListing.longitude;
-      temp.amenities = availListing.amenities;
-      listings.add(temp);
-    }*/
+    filtered.forEach((availListing) -> listings.add(availListing.getListing()));
 
     return listings;
   }
@@ -702,11 +690,24 @@ public class CommandLine {
   private ArrayList<AvailabilityListing> removeAvailListing(ArrayList<Listing> listings, ArrayList<AvailabilityListing> availListings) {
     ArrayList<AvailabilityListing> newAvail = new ArrayList<>();
     
-    for (AvailabilityListing availListing: availListings) {
+    availListings.forEach((availListing) -> {
       if (listings.contains(availListing.getListing())) {
         newAvail.add(availListing);
       }
-    }
+    });
+
+    return newAvail;
+  }
+
+  private ArrayList<AvailabilityListing> applyPriceFilter(ArrayList<AvailabilityListing> availListings, BigDecimal from, BigDecimal to) {
+    ArrayList<AvailabilityListing> newAvail = new ArrayList<>();
+
+    availListings.forEach((availListing) -> {
+      if (availListing.price.compareTo(from) >= 0 && availListing.price.compareTo(to) <= 0) {
+        newAvail.add(availListing);
+      }
+    });
+
     return newAvail;
   }
 
@@ -736,6 +737,50 @@ public class CommandLine {
     return dateFromTo;
   }
 
+  private BigDecimal[] checkFromToPrices(String input) {
+		String[] prices = input.split(",");
+		if (prices.length != 2) {
+			System.out.println("That's not the right number of prices, please try again.");
+			return null;
+		}
+    
+    BigDecimal[] priceFromTo = new BigDecimal[2];
+    try {
+      priceFromTo[0] = new BigDecimal(coordinatesDf.format(Double.parseDouble(prices[0])));
+      priceFromTo[1] = new BigDecimal(coordinatesDf.format(Double.parseDouble(prices[1])));
+		} catch (NumberFormatException e) {
+			System.out.println("Those aren't numeral values, please try again!");
+			return null;
+		}
+		return priceFromTo;
+	}
+
+  private BigDecimal[] askFilterPrice() {
+    String input;
+    BigDecimal[] priceFromTo = null;
+
+		while (priceFromTo == null) {
+			System.out.print("Do you want to use a price filter? [y/n]: ");
+			input = sc.nextLine().strip();
+			if (input.equalsIgnoreCase("y")) {
+        
+				while (priceFromTo == null) {
+					System.out.print("Enter a \"start\" price and an \"end\" price seperated by commas."
+					  + " (E.g., \"10.99, 20.99\"): ");
+			    input = sc.nextLine().replaceAll("\\s", "");
+
+			    priceFromTo = checkFromToPrices(input);
+				}
+			} else if (input.equalsIgnoreCase("n")) {
+				break;
+			} else {
+				System.out.println("That's not a proper input, please try again!");
+				continue;
+			}
+		}
+    return priceFromTo;
+  }
+
 	private ArrayList<Listing> searchListingByAddress() {
 		String street, postalCode, country, city;
 		int number = -1;
@@ -762,22 +807,33 @@ public class CommandLine {
 		city = sc.nextLine();
 
 		ArrayList<Listing> listings;
+    ArrayList<AvailabilityListing> availListings = null;
 		LocalDate[] dateFromTo = askFilterDate();
+    BigDecimal[] priceFromTo = askFilterPrice();
 
-    if (dateFromTo != null) {
-      ArrayList<AvailabilityListing> availListings = sqlMngr.searchFilteredAddr(street, number, postalCode, country, city, 
-        dateFromTo[0], dateFromTo[1]);
-      
-      listings = convertToListing(availListings);
-      listings = askFilterAmenities(listings);
-      availListings = removeAvailListing(listings, availListings);
-      printFilteredListings(availListings);
-    }
-    else { // don't apply date filter
+    if (dateFromTo == null && priceFromTo == null) { // don't apply date and price filter
       listings = sqlMngr.searchListingAddr(street, number, postalCode, country, city);
       listings = askFilterAmenities(listings);
 		  printListings(listings); // print result
+      return listings;
     }
+    else if (dateFromTo != null) { // apply date filter
+      availListings = sqlMngr.searchDateFilteredAddr(street, number, postalCode, country, city, 
+        dateFromTo[0], dateFromTo[1]);
+      
+      if (priceFromTo != null) { // apply price fitler
+        availListings = applyPriceFilter(availListings, priceFromTo[0], priceFromTo[1]);
+      }
+    }
+    else { // don't apply date filter, but apply price filter
+      availListings = sqlMngr.searchPriceFilteredAddr(street, number, postalCode, country, city, 
+        priceFromTo[0], priceFromTo[1]);
+    }
+
+    listings = convertToListing(availListings);
+    listings = askFilterAmenities(listings);
+    availListings = removeAvailListing(listings, availListings);
+    printFilteredListings(availListings);
 
 		return listings;
 	}
@@ -809,8 +865,8 @@ public class CommandLine {
 		ArrayList<Double> distArr = new ArrayList<>();
 		final int radius = 6371; // radius of earth in km
 
-		for (Listing listing : listings) {
-			double lat2 = listing.latitude.doubleValue();
+    listings.forEach((listing) -> {
+      double lat2 = listing.latitude.doubleValue();
 			double long2 = listing.longitude.doubleValue();
 
 			double latDistance = Math.toRadians(lat2 - lat1);
@@ -823,7 +879,7 @@ public class CommandLine {
 			if (calDistance <= distance) {
 				addOrderByDistance(filtered, distArr, listing, (Double) calDistance);
 			}
-		}
+    });
 		return filtered;
 	}
 
@@ -857,22 +913,57 @@ public class CommandLine {
 		}
 
 		ArrayList<Listing> listings;
+    ArrayList<AvailabilityListing> availListings = null;
     LocalDate[] dateFromTo = askFilterDate();
+    BigDecimal[] priceFromTo = askFilterPrice();
 
-    if (dateFromTo != null) {
-      ArrayList<AvailabilityListing> availListings = sqlMngr.searchAllAvailListing(dateFromTo[0], dateFromTo[1]);
-      listings = convertToListing(availListings);
-      listings = calDistance(listings, latitude.doubleValue(), longitude.doubleValue(), distance);
-      listings = askFilterAmenities(listings);
-      availListings = removeAvailListing(listings, availListings);
-      printFilteredListings(availListings);
-    }
-    else { // don't apply date filter
+    if (dateFromTo == null && priceFromTo == null) { // don't apply date and price filter
       listings = sqlMngr.searchAllListing();
       listings = calDistance(listings, latitude.doubleValue(), longitude.doubleValue(), distance);
       listings = askFilterAmenities(listings);
 		  printListings(listings);
+      return listings;
     }
+    else if (dateFromTo != null) { // apply date filter
+      availListings = sqlMngr.searchDateFilteredAll(dateFromTo[0], dateFromTo[1]);
+
+      if (priceFromTo != null) { // apply price filter
+        availListings = applyPriceFilter(availListings, priceFromTo[0], priceFromTo[1]);
+      }
+    }
+    else { // don't apply date filter, but apply price filter
+      availListings = sqlMngr.searchPriceFilteredAll(priceFromTo[0], priceFromTo[1]);
+    }
+
+    listings = convertToListing(availListings);
+    listings = calDistance(listings, latitude.doubleValue(), longitude.doubleValue(), distance);
+    listings = askFilterAmenities(listings);
+    availListings = removeAvailListing(listings, availListings);
+    printFilteredListings(availListings);
+    /*
+     * if (dateFromTo == null && priceFromTo == null) { // don't apply date and price filter
+      listings = sqlMngr.searchListingPostalCode(pattern);
+      listings = askFilterAmenities(listings);
+		  printListings(listings);
+      return listings;
+    }
+    else if (dateFromTo != null) { // apply date filter
+      availListings = sqlMngr.searchDateFilteredPostalCode(pattern, 
+        dateFromTo[0], dateFromTo[1]);
+      
+      if (priceFromTo != null) { // apply price fitler
+        availListings = applyPriceFilter(availListings, priceFromTo[0], priceFromTo[1]);
+      }
+    }
+    else { // don't apply date filter, but apply price filter
+      availListings = sqlMngr.searchPriceFilteredPostalCode(pattern, 
+        priceFromTo[0], priceFromTo[1]);
+    }
+    listings = convertToListing(availListings);
+    listings = askFilterAmenities(listings);
+    availListings = removeAvailListing(listings, availListings);
+    printFilteredListings(availListings);
+     */
 
 		return listings;
 	}
@@ -887,21 +978,32 @@ public class CommandLine {
 
 		String pattern = postalCode.substring(0, postalCode.length() - 1) + "_";
 		ArrayList<Listing> listings;
+    ArrayList<AvailabilityListing> availListings = null;
     LocalDate[] dateFromTo = askFilterDate();
+    BigDecimal[] priceFromTo = askFilterPrice();
 
-    if (dateFromTo != null) {
-      ArrayList<AvailabilityListing> availListings = sqlMngr.searchFilteredPostalCode(pattern, 
-        dateFromTo[0], dateFromTo[1]);
-      listings = convertToListing(availListings);
-      listings = askFilterAmenities(listings);
-      availListings = removeAvailListing(listings, availListings);
-      printFilteredListings(availListings);
-    }
-    else { // don't apply date filter
+    if (dateFromTo == null && priceFromTo == null) { // don't apply date and price filter
       listings = sqlMngr.searchListingPostalCode(pattern);
       listings = askFilterAmenities(listings);
 		  printListings(listings);
+      return listings;
     }
+    else if (dateFromTo != null) { // apply date filter
+      availListings = sqlMngr.searchDateFilteredPostalCode(pattern, 
+        dateFromTo[0], dateFromTo[1]);
+      
+      if (priceFromTo != null) { // apply price fitler
+        availListings = applyPriceFilter(availListings, priceFromTo[0], priceFromTo[1]);
+      }
+    }
+    else { // don't apply date filter, but apply price filter
+      availListings = sqlMngr.searchPriceFilteredPostalCode(pattern, 
+        priceFromTo[0], priceFromTo[1]);
+    }
+    listings = convertToListing(availListings);
+    listings = askFilterAmenities(listings);
+    availListings = removeAvailListing(listings, availListings);
+    printFilteredListings(availListings);
 
 		return listings;
 	}
