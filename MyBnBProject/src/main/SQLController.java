@@ -22,14 +22,8 @@ public class SQLController {
 	// Listing statements
 	private PreparedStatement insertListing = null;
 	private PreparedStatement selectAllListing = null;
-  private PreparedStatement selectDateFilteredAll = null;
-  private PreparedStatement selectPriceFilteredAll = null;
 	private PreparedStatement selectListingAddr = null;
-  private PreparedStatement selectDateFilteredAddr = null;
-  private PreparedStatement selectPriceFilteredAddr = null;
 	private PreparedStatement selectListingPostalCode = null;
-  private PreparedStatement selectDateFilteredPostalCode = null;
-  private PreparedStatement selectPriceFilteredPostalCode = null;
 	// Hosts statements
 	private PreparedStatement insertHosts = null;
 	private PreparedStatement selectHostsBySIN = null;
@@ -231,24 +225,11 @@ public class SQLController {
 			insertListing = conn.prepareStatement("INSERT INTO Listing"
 					+ " (Type, Street, Number, PostalCode, Country, City, Latitude, Longitude, Amenities)" 
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-			selectAllListing = conn.prepareStatement("SELECT * FROM Listing");
-      selectDateFilteredAll = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
-          + " WHERE (Date BETWEEN ? AND ?) AND Available=true");
-      selectPriceFilteredAll = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
-          + " WHERE (Price BETWEEN ? AND ?) AND Available=true");
-			selectListingAddr = conn.prepareStatement("SELECT * FROM Listing WHERE Street=? AND"
-					+ " Number=? AND PostalCode=? AND Country=? AND City=?");
-      selectDateFilteredAddr = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
-          + " WHERE Street=? AND Number=? AND PostalCode=? AND Country=? AND City=? AND"
-          + " (Date BETWEEN ? AND ?) AND Available=true");
-      selectPriceFilteredAddr = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
-          + " WHERE Street=? AND Number=? AND PostalCode=? AND Country=? AND City=? AND"
-          + " (Price BETWEEN ? AND ?) AND Available=true");
-			selectListingPostalCode = conn.prepareStatement("SELECT * FROM Listing WHERE PostalCode LIKE ?");
-      selectDateFilteredPostalCode = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
-          + " WHERE PostalCode LIKE ? AND (Date BETWEEN ? AND ?) AND Available=true");
-      selectPriceFilteredPostalCode = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
-          + " WHERE PostalCode LIKE ? AND (Price BETWEEN ? AND ?) AND Available=true");
+			selectAllListing = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability");
+			selectListingAddr = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
+          + " WHERE Street=? AND Number=? AND PostalCode=? AND Country=? AND City=?");
+			selectListingPostalCode = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
+          + " WHERE PostalCode LIKE ?");
 			// Hosts statements
 			insertHosts = conn.prepareStatement("INSERT INTO Hosts"
 					+ " (SIN, Street, Number, PostalCode, Country)" 
@@ -552,9 +533,9 @@ public class SQLController {
 
 	// Controls the execution of a select query.
 	// Functionality: Select listings by address.
-	public ArrayList<Listing> searchListingAddr(String street, int number, String postalCode, String country,
+	public ArrayList<AvailabilityListing> searchListingAddr(String street, int number, String postalCode, String country,
 			String city) {
-		ArrayList<Listing> listings = new ArrayList<>();
+		ArrayList<AvailabilityListing> listings = new ArrayList<>();
 		try {
 			int count = 0;
 			selectListingAddr.setString(++count, street);
@@ -564,20 +545,7 @@ public class SQLController {
 			selectListingAddr.setString(++count, city);
 			ResultSet rs = selectListingAddr.executeQuery();
 
-			while (rs.next()) {
-				Listing temp = new Listing();
-				temp.type = rs.getString("Type");
-				temp.street = rs.getString("Street");
-				temp.number = rs.getInt("Number");
-				temp.postalCode = rs.getString("PostalCode");
-				temp.country = rs.getString("Country");
-				temp.city = rs.getString("City");
-				temp.latitude = rs.getBigDecimal("Latitude");
-				temp.longitude = rs.getBigDecimal("Longitude");
-				temp.amenities = rs.getString("Amenities");
-				listings.add(temp);
-			}
-
+			initialAvailListings(rs, listings);
 			rs.close();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when selecting listing by address!");
@@ -586,77 +554,14 @@ public class SQLController {
 		return listings;
 	}
 
-  // Controls the execution of a select query.
-	// Functionality: Select available listings by address within date range.
-	public ArrayList<AvailabilityListing> searchDateFilteredAddr(String street, int number, String postalCode, String country,
-			String city, LocalDate from, LocalDate to) {
-		ArrayList<AvailabilityListing> listings = new ArrayList<>();
-		try {
-			int count = 0;
-			selectDateFilteredAddr.setString(++count, street);
-			selectDateFilteredAddr.setInt(++count, number);
-			selectDateFilteredAddr.setString(++count, postalCode);
-			selectDateFilteredAddr.setString(++count, country);
-			selectDateFilteredAddr.setString(++count, city);
-      selectDateFilteredAddr.setObject(++count, from);
-      selectDateFilteredAddr.setObject(++count, to);
-			ResultSet rs = selectDateFilteredAddr.executeQuery();
-
-			initialAvailListings(rs, listings);
-			rs.close();
-		} catch (SQLException e) {
-			System.err.println("Exception triggered when selecting available listing by address within a date range!");
-			e.printStackTrace();
-		}
-		return listings;
-	}
-
-  // Controls the execution of a select query.
-	// Functionality: Select available listings by address within price range.
-	public ArrayList<AvailabilityListing> searchPriceFilteredAddr(String street, int number, String postalCode, String country,
-			String city, BigDecimal from, BigDecimal to) {
-		ArrayList<AvailabilityListing> listings = new ArrayList<>();
-		try {
-			int count = 0;
-			selectPriceFilteredAddr.setString(++count, street);
-			selectPriceFilteredAddr.setInt(++count, number);
-			selectPriceFilteredAddr.setString(++count, postalCode);
-			selectPriceFilteredAddr.setString(++count, country);
-			selectPriceFilteredAddr.setString(++count, city);
-      selectPriceFilteredAddr.setObject(++count, from);
-      selectPriceFilteredAddr.setObject(++count, to);
-			ResultSet rs = selectPriceFilteredAddr.executeQuery();
-
-			initialAvailListings(rs, listings);
-			rs.close();
-		} catch (SQLException e) {
-			System.err.println("Exception triggered when selecting available listing by address within a price range!");
-			e.printStackTrace();
-		}
-		return listings;
-	}
-
 	// Controls the execution of a select query.
 	// Functionality: Select all listings.
-	public ArrayList<Listing> searchAllListing() {
-		ArrayList<Listing> listings = new ArrayList<>();
+	public ArrayList<AvailabilityListing> searchAllListing() {
+		ArrayList<AvailabilityListing> listings = new ArrayList<>();
 		try {
 			ResultSet rs = selectAllListing.executeQuery();
 
-			while (rs.next()) {
-				Listing temp = new Listing();
-				temp.type = rs.getString("Type");
-				temp.street = rs.getString("Street");
-				temp.number = rs.getInt("Number");
-				temp.postalCode = rs.getString("PostalCode");
-				temp.country = rs.getString("Country");
-				temp.city = rs.getString("City");
-				temp.latitude = rs.getBigDecimal("Latitude");
-				temp.longitude = rs.getBigDecimal("Longitude");
-				temp.amenities = rs.getString("Amenities");
-				listings.add(temp);
-			}
-
+      initialAvailListings(rs, listings);
 			rs.close();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when all selecting listing!");
@@ -665,110 +570,18 @@ public class SQLController {
 		return listings;
 	}
 
-  // Controls the execution of a select query.
-	// Functionality: Select all available listings within a date range.
-  public ArrayList<AvailabilityListing> searchDateFilteredAll(LocalDate from, LocalDate to) {
-    ArrayList<AvailabilityListing> listings = new ArrayList<>();
-		try {
-      int count = 0;
-      selectDateFilteredAll.setObject(++count, from);
-      selectDateFilteredAll.setObject(++count, to);
-
-			ResultSet rs = selectDateFilteredAll.executeQuery();
-
-			initialAvailListings(rs, listings);
-			rs.close();
-		} catch (SQLException e) {
-			System.err.println("Exception triggered when all available selecting listing within a date range!");
-			e.printStackTrace();
-		}
-		return listings;
-  }
-
-  // Controls the execution of a select query.
-	// Functionality: Select all available listings within a price range.
-  public ArrayList<AvailabilityListing> searchPriceFilteredAll(BigDecimal from, BigDecimal to) {
-    ArrayList<AvailabilityListing> listings = new ArrayList<>();
-		try {
-      int count = 0;
-      selectPriceFilteredAll.setObject(++count, from);
-      selectPriceFilteredAll.setObject(++count, to);
-
-			ResultSet rs = selectPriceFilteredAll.executeQuery();
-
-			initialAvailListings(rs, listings);
-			rs.close();
-		} catch (SQLException e) {
-			System.err.println("Exception triggered when all available selecting listing within a price range!");
-			e.printStackTrace();
-		}
-		return listings;
-  }
-
 	// Controls the execution of a select query.
 	// Functionality: Select listings by postal code.
-	public ArrayList<Listing> searchListingPostalCode(String pattern) {
-		ArrayList<Listing> listings = new ArrayList<>();
+	public ArrayList<AvailabilityListing> searchListingPostalCode(String pattern) {
+		ArrayList<AvailabilityListing> listings = new ArrayList<>();
 		try {
 			selectListingPostalCode.setString(1, pattern);
 			ResultSet rs = selectListingPostalCode.executeQuery();
 
-			while (rs.next()) {
-				Listing temp = new Listing();
-				temp.type = rs.getString("Type");
-				temp.street = rs.getString("Street");
-				temp.number = rs.getInt("Number");
-				temp.postalCode = rs.getString("PostalCode");
-				temp.country = rs.getString("Country");
-				temp.city = rs.getString("City");
-				temp.latitude = rs.getBigDecimal("Latitude");
-				temp.longitude = rs.getBigDecimal("Longitude");
-				temp.amenities = rs.getString("Amenities");
-				listings.add(temp);
-			}
+      initialAvailListings(rs, listings);
 			rs.close();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when selecting listing by postal code!");
-			e.printStackTrace();
-		}
-		return listings;
-	}
-
-  // Controls the execution of a select query.
-	// Functionality: Select available listings by postal code within a date range.
-	public ArrayList<AvailabilityListing> searchDateFilteredPostalCode(String pattern, LocalDate from, LocalDate to) {
-		ArrayList<AvailabilityListing> listings = new ArrayList<>();
-		try {
-      int count = 0;
-			selectDateFilteredPostalCode.setString(++count, pattern);
-      selectDateFilteredPostalCode.setObject(++count, from);
-      selectDateFilteredPostalCode.setObject(++count, to);
-			ResultSet rs = selectDateFilteredPostalCode.executeQuery();
-
-			initialAvailListings(rs, listings);
-			rs.close();
-		} catch (SQLException e) {
-			System.err.println("Exception triggered when selecting available listings by postal code within a date range!");
-			e.printStackTrace();
-		}
-		return listings;
-	}
-
-	// Controls the execution of a select query.
-	// Functionality: Select available listings by postal code within a price range.
-	public ArrayList<AvailabilityListing> searchPriceFilteredPostalCode(String pattern, BigDecimal from, BigDecimal to) {
-		ArrayList<AvailabilityListing> listings = new ArrayList<>();
-		try {
-      int count = 0;
-			selectPriceFilteredPostalCode.setString(++count, pattern);
-      selectPriceFilteredPostalCode.setObject(++count, (BigDecimal)from);
-      selectPriceFilteredPostalCode.setObject(++count, (BigDecimal)to);
-			ResultSet rs = selectPriceFilteredPostalCode.executeQuery();
-
-			initialAvailListings(rs, listings);
-			rs.close();
-		} catch (SQLException e) {
-			System.err.println("Exception triggered when selecting available listings by postal code within a price range!");
 			e.printStackTrace();
 		}
 		return listings;
