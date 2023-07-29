@@ -707,7 +707,7 @@ public class CommandLine {
     ArrayList<AvailabilityListing> newAvail = new ArrayList<>();
 
     availListings.forEach((availListing) -> {
-      if (availListing.date.compareTo(from) >= 0 && availListing.date.compareTo(to) <= 0 && availListing.available) {
+      if (availListing.date.compareTo(from) >= 0 && availListing.date.compareTo(to) <= 0) {
         newAvail.add(availListing);
       }
     });
@@ -719,7 +719,7 @@ public class CommandLine {
     ArrayList<AvailabilityListing> newAvail = new ArrayList<>();
 
     availListings.forEach((availListing) -> {
-      if (availListing.price.compareTo(from) >= 0 && availListing.price.compareTo(to) <= 0 && availListing.available) {
+      if (availListing.price.compareTo(from) >= 0 && availListing.price.compareTo(to) <= 0) {
         newAvail.add(availListing);
       }
     });
