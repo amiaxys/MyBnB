@@ -11,6 +11,7 @@ public class Booked {
     protected LocalDate fromDate;
     protected LocalDate toDate;
     protected String paymentMethod;
+    protected boolean canceled;
 
     public Booked() {
         sin = null;
@@ -21,5 +22,6 @@ public class Booked {
         fromDate = null;
         toDate = null;
         paymentMethod = null;
+        canceled = false;
     }
 }

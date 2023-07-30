@@ -22,22 +22,28 @@ public class SQLController {
 	// Listing statements
 	private PreparedStatement insertListing = null;
 	private PreparedStatement selectAllListing = null;
-  private PreparedStatement selectAllAvailListing = null;
+	private PreparedStatement selectAllAvailListing = null;
 	private PreparedStatement selectListingAddr = null;
-  private PreparedStatement selectFilteredAddr = null;
+	private PreparedStatement selectFilteredAddr = null;
 	private PreparedStatement selectListingPostalCode = null;
-  private PreparedStatement selectFilteredPostalCode = null;
+	private PreparedStatement selectFilteredPostalCode = null;
 	// Hosts statements
 	private PreparedStatement insertHosts = null;
 	private PreparedStatement selectHostsBySIN = null;
 	// Availability statements
 	private PreparedStatement insertAvailability = null;
 	private PreparedStatement insertOrUpdateAvailability = null;
+	private PreparedStatement updateAvailability = null;
 	private PreparedStatement selectAllAvailBetweenDate = null;
 	private PreparedStatement selectAvailBetweenDate = null;
 	private PreparedStatement deleteAvailBetweenDate = null;
 	// Booked statements
 	private PreparedStatement insertBooked = null;
+	private PreparedStatement cancelBooked = null;
+	private PreparedStatement selectAllBookedBySIN = null;
+	private PreparedStatement selectBookedBySIN = null;
+	private PreparedStatement selectAllBookedByHostListings = null;
+	private PreparedStatement selectBookedByHostListings = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -199,6 +205,7 @@ public class SQLController {
 					+ " FromDate DATE,"
 					+ " ToDate DATE,"
 					+ " PaymentMethod SET('Credit card', 'Debit card', 'Cash'),"
+					+ " Canceled BOOL NOT NULL DEFAULT 0,"
 					+ " PRIMARY KEY (Street, Number, PostalCode, Country, FromDate, ToDate),"
 					+ " FOREIGN KEY (SIN) REFERENCES User(SIN),"
 					+ " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES"
@@ -229,16 +236,16 @@ public class SQLController {
 					+ " (Type, Street, Number, PostalCode, Country, City, Latitude, Longitude, Amenities)" 
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 			selectAllListing = conn.prepareStatement("SELECT * FROM Listing");
-      selectAllAvailListing = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
-          + " WHERE (Date BETWEEN ? AND ?) AND Available=true");
+      		selectAllAvailListing = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
+          			+ " WHERE (Date BETWEEN ? AND ?) AND Available=true");
 			selectListingAddr = conn.prepareStatement("SELECT * FROM Listing WHERE Street=? AND"
 					+ " Number=? AND PostalCode=? AND Country=? AND City=?");
-      selectFilteredAddr = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
-          + " WHERE Street=? AND Number=? AND PostalCode=? AND Country=? AND City=? AND"
-          + " (Date BETWEEN ? AND ?) AND Available=true");
+      		selectFilteredAddr = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
+          			+ " WHERE Street=? AND Number=? AND PostalCode=? AND Country=? AND City=? AND"
+         			+ " (Date BETWEEN ? AND ?) AND Available=true");
 			selectListingPostalCode = conn.prepareStatement("SELECT * FROM Listing WHERE PostalCode LIKE ?");
-      selectFilteredPostalCode = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
-          + " WHERE PostalCode LIKE ? AND (Date BETWEEN ? AND ?) AND Available=true");
+      		selectFilteredPostalCode = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
+          			+ " WHERE PostalCode LIKE ? AND (Date BETWEEN ? AND ?) AND Available=true");
 			// Hosts statements
 			insertHosts = conn.prepareStatement("INSERT INTO Hosts"
 					+ " (SIN, Street, Number, PostalCode, Country)" 
@@ -251,6 +258,8 @@ public class SQLController {
 			insertOrUpdateAvailability = conn.prepareStatement("INSERT INTO Availability"
 					+ " (Street, Number, PostalCode, Country, Date, Available, Price)"
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE Available=?, Price=?");
+			updateAvailability = conn.prepareStatement("UPDATE Availability SET Available=? WHERE"
+					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND Date=?");
 			selectAllAvailBetweenDate = conn.prepareStatement("SELECT * FROM Availability WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND Date BETWEEN ? AND ?");
 			selectAvailBetweenDate = conn.prepareStatement("SELECT * FROM Availability WHERE"
@@ -263,6 +272,15 @@ public class SQLController {
 			insertBooked = conn.prepareStatement("INSERT INTO Booked"
 					+ " (SIN, Street, Number, PostalCode, Country, FromDate, ToDate, PaymentMethod)" 
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+			cancelBooked = conn.prepareStatement("UPDATE Booked SET Canceled=1 WHERE"
+					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND"
+					+ " FromDate=? AND ToDate=?");
+			selectAllBookedBySIN = conn.prepareStatement("SELECT * FROM Booked WHERE SIN=?");
+			selectBookedBySIN = conn.prepareStatement("SELECT * FROM Booked WHERE SIN=? AND Canceled=?");
+			selectAllBookedByHostListings = conn.prepareStatement("SELECT * FROM Booked NATURAL JOIN"
+					+ " Listing NATURAL JOIN Hosts WHERE SIN=?");
+			selectBookedByHostListings = conn.prepareStatement("SELECT * FROM Booked NATURAL JOIN"
+					+ " Listing NATURAL JOIN Hosts WHERE SIN=? AND Canceled=?");
 			// @formatter:on
 		} catch (SQLException e) {
 			success = false;
@@ -443,6 +461,27 @@ public class SQLController {
 		return rows;
 	}
 
+	// Controls the execution of an update query.
+	// Functionality: Update an availability.
+	public int updateAvailability(String street, int number, String postalCode, String country, LocalDate date,
+			boolean available) {
+		int rows = 0;
+		try {
+			int count = 0;
+			updateAvailability.setBoolean(++count, available);
+			updateAvailability.setString(++count, street);
+			updateAvailability.setInt(++count, number);
+			updateAvailability.setString(++count, postalCode);
+			updateAvailability.setString(++count, country);
+			updateAvailability.setObject(++count, date);
+			rows = updateAvailability.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when updating availability!");
+			e.printStackTrace();
+		}
+		return rows;
+	}
+
 	// Controls the execution of a select query.
 	// Functionality: Select availabilities by date.
 	public ArrayList<Availability> selectAvailBetweenDate(String street, int number, String postalCode, String country,
@@ -576,9 +615,10 @@ public class SQLController {
 		return listings;
 	}
 
-  // Controls the execution of a select query.
+	// Controls the execution of a select query.
 	// Functionality: Select available listings by address.
-	public ArrayList<AvailabilityListing> searchFilteredAddr(String street, int number, String postalCode, String country,
+	public ArrayList<AvailabilityListing> searchFilteredAddr(String street, int number, String postalCode,
+			String country,
 			String city, LocalDate from, LocalDate to) {
 		ArrayList<AvailabilityListing> listings = new ArrayList<>();
 		try {
@@ -588,8 +628,8 @@ public class SQLController {
 			selectFilteredAddr.setString(++count, postalCode);
 			selectFilteredAddr.setString(++count, country);
 			selectFilteredAddr.setString(++count, city);
-      selectFilteredAddr.setObject(++count, from);
-      selectFilteredAddr.setObject(++count, to);
+			selectFilteredAddr.setObject(++count, from);
+			selectFilteredAddr.setObject(++count, to);
 			ResultSet rs = selectFilteredAddr.executeQuery();
 
 			while (rs.next()) {
@@ -602,11 +642,12 @@ public class SQLController {
 				BigDecimal tempLatitude = rs.getBigDecimal("Latitude");
 				BigDecimal tempLongitude = rs.getBigDecimal("Longitude");
 				String tempAmenities = rs.getString("Amenities");
-        LocalDate date = rs.getObject("Date", LocalDate.class);
+				LocalDate date = rs.getObject("Date", LocalDate.class);
 				boolean available = rs.getBoolean("Available");
 				BigDecimal price = rs.getBigDecimal("Price");
-        AvailabilityListing temp = new AvailabilityListing(tempType, tempStreet, tempNumber, tempPostalCode, tempCountry,
-            tempCity, tempLatitude, tempLongitude, tempAmenities, date, available, price);
+				AvailabilityListing temp = new AvailabilityListing(tempType, tempStreet, tempNumber, tempPostalCode,
+						tempCountry,
+						tempCity, tempLatitude, tempLongitude, tempAmenities, date, available, price);
 				listings.add(temp);
 			}
 
@@ -647,14 +688,14 @@ public class SQLController {
 		return listings;
 	}
 
-  // Controls the execution of a select query.
+	// Controls the execution of a select query.
 	// Functionality: Select all available listings.
-  public ArrayList<AvailabilityListing> searchAllAvailListing(LocalDate from, LocalDate to) {
-    ArrayList<AvailabilityListing> listings = new ArrayList<>();
+	public ArrayList<AvailabilityListing> searchAllAvailListing(LocalDate from, LocalDate to) {
+		ArrayList<AvailabilityListing> listings = new ArrayList<>();
 		try {
-      int count = 0;
-      selectAllAvailListing.setObject(++count, from);
-      selectAllAvailListing.setObject(++count, to);
+			int count = 0;
+			selectAllAvailListing.setObject(++count, from);
+			selectAllAvailListing.setObject(++count, to);
 
 			ResultSet rs = selectAllAvailListing.executeQuery();
 
@@ -668,11 +709,12 @@ public class SQLController {
 				BigDecimal tempLatitude = rs.getBigDecimal("Latitude");
 				BigDecimal tempLongitude = rs.getBigDecimal("Longitude");
 				String tempAmenities = rs.getString("Amenities");
-        LocalDate date = rs.getObject("Date", LocalDate.class);
+				LocalDate date = rs.getObject("Date", LocalDate.class);
 				boolean available = rs.getBoolean("Available");
 				BigDecimal price = rs.getBigDecimal("Price");
-        AvailabilityListing temp = new AvailabilityListing(tempType, tempStreet, tempNumber, tempPostalCode, tempCountry,
-            tempCity, tempLatitude, tempLongitude, tempAmenities, date, available, price);
+				AvailabilityListing temp = new AvailabilityListing(tempType, tempStreet, tempNumber, tempPostalCode,
+						tempCountry,
+						tempCity, tempLatitude, tempLongitude, tempAmenities, date, available, price);
 				listings.add(temp);
 			}
 			rs.close();
@@ -681,7 +723,7 @@ public class SQLController {
 			e.printStackTrace();
 		}
 		return listings;
-  }
+	}
 
 	// Controls the execution of a select query.
 	// Functionality: Select listings by postal code.
@@ -712,15 +754,15 @@ public class SQLController {
 		return listings;
 	}
 
-  // Controls the execution of a select query.
+	// Controls the execution of a select query.
 	// Functionality: Select available listings by postal code within a date range.
 	public ArrayList<AvailabilityListing> searchFilteredPostalCode(String pattern, LocalDate from, LocalDate to) {
 		ArrayList<AvailabilityListing> listings = new ArrayList<>();
 		try {
-      int count = 0;
+			int count = 0;
 			selectFilteredPostalCode.setString(++count, pattern);
-      selectFilteredPostalCode.setObject(++count, from);
-      selectFilteredPostalCode.setObject(++count, to);
+			selectFilteredPostalCode.setObject(++count, from);
+			selectFilteredPostalCode.setObject(++count, to);
 
 			ResultSet rs = selectFilteredPostalCode.executeQuery();
 
@@ -734,11 +776,12 @@ public class SQLController {
 				BigDecimal tempLatitude = rs.getBigDecimal("Latitude");
 				BigDecimal tempLongitude = rs.getBigDecimal("Longitude");
 				String tempAmenities = rs.getString("Amenities");
-        LocalDate date = rs.getObject("Date", LocalDate.class);
+				LocalDate date = rs.getObject("Date", LocalDate.class);
 				boolean available = rs.getBoolean("Available");
 				BigDecimal price = rs.getBigDecimal("Price");
-        AvailabilityListing temp = new AvailabilityListing(tempType, tempStreet, tempNumber, tempPostalCode, tempCountry,
-            tempCity, tempLatitude, tempLongitude, tempAmenities, date, available, price);
+				AvailabilityListing temp = new AvailabilityListing(tempType, tempStreet, tempNumber, tempPostalCode,
+						tempCountry,
+						tempCity, tempLatitude, tempLongitude, tempAmenities, date, available, price);
 				listings.add(temp);
 			}
 			rs.close();
@@ -770,6 +813,145 @@ public class SQLController {
 			e.printStackTrace();
 		}
 		return rows;
+	}
+
+	// Controls the execution of an update query.
+	// Functionality: Cancel a booked record.
+	public int cancelBooked(String street, int number, String postalCode, String country, LocalDate from,
+			LocalDate to) {
+		int rows = 0;
+		try {
+			int count = 0;
+			cancelBooked.setString(++count, street);
+			cancelBooked.setInt(++count, number);
+			cancelBooked.setString(++count, postalCode);
+			cancelBooked.setString(++count, country);
+			cancelBooked.setObject(++count, from);
+			cancelBooked.setObject(++count, to);
+			rows = cancelBooked.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when cancelling booked record!");
+			e.printStackTrace();
+		}
+		return rows;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select booked records by SIN.
+	public ArrayList<Booked> selectBookedBySIN(String sin) {
+		ArrayList<Booked> booked = new ArrayList<>();
+		try {
+			selectAllBookedBySIN.setString(1, sin);
+			ResultSet rs = selectAllBookedBySIN.executeQuery();
+
+			while (rs.next()) {
+				Booked temp = new Booked();
+				temp.sin = rs.getString("SIN");
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				temp.fromDate = rs.getObject("FromDate", LocalDate.class);
+				temp.toDate = rs.getObject("ToDate", LocalDate.class);
+				temp.paymentMethod = rs.getString("PaymentMethod");
+				temp.canceled = rs.getBoolean("Canceled");
+				booked.add(temp);
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting booked record by SIN!");
+			e.printStackTrace();
+		}
+		return booked;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select booked records by SIN and canceled.
+	public ArrayList<Booked> selectBookedBySIN(String sin, boolean canceled) {
+		ArrayList<Booked> booked = new ArrayList<>();
+		try {
+			selectBookedBySIN.setString(1, sin);
+			selectBookedBySIN.setBoolean(2, canceled);
+			ResultSet rs = selectBookedBySIN.executeQuery();
+
+			while (rs.next()) {
+				Booked temp = new Booked();
+				temp.sin = rs.getString("SIN");
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				temp.fromDate = rs.getObject("FromDate", LocalDate.class);
+				temp.toDate = rs.getObject("ToDate", LocalDate.class);
+				temp.paymentMethod = rs.getString("PaymentMethod");
+				temp.canceled = rs.getBoolean("Canceled");
+				booked.add(temp);
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting active booked records by SIN!");
+			e.printStackTrace();
+		}
+		return booked;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select all booked records by host listings.
+	public ArrayList<Booked> selectBookedByHostListings(String sin) {
+		ArrayList<Booked> booked = new ArrayList<>();
+		try {
+			selectAllBookedByHostListings.setString(1, sin);
+			ResultSet rs = selectAllBookedByHostListings.executeQuery();
+
+			while (rs.next()) {
+				Booked temp = new Booked();
+				temp.sin = rs.getString("SIN");
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				temp.fromDate = rs.getObject("FromDate", LocalDate.class);
+				temp.toDate = rs.getObject("ToDate", LocalDate.class);
+				temp.paymentMethod = rs.getString("PaymentMethod");
+				temp.canceled = rs.getBoolean("Canceled");
+				booked.add(temp);
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting active booked records by host listings!");
+			e.printStackTrace();
+		}
+		return booked;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select booked records by host listings and canceled.
+	public ArrayList<Booked> selectBookedByHostListings(String sin, boolean canceled) {
+		ArrayList<Booked> booked = new ArrayList<>();
+		try {
+			selectBookedByHostListings.setString(1, sin);
+			selectBookedByHostListings.setBoolean(2, canceled);
+			ResultSet rs = selectBookedByHostListings.executeQuery();
+
+			while (rs.next()) {
+				Booked temp = new Booked();
+				temp.sin = rs.getString("SIN");
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				temp.fromDate = rs.getObject("FromDate", LocalDate.class);
+				temp.toDate = rs.getObject("ToDate", LocalDate.class);
+				temp.paymentMethod = rs.getString("PaymentMethod");
+				temp.canceled = rs.getBoolean("Canceled");
+				booked.add(temp);
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting canceled booked records by host listings!");
+			e.printStackTrace();
+		}
+		return booked;
 	}
 
 	/*
