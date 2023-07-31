@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
+import java.io.Console;
 import java.math.BigDecimal;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -21,6 +22,8 @@ public class CommandLine {
 	private Scanner sc = null;
 	// current user, if signed in
 	private User currentUser = null;
+
+  private Console console = System.console();
 
 	DecimalFormat coordinatesDf = new DecimalFormat("#.####");
 	DecimalFormat priceDf = new DecimalFormat("#.##");
@@ -308,12 +311,20 @@ public class CommandLine {
 	// in order to retrieve from the user the credentials with which our program
 	// is going to establish a connection with MySQL
 	private String[] getCredentials() {
-		String[] cred = new String[3];
-		System.out.println("*******ENTER LOGIN CREDENTIALS FOR MYSQL DATABASE*******\n");
-		System.out.print("Username: ");
-		cred[0] = sc.nextLine();
-		System.out.print("Password: ");
-		cred[1] = sc.nextLine();
+    String[] cred = new String[3];
+    System.out.println("*******ENTER LOGIN CREDENTIALS FOR MYSQL DATABASE*******\n");
+	  System.out.print("Username: ");
+	  cred[0] = sc.nextLine();
+    
+    if (console == null) {
+      System.out.print("Error! Cannot get Console instance\nPassword: ");
+		  cred[1] = sc.nextLine();
+    }
+    else {
+		  char[] password = console.readPassword("Password: ");
+      cred[1] = new String(password);
+    }
+		
 		return cred;
 	}
 
@@ -393,6 +404,15 @@ public class CommandLine {
 					continue;
 				}
 				user.sin = input;
+        if (console == null) {
+          System.out.print("Error! Cannot get Console instance\nEnter password (8-250 characters): ");
+		      input = sc.nextLine();
+        }
+        else {
+		      char[] passwordChar = console.readPassword("Enter password (8-250 characters): ");
+          input = new String(passwordChar);
+        }
+
 				System.out.print("Enter password (8-250 characters): ");
 				input = sc.nextLine();
 				int tempLen = input.length();
@@ -472,10 +492,15 @@ public class CommandLine {
 			}
 		}
 
-		String password = null;
-		System.out.print("Enter password: ");
-		input = sc.nextLine();
-		password = getSaltHashedPassword(input, user.salt);
+    if (console == null) {
+      System.out.print("Error! Cannot get Console instance\nEnter password: ");
+		  input = sc.nextLine();
+    }
+    else {
+		  char[] passwordChar = console.readPassword("Enter password: ");
+      input = new String(passwordChar);
+    }
+		String password = getSaltHashedPassword(input, user.salt);
 
 		if (password.equals(user.password)) {
 			System.out.println("You are signed in!");
