@@ -114,13 +114,8 @@ public class CommandLine {
 		System.out.println("0. Exit.");
 		System.out.println("1. Create an account.");
 		System.out.println("2. Sign in.");
-		// NOTE: remember to add the report option
-		/*
-		 * System.out.println("2. Select a record.");
-		 * System.out.println("3. Print schema.");
-		 * System.out.println("4. Print table schema.");
-		 */
-		System.out.print("Choose one of the previous options [0-2]: ");
+		System.out.println("3. Run reports.");
+		System.out.print("Choose one of the previous options [0-3]: ");
 	}
 
 	// Loop through and execute menu options
@@ -139,6 +134,12 @@ public class CommandLine {
 				case 2:
 					this.signIn();
 					break;
+        case 3:
+					String reportInput;
+					do {
+						reportInput = this.runReportOptions();
+					} while (reportInput.compareTo("0") != 0);
+					break;
 				default:
 					System.out.println("That's not an option, please try again!");
 					break;
@@ -150,6 +151,45 @@ public class CommandLine {
 
 		return input;
 	}
+
+  // Print report options
+	private static void reportOptions() {
+		System.out.println("\n*********REPORT OPTIONS*********");
+		System.out.println("0. Back.");
+		System.out.println("1. Report total number of bookings in a specific date range.");
+		System.out.println("2. Report renters by the number of bookings in a specific date range. [not implemented]");
+		System.out.println("3. Report total number of listings per city (and country). [not implemented]");
+		System.out.println("4. Report hosts that have a number of listings that is more than 10% of the number of"
+        + "\n   listings for every country and city. [not implemented]");
+		System.out.println("5. Report hosts and renters with the largest number of cancellations within a year. [not implemented]");
+		System.out.println("6. Report the set of most popular noun phrases for each listing. [not implemented]");
+    System.out.print("Choose one of the previous options [0-6]: ");
+	}
+
+  private String runReportOptions() {
+		reportOptions(); // Print report options
+		String input = sc.nextLine();
+		try {
+			int choice = Integer.parseInt(input);
+			// Activate the desired functionality
+			switch (choice) {
+				case 0:
+					break;
+				case 1:
+					reportNumBookings();
+					break;
+				default:
+					System.out.println("That's not an option, please try again!");
+					break;
+			}
+		} catch (NumberFormatException e) {
+			input = "-1";
+			System.out.println("That's not a number, please try again!");
+		}
+
+		return input;
+	}
+
 
 	// Print signed in menu (user menu) options
 	private static void userMenu() {
@@ -1488,25 +1528,50 @@ public class CommandLine {
 		}
 	}
 
-	/*
-	 * // Function that handles the feature: "3. Print schema." private void
-	 * printSchema() { ArrayList<String> schema = sqlMngr.getSchema();
-	 * 
-	 * System.out.println(""); System.out.println("------------");
-	 * System.out.println("Total number of tables: " + schema.size()); for (int i =
-	 * 0; i < schema.size(); i++) { System.out.println("Table: " + schema.get(i)); }
-	 * System.out.println("------------"); System.out.println(""); }
-	 * 
-	 * // Function that handles the feature: "4. Print table schema." private void
-	 * printColSchema() { System.out.print("Table Name: "); String tableName =
-	 * sc.nextLine(); ArrayList<String> result = sqlMngr.colSchema(tableName);
-	 * System.out.println(""); System.out.println("------------");
-	 * System.out.println("Total number of fields: " + result.size() / 2); for (int
-	 * i = 0; i < result.size(); i += 2) { System.out.println("-");
-	 * System.out.println("Field Name: " + result.get(i));
-	 * System.out.println("Field Type: " + result.get(i + 1)); }
-	 * System.out.println("------------"); System.out.println(""); }
-	 * 
-	 */
+	private void reportNumBookings() {
+    String input = null;
+    LocalDate[] dateFromTo = null;
+    ArrayList<Object> result = null;
 
+    System.out.println();
+    while (dateFromTo == null) {
+			System.out.print("Enter a \"from\" date and a \"to\" date (YYYY-MM-DD) seperated by commas."
+					+ " (E.g., \"2023-09-10, 2023-09-20\"): ");
+			input = sc.nextLine().replaceAll("\\s", "");
+
+			dateFromTo = checkFromToDates(input);
+      input = null;
+		}
+
+    while (input == null) {
+      System.out.print("Do you want the report by city or postal code [c/p]: ");
+			input = sc.nextLine().strip();
+			if (input.equalsIgnoreCase("c")){
+        input = "City";
+        result = sqlMngr.reportNumBookingsCity(dateFromTo[0], dateFromTo[1]);
+        System.out.println("\nTotal number of bookings from "+dateFromTo[0].toString()+" to "
+        +dateFromTo[1].toString()+" by city:");
+        break;
+      }
+      else if (input.equalsIgnoreCase("p")) {
+        input = "Postal Code";
+        result = sqlMngr.reportNumBookingsPostalCode(dateFromTo[0], dateFromTo[1]);
+        System.out.println("\nTotal number of bookings from "+dateFromTo[0].toString()+" to "
+        +dateFromTo[1].toString()+" by postal code:");
+				break;
+			} else {
+				System.out.println("That's not a proper input, please try again!");
+        input = null;
+				continue;
+			}
+    }
+    // print result
+		System.out.println("+---------------------------+---------------+");
+		System.out.printf("| %-25s | %-13s |%n", input, "Total booking");
+		System.out.println("+===========================+===============+");
+		for (int i = 0; i < result.size(); i++) {
+			System.out.printf("| %-25s | %-13s |%n", result.get(i), result.get(++i));
+		}
+		System.out.println("+---------------------------+---------------+\n");
+  }
 }

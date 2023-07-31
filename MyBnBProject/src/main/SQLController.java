@@ -41,6 +41,9 @@ public class SQLController {
 	private PreparedStatement selectBookedBySIN = null;
 	private PreparedStatement selectAllBookedByHostListings = null;
 	private PreparedStatement selectBookedByHostListings = null;
+  // Report statements
+  private PreparedStatement reportNumBookingsCity = null;
+  private PreparedStatement reportNumBookingsPostalCode = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -273,6 +276,11 @@ public class SQLController {
 					+ " Listing NATURAL JOIN Hosts WHERE SIN=?");
 			selectBookedByHostListings = conn.prepareStatement("SELECT * FROM Booked NATURAL JOIN"
 					+ " Listing NATURAL JOIN Hosts WHERE SIN=? AND Canceled=?");
+      reportNumBookingsCity = conn.prepareStatement("SELECT City, COUNT(*) AS TotalBooking"
+          + " from Booked NATURAL JOIN Listing where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
+          + " GROUP BY CITY");
+      reportNumBookingsPostalCode = conn.prepareStatement("SELECT PostalCode, COUNT(*) AS TotalBooking"
+          + " from Booked where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?) GROUP BY PostalCode");
 			// @formatter:on
 		} catch (SQLException e) {
 			success = false;
@@ -846,6 +854,54 @@ public class SQLController {
 		}
 		return booked;
 	}
+
+  // Controls the execution of a report query.
+	// Functionality: Get the total number of bookings in a date range by city.
+  public ArrayList<Object> reportNumBookingsCity(LocalDate from, LocalDate to) {
+    ArrayList<Object> result = new ArrayList<>();
+		try {
+      int count = 0;
+			reportNumBookingsCity.setObject(++count, from);
+			reportNumBookingsCity.setObject(++count, to);
+      reportNumBookingsCity.setObject(++count, from);
+			reportNumBookingsCity.setObject(++count, to);
+			ResultSet rs = reportNumBookingsCity.executeQuery();
+
+			while (rs.next()) {
+				result.add(rs.getString("City"));
+        result.add(rs.getString("TotalBooking"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting total number of bookings by city!");
+			e.printStackTrace();
+		}
+		return result;
+  }
+
+  // Controls the execution of a report query.
+	// Functionality: Get the total number of bookings in a date range by postal code.
+  public ArrayList<Object> reportNumBookingsPostalCode(LocalDate from, LocalDate to) {
+    ArrayList<Object> result = new ArrayList<>();
+		try {
+      int count = 0;
+			reportNumBookingsPostalCode.setObject(++count, from);
+			reportNumBookingsPostalCode.setObject(++count, to);
+      reportNumBookingsPostalCode.setObject(++count, from);
+			reportNumBookingsPostalCode.setObject(++count, to);
+			ResultSet rs = reportNumBookingsPostalCode.executeQuery();
+
+			while (rs.next()) {
+				result.add(rs.getString("PostalCode"));
+        result.add(rs.getString("TotalBooking"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting total number of bookings by postal code!");
+			e.printStackTrace();
+		}
+		return result;
+  }
 
 	/*
 	 * // Controls the execution of functionality: "3. Print schema." public
