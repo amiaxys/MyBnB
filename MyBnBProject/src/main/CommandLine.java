@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
+import java.io.Console;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 
@@ -24,6 +25,8 @@ public class CommandLine {
 
 	Password passMethods = new Password();
 	Print printMethods = new Print();
+
+	private Console console = System.console();
 
 	DecimalFormat coordinatesDf = new DecimalFormat("#.####");
 	DecimalFormat priceDf = new DecimalFormat("#.##");
@@ -160,7 +163,7 @@ public class CommandLine {
 		System.out.println("\n*********REPORT OPTIONS*********");
 		System.out.println(" 0. Back.");
 		System.out.println(" 1. Report total number of bookings in a specific date range.");
-		System.out.println(" 2. Report renters by the number of bookings in a specific date range. [not implemented]");
+		System.out.println(" 2. Report renters by the number of bookings in a specific date range.");
 		System.out.println(" 3. Report total number of listings per city (and country). [not implemented]");
 		System.out.println(" 4. Report hosts that have a number of listings that is more than 10% of the number of"
 				+ "\n   listings for every country and city. [not implemented]");
@@ -181,6 +184,9 @@ public class CommandLine {
 					break;
 				case 1:
 					reportNumBookings();
+					break;
+				case 2:
+					reportRenterBookings();
 					break;
 				default:
 					System.out.println("That's not an option, please try again!");
@@ -316,8 +322,14 @@ public class CommandLine {
 		System.out.println("*******ENTER LOGIN CREDENTIALS FOR MYSQL DATABASE*******\n");
 		System.out.print("Username: ");
 		cred[0] = sc.nextLine();
-		System.out.print("Password: ");
-		cred[1] = sc.nextLine();
+
+		if (console == null) {
+			System.out.print("Error! Cannot get Console instance\nPassword: ");
+			cred[1] = sc.nextLine();
+		} else {
+			char[] password = console.readPassword("Password: ");
+			cred[1] = new String(password);
+		}
 		return cred;
 	}
 
@@ -370,6 +382,14 @@ public class CommandLine {
 					continue;
 				}
 				user.sin = input;
+				if (console == null) {
+					System.out.print("Error! Cannot get Console instance\nEnter password (8-250 characters): ");
+					input = sc.nextLine();
+				} else {
+					char[] passwordChar = console.readPassword("Enter password (8-250 characters): ");
+					input = new String(passwordChar);
+				}
+
 				System.out.print("Enter password (8-250 characters): ");
 				input = sc.nextLine();
 				int tempLen = input.length();
@@ -452,10 +472,14 @@ public class CommandLine {
 			}
 		}
 
-		String password = null;
-		System.out.print("Enter password: ");
-		input = sc.nextLine();
-		password = passMethods.getSaltHashedPassword(input, user.salt);
+		if (console == null) {
+			System.out.print("Error! Cannot get Console instance\nEnter password: ");
+			input = sc.nextLine();
+		} else {
+			char[] passwordChar = console.readPassword("Enter password: ");
+			input = new String(passwordChar);
+		}
+		String password = passMethods.getSaltHashedPassword(input, user.salt);
 
 		if (password.equals(user.password)) {
 			System.out.println("You are signed in!");
@@ -1493,7 +1517,7 @@ public class CommandLine {
 		}
 
 		while (input == null) {
-			System.out.print("Do you want the report by city or postal code [c/p]: ");
+			System.out.print("Choose the report by city or postal code [c/p]: ");
 			input = sc.nextLine().strip();
 			if (input.equalsIgnoreCase("c")) {
 				input = "City";
@@ -1521,5 +1545,57 @@ public class CommandLine {
 			System.out.printf("| %-25s | %-13s |%n", result.get(i), result.get(++i));
 		}
 		System.out.println("+---------------------------+---------------+\n");
+	}
+
+	private void reportRenterBookings() {
+		String input = null;
+		LocalDate[] dateFromTo = null;
+		ArrayList<Object> result = null;
+
+		System.out.println();
+		while (dateFromTo == null) {
+			System.out.print("Enter a \"from\" date and a \"to\" date (YYYY-MM-DD) seperated by commas."
+					+ " (E.g., \"2023-09-10, 2023-09-20\"): ");
+			input = sc.nextLine().replaceAll("\\s", "");
+
+			dateFromTo = checkFromToDates(input);
+			input = null;
+		}
+
+		while (input == null) {
+			System.out.print("Do you want the report by city [y/n]: ");
+			input = sc.nextLine().strip();
+			if (input.equalsIgnoreCase("y")) {
+				result = sqlMngr.reportRenterBookingCity(dateFromTo[0], dateFromTo[1]);
+				System.out.println("\nTotal number of bookings from " + dateFromTo[0].toString() + " to "
+						+ dateFromTo[1].toString() + " by renter and city:");
+
+				System.out.println("+----------------------+---------------------------+---------------+");
+				System.out.printf("| %-20s | %-25s | %-13s |%n", "Name", "City", "Total booking");
+				System.out.println("+======================+===========================+===============+");
+				for (int i = 0; i < result.size(); i++) {
+					System.out.printf("| %-20s | %-25s | %-13s |%n", result.get(i), result.get(++i), result.get(++i));
+				}
+				System.out.println("+----------------------+---------------------------+---------------+\n");
+				return;
+			} else if (input.equalsIgnoreCase("n")) {
+				result = sqlMngr.reportRenterBooking(dateFromTo[0], dateFromTo[1]);
+				System.out.println("\nTotal number of bookings from " + dateFromTo[0].toString() + " to "
+						+ dateFromTo[1].toString() + " by renter:");
+
+				System.out.println("+----------------------+---------------+");
+				System.out.printf("| %-20s | %-13s |%n", "Name", "Total booking");
+				System.out.println("+======================+===============+");
+				for (int i = 0; i < result.size(); i++) {
+					System.out.printf("| %-20s | %-13s |%n", result.get(i), result.get(++i));
+				}
+				System.out.println("+----------------------+---------------+\n");
+				return;
+			} else {
+				System.out.println("That's not a proper input, please try again!");
+				input = null;
+				continue;
+			}
+		}
 	}
 }

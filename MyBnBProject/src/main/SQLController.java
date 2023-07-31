@@ -46,6 +46,8 @@ public class SQLController {
 	// Report statements
 	private PreparedStatement reportNumBookingsCity = null;
 	private PreparedStatement reportNumBookingsPostalCode = null;
+	private PreparedStatement reportRenterBooking = null;
+	private PreparedStatement reportRenterBookingCity = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -280,11 +282,18 @@ public class SQLController {
 					+ " Listing NATURAL JOIN Hosts WHERE SIN=?");
 			selectBookedByHostListings = conn.prepareStatement("SELECT * FROM Booked NATURAL JOIN"
 					+ " Listing NATURAL JOIN Hosts WHERE SIN=? AND Canceled=?");
+      		// Report statements
       		reportNumBookingsCity = conn.prepareStatement("SELECT City, COUNT(*) AS TotalBooking"
           			+ " from Booked NATURAL JOIN Listing where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
           			+ " GROUP BY CITY");
       		reportNumBookingsPostalCode = conn.prepareStatement("SELECT PostalCode, COUNT(*) AS TotalBooking"
           			+ " from Booked where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?) GROUP BY PostalCode");
+      		reportRenterBooking = conn.prepareStatement("SELECT Name, COUNT(SIN) AS TotalBooking"
+          			+ " from Booked NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
+          			+ " GROUP BY Name");
+      		reportRenterBookingCity = conn.prepareStatement("SELECT Name, City, COUNT(SIN) AS TotalBooking"
+          			+ " from Booked NATURAL JOIN Listing NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND"
+          			+ " (ToDate BETWEEN ? AND ?) GROUP BY Name, City");
 			// @formatter:on
 		} catch (SQLException e) {
 			success = false;
@@ -952,40 +961,53 @@ public class SQLController {
 		return result;
 	}
 
-	/*
-	 * // Controls the execution of functionality: "3. Print schema." public
-	 * ArrayList<String> getSchema() { ArrayList<String> output = new
-	 * ArrayList<String>(); try { DatabaseMetaData meta = conn.getMetaData();
-	 * ResultSet schemas = meta.getTables(null, null, "%", null); // ResultSet
-	 * catalogs = meta.getCatalogs(); while (schemas.next()) {
-	 * output.add(schemas.getString("TABLE_NAME")); } schemas.close(); } catch
-	 * (SQLException e) { System.err.println("Retrieval of Schema Info failed!");
-	 * e.printStackTrace(); output.clear(); } return output; }
-	 * 
-	 * // Controls the execution of functionality: "4. Print table schema." public
-	 * ArrayList<String> colSchema(String tableName) { ArrayList<String> result =
-	 * new ArrayList<String>(); try { DatabaseMetaData meta = conn.getMetaData();
-	 * ResultSet rs = meta.getColumns(null, null, tableName, null); while
-	 * (rs.next()) { result.add(rs.getString(4)); result.add(rs.getString(6)); }
-	 * rs.close(); } catch (SQLException e) {
-	 * System.err.println("Retrieval of Table Info failed!"); e.printStackTrace();
-	 * result.clear(); } return result; }
-	 * 
-	 * // Controls the execution of a select query. // Functionality:
-	 * "2. Select a record." public void selectOp(String query) { try { ResultSet rs
-	 * = st.executeQuery(query); ResultSetMetaData rsmd = rs.getMetaData(); int
-	 * colNum = rsmd.getColumnCount(); System.out.println(""); for (int i = 0; i <
-	 * colNum; i++) { System.out.print(rsmd.getColumnLabel(i + 1) + "\t"); }
-	 * System.out.println(""); while (rs.next()) { for (int i = 0; i < colNum; i++)
-	 * { System.out.print(rs.getString(i + 1) + "\t"); } System.out.println(""); }
-	 * rs.close(); } catch (SQLException e) {
-	 * System.err.println("Exception triggered during Select execution!");
-	 * e.printStackTrace(); } System.out.println(); }
-	 * 
-	 * // Controls the execution of an insert query. // Functionality:
-	 * "1. Insert a record." public int insertOp(String query) { int rows = 0; try {
-	 * rows = st.executeUpdate(query); } catch (SQLException e) {
-	 * System.err.println("Exception triggered during Insert execution!");
-	 * e.printStackTrace(); } return rows; }
-	 */
+	// Controls the execution of a report query.
+	// Functionality: Get the total number of bookings in a date range by renter.
+	public ArrayList<Object> reportRenterBooking(LocalDate from, LocalDate to) {
+		ArrayList<Object> result = new ArrayList<>();
+		try {
+			int count = 0;
+			reportRenterBooking.setObject(++count, from);
+			reportRenterBooking.setObject(++count, to);
+			reportRenterBooking.setObject(++count, from);
+			reportRenterBooking.setObject(++count, to);
+			ResultSet rs = reportRenterBooking.executeQuery();
+
+			while (rs.next()) {
+				result.add(rs.getString("Name"));
+				result.add(rs.getString("TotalBooking"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting total number of bookings by renter!");
+			e.printStackTrace();
+		}
+		return result;
+	}
+
+	// Controls the execution of a report query.
+	// Functionality: Get the total number of bookings in a date range by renter and
+	// city.
+	public ArrayList<Object> reportRenterBookingCity(LocalDate from, LocalDate to) {
+		ArrayList<Object> result = new ArrayList<>();
+		try {
+			int count = 0;
+			reportRenterBookingCity.setObject(++count, from);
+			reportRenterBookingCity.setObject(++count, to);
+			reportRenterBookingCity.setObject(++count, from);
+			reportRenterBookingCity.setObject(++count, to);
+			ResultSet rs = reportRenterBookingCity.executeQuery();
+
+			while (rs.next()) {
+				result.add(rs.getString("Name"));
+				result.add(rs.getString("City"));
+				result.add(rs.getString("TotalBooking"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting total number of bookings by renter and city!");
+			e.printStackTrace();
+		}
+		return result;
+	}
 }
