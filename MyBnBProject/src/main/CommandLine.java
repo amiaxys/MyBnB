@@ -6,16 +6,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Scanner;
 
-import com.mysql.cj.x.protobuf.MysqlxDatatypes.Array;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.math.BigDecimal;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.text.DecimalFormat;
 
 public class CommandLine {
@@ -26,6 +21,9 @@ public class CommandLine {
 	private Scanner sc = null;
 	// current user, if signed in
 	private User currentUser = null;
+
+	Password passMethods = new Password();
+	Print printMethods = new Print();
 
 	DecimalFormat coordinatesDf = new DecimalFormat("#.####");
 	DecimalFormat priceDf = new DecimalFormat("#.##");
@@ -116,10 +114,10 @@ public class CommandLine {
 	// Print not signed in menu options
 	private static void menu() {
 		System.out.println("=========MENU=========");
-		System.out.println("0. Exit.");
-		System.out.println("1. Create an account.");
-		System.out.println("2. Sign in.");
-		System.out.println("3. Run reports.");
+		System.out.println(" 0. Exit.");
+		System.out.println(" 1. Create an account.");
+		System.out.println(" 2. Sign in.");
+		System.out.println(" 3. Run reports.");
 		System.out.print("Choose one of the previous options [0-3]: ");
 	}
 
@@ -139,7 +137,7 @@ public class CommandLine {
 				case 2:
 					this.signIn();
 					break;
-        case 3:
+				case 3:
 					String reportInput;
 					do {
 						reportInput = this.runReportOptions();
@@ -157,21 +155,22 @@ public class CommandLine {
 		return input;
 	}
 
-  // Print report options
+	// Print report options
 	private static void reportOptions() {
 		System.out.println("\n*********REPORT OPTIONS*********");
-		System.out.println("0. Back.");
-		System.out.println("1. Report total number of bookings in a specific date range.");
-		System.out.println("2. Report renters by the number of bookings in a specific date range. [not implemented]");
-		System.out.println("3. Report total number of listings per city (and country). [not implemented]");
-		System.out.println("4. Report hosts that have a number of listings that is more than 10% of the number of"
-        + "\n   listings for every country and city. [not implemented]");
-		System.out.println("5. Report hosts and renters with the largest number of cancellations within a year. [not implemented]");
-		System.out.println("6. Report the set of most popular noun phrases for each listing. [not implemented]");
-    System.out.print("Choose one of the previous options [0-6]: ");
+		System.out.println(" 0. Back.");
+		System.out.println(" 1. Report total number of bookings in a specific date range.");
+		System.out.println(" 2. Report renters by the number of bookings in a specific date range. [not implemented]");
+		System.out.println(" 3. Report total number of listings per city (and country). [not implemented]");
+		System.out.println(" 4. Report hosts that have a number of listings that is more than 10% of the number of"
+				+ "\n   listings for every country and city. [not implemented]");
+		System.out.println(
+				" 5. Report hosts and renters with the largest number of cancellations within a year. [not implemented]");
+		System.out.println(" 6. Report the set of most popular noun phrases for each listing. [not implemented]");
+		System.out.print("Choose one of the previous options [0-6]: ");
 	}
 
-  private String runReportOptions() {
+	private String runReportOptions() {
 		reportOptions(); // Print report options
 		String input = sc.nextLine();
 		try {
@@ -195,19 +194,19 @@ public class CommandLine {
 		return input;
 	}
 
-
 	// Print signed in menu (user menu) options
 	private static void userMenu() {
 		System.out.println("\n=========USER MENU=========");
-		System.out.println("0. Exit.");
-		System.out.println("1. Create a listing.");
-		System.out.println("2. Search for listings.");
-		System.out.println("3. Add availabilities to listings.");
-		System.out.println("4. View your bookings.");
-		System.out.println("5. Cancel a booking.");
-		System.out.println("6. View your listings' bookings.");
-		System.out.println("7. Cancel a listing's booking.");
-		System.out.println("10. Sign out.");
+		System.out.println(" 0. Exit.");
+		System.out.println(" 1. Create a listing.");
+		System.out.println(" 2. Add availabilities to listings.");
+		System.out.println(" 3. Search for listings.");
+		System.out.println(" 4. View your bookings.");
+		System.out.println(" 5. Cancel a booking.");
+		System.out.println(" 6. View your listings' bookings.");
+		System.out.println(" 7. Cancel a listing's booking.");
+		System.out.println(" 8. Delete a listing.");
+		System.out.println(" 10. Sign out.");
 		// add delete account later
 		System.out.print("Choose one of the previous options [0-10]: ");
 	}
@@ -226,13 +225,13 @@ public class CommandLine {
 					this.createListing();
 					break;
 				case 2:
+					this.addAvailabilities();
+					break;
+				case 3:
 					String searchInput;
 					do {
 						searchInput = this.runSearchOptions();
 					} while (searchInput.compareTo("0") != 0);
-					break;
-				case 3:
-					this.addAvailabilities();
 					break;
 				case 4:
 					this.viewBookings();
@@ -245,6 +244,9 @@ public class CommandLine {
 					break;
 				case 7:
 					this.cancelListingBooked();
+					break;
+				case 8:
+					this.deleteListing();
 					break;
 				case 10:
 					this.signOut();
@@ -319,33 +321,6 @@ public class CommandLine {
 		return cred;
 	}
 
-	// Code from:
-	// https://www.javaguides.net/2020/02/java-sha-256-hash-with-salt-example.html
-	private static byte[] getSalt() {
-		SecureRandom random = new SecureRandom();
-		byte[] salt = new byte[16];
-		random.nextBytes(salt);
-		return salt;
-	}
-
-	private static String getSaltHashedPassword(String password, byte[] salt) {
-		String shPassword = null;
-		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-256");
-			md.update(salt);
-			byte[] bytes = md.digest(password.getBytes());
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < bytes.length; i++) {
-				sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
-			}
-			shPassword = sb.toString();
-		} catch (NoSuchAlgorithmException e) {
-			System.out.println("Error salt and hashing password!");
-			e.printStackTrace();
-		}
-		return shPassword;
-	}
-
 	private LocalDate checkValidDate(String date) {
 		DateTimeFormatter format = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT);
 		LocalDate parsedDate = null;
@@ -378,7 +353,7 @@ public class CommandLine {
 	private void createUser() {
 		boolean repeat = false;
 		User user = new User();
-		user.salt = getSalt();
+		user.salt = passMethods.getSalt();
 		String input;
 		while (user.sin == null || user.password == null || repeat) {
 			repeat = false;
@@ -399,7 +374,7 @@ public class CommandLine {
 				input = sc.nextLine();
 				int tempLen = input.length();
 				if (tempLen >= 8 && tempLen <= 250) {
-					user.password = getSaltHashedPassword(input, user.salt);
+					user.password = passMethods.getSaltHashedPassword(input, user.salt);
 				} else if (tempLen < 8) {
 					System.out.println("Your password is not 8 characters long, try again!");
 					continue;
@@ -453,8 +428,11 @@ public class CommandLine {
 		String input;
 		while (user == null) {
 			while (sin == null) {
-				System.out.print("Enter SIN: ");
+				System.out.print("Enter a SIN or 0 to exit: ");
 				input = sc.nextLine().strip();
+				if (input.equals("0")) {
+					return;
+				}
 				if (input.length() != 9) {
 					System.out.println("That's not a SIN, please try again!");
 					continue;
@@ -477,7 +455,7 @@ public class CommandLine {
 		String password = null;
 		System.out.print("Enter password: ");
 		input = sc.nextLine();
-		password = getSaltHashedPassword(input, user.salt);
+		password = passMethods.getSaltHashedPassword(input, user.salt);
 
 		if (password.equals(user.password)) {
 			System.out.println("You are signed in!");
@@ -487,6 +465,7 @@ public class CommandLine {
 		}
 	}
 
+	// Function that handles the feature: "Sign out."
 	private void signOut() {
 		String input = "";
 		System.out.println();
@@ -536,34 +515,27 @@ public class CommandLine {
 
 	// Function that handles the feature: "Create a listing."
 	private void createListing() {
-		String type = null;
-		String street = null;
-		int number = 0;
-		String postalCode = null;
-		String country = null;
-		String city = null;
-		BigDecimal latitude = null;
-		BigDecimal longitude = null;
-		String traits = null;
+		Listing listing = new Listing();
 		String input;
 
 		System.out.println();
 		// insert new row to table Listing
-		while (type == null || postalCode == null || latitude == null || longitude == null) {
+		while (listing.type == null || listing.postalCode == null || listing.latitude == null
+				|| listing.longitude == null) {
 			System.out.print("Enter a type of listing (apartment, house, or room): ");
 			input = sc.nextLine().strip().toLowerCase();
 			if (!input.equals("apartment") && !input.equals("house") && !input.equals("room")) {
 				System.out.println("That's not a valid type of listing, please try again!");
 				continue;
 			}
-			type = input;
+			listing.type = input;
 
 			System.out.print("Enter the street name: ");
 			input = sc.nextLine();
 			if (!isValid(input, 40)) {
 				continue;
 			}
-			street = input;
+			listing.street = input;
 
 			try {
 				System.out.print("Enter the street number: ");
@@ -571,42 +543,42 @@ public class CommandLine {
 				if (!isValid(input, 6)) {
 					continue;
 				}
-				number = Integer.parseInt(input);
+				listing.number = Integer.parseInt(input);
 
 				System.out.print("Enter the postal code: ");
 				input = sc.nextLine();
 				if (!isValid(input, 10)) {
 					continue;
 				}
-				postalCode = input;
+				listing.postalCode = input;
 
 				System.out.print("Enter the country: ");
 				input = sc.nextLine();
 				if (!isValid(input, 56)) {
 					continue;
 				}
-				country = input;
+				listing.country = input;
 
 				System.out.print("Enter the city: ");
 				input = sc.nextLine();
 				if (!isValid(input, 20)) {
 					continue;
 				}
-				city = input;
+				listing.city = input;
 
 				System.out.print("Enter the latitude (in decimal values): ");
 				input = sc.nextLine();
 				if (!isValid(input, 7)) {
 					continue;
 				}
-				latitude = new BigDecimal(coordinatesDf.format(Double.parseDouble(input)));
+				listing.latitude = new BigDecimal(coordinatesDf.format(Double.parseDouble(input)));
 
 				System.out.print("Enter the longitude (in decimal values): ");
 				input = sc.nextLine();
 				if (!isValid(input, 8)) {
 					continue;
 				}
-				longitude = new BigDecimal(coordinatesDf.format(Double.parseDouble(input)));
+				listing.longitude = new BigDecimal(coordinatesDf.format(Double.parseDouble(input)));
 			} catch (NumberFormatException e) {
 				System.out.println("That's not a number, please try again!");
 			}
@@ -615,47 +587,64 @@ public class CommandLine {
 		System.out.println("\nSelect any of the following amenities/characteristics:\n");
 		printAmenities();
 		System.out.println();
-		while (traits == null) {
+		while (listing.amenities == null) {
 			System.out.print("Enter a list of amenities above separated by commas. (E.g., \"Wifi, Hot tub, Gym\"): ");
 			input = sc.nextLine().strip().replaceAll("((?<=,)\\s||\\s(?=,))", "");
 			if (!isValidAmenities(input)) {
 				System.out.println("That's an invalid list, please try again!");
 				continue;
 			}
-			traits = input;
+			listing.amenities = input;
 		}
 
-		int rows = sqlMngr.insertListing(type, street, number, postalCode, country, city, latitude, longitude, traits);
+		int rows = sqlMngr.insertListing(listing.type, listing.street, listing.number, listing.postalCode,
+				listing.country, listing.city, listing.latitude, listing.longitude, listing.amenities);
 		System.out.println("\nListing rows affected: " + rows + "\n");
 		// inserting to Listing failed.
 		if (rows == 0) {
 			return;
 		}
 		// insert new row to table Hosts
-		rows = sqlMngr.insertHosts(currentUser.sin, street, number, postalCode, country);
+		rows = sqlMngr.insertHosts(currentUser.sin, listing.street, listing.number, listing.postalCode,
+				listing.country);
 	}
 
-	private void printFilteredListings(ArrayList<AvailabilityListing> listings) {
-		int count = 0;
-		System.out.println("\nResult: " + listings.size() + " listings\n");
-		System.out.println(
-				"+-----+-----------+----------------------------------------------------------------------------------+----------+-----------+------------+------------+");
-		System.out.printf("| %-3s | %-9s | %-80s | %-8s | %-9s | %-10s | %-10s |%n",
-				"#", "Type", "Address", "Latitude", "Longitude", "Date", "Price");
-		System.out.println(
-				"+=====+===========+==================================================================================+==========+===========+============+============+");
-		for (AvailabilityListing listing : listings) {
-			count++;
-			String lat = coordinatesDf.format(listing.latitude.doubleValue());
-			String lon = coordinatesDf.format(listing.longitude.doubleValue());
-			System.out.printf("| %-3s | %-9s | %-80s | %-8s | %-9s | %-10s | %-10s |%n", count, listing.type,
-					listing.number + " " + listing.street + ", " +
-							listing.city + ", " + listing.country + " " + listing.postalCode,
-					lat, lon,
-					listing.date.toString(), listing.price);
+	// Function that handles the feature: "Delete a listing."
+	private void deleteListing() {
+		String input;
+		int choice = -1;
+		System.out.println("\nNOTE: Active bookings will automatically be canceled when deleting a listing.\n");
+		while (choice != 0) {
+			ArrayList<Listing> listings = sqlMngr.selectHostsBySIN(currentUser.sin);
+			printMethods.printHostedListings(listings);
+			System.out.printf("Choose a listing you want to delete [1-%d] or enter 0 to exit: ", listings.size());
+			input = sc.nextLine().strip();
+			if (!checkInputArrayList(input, listings.size())) {
+				continue;
+			}
+			choice = Integer.parseInt(input);
+			if (choice == 0) {
+				return;
+			}
+
+			System.out.print("Are you sure you want to delete this listing? [y/n]: ");
+			input = sc.nextLine().strip();
+
+			if (!input.equalsIgnoreCase("y") && !input.equalsIgnoreCase("n")) {
+				System.out.println("That's not a valid input, please try again!");
+				continue;
+			} else if (input.equalsIgnoreCase("n")) {
+				break;
+			}
+
+			Listing listing = listings.get(choice - 1);
+			int rows = sqlMngr.cancelBookedByListing(listing.street, listing.number, listing.postalCode,
+					listing.country);
+			System.out.println("\nBooked rows affected: " + rows + "\n");
+			rows = sqlMngr.deleteListing(listing.street, listing.number, listing.postalCode, listing.country);
+			System.out.println("\nListing rows affected: " + rows + "\n");
+			choice = 0;
 		}
-		System.out.println(
-				"+-----+-----------+----------------------------------------------------------------------------------+----------+-----------+------------+------------+\n");
 	}
 
 	private ArrayList<AvailabilityListing> filterByAmenities(ArrayList<AvailabilityListing> listings,
@@ -901,7 +890,7 @@ public class CommandLine {
 		}
 		availListings = askFilterAmenities(availListings);
 		askRankByPrice(availListings);
-		printFilteredListings(availListings);
+		printMethods.printFilteredListings(availListings);
 		return availListings;
 	}
 
@@ -995,7 +984,7 @@ public class CommandLine {
 		availListings = calDistance(availListings, latitude.doubleValue(), longitude.doubleValue(), distance);
 		availListings = askFilterAmenities(availListings);
 		askRankByPrice(availListings);
-		printFilteredListings(availListings);
+		printMethods.printFilteredListings(availListings);
 		return availListings;
 	}
 
@@ -1021,7 +1010,7 @@ public class CommandLine {
 		}
 		availListings = askFilterAmenities(availListings);
 		askRankByPrice(availListings);
-		printFilteredListings(availListings);
+		printMethods.printFilteredListings(availListings);
 		return availListings;
 	}
 
@@ -1034,11 +1023,7 @@ public class CommandLine {
 			return false;
 		}
 
-		if (choice == 0) {
-			return true;
-		}
-
-		if (choice < 1 || choice > size) {
+		if (choice < 0 || choice > size) {
 			System.out.println("That's not an option, please try again!");
 			return false;
 		}
@@ -1062,23 +1047,6 @@ public class CommandLine {
 		return dateFromTo;
 	}
 
-	private void printHostedListings(ArrayList<Listing> hostedListings) {
-		int count = 0;
-		System.out.println("Listings You Host: " + hostedListings.size() + " listings\n");
-		System.out.println("+-----+----------------------------------------------------------------"
-				+ "-----------------------------------+");
-		System.out.printf("| %-3s | %-97s |%n", "#", "Address of Listing");
-		System.out.println("+=====+================================================================"
-				+ "===================================+");
-		for (Listing listing : hostedListings) {
-			count++;
-			System.out.printf("| %-3s | %-97s |%n", count, listing.number + " " + listing.street +
-					", " + listing.country + ", " + listing.postalCode);
-		}
-		System.out.println("+-----+----------------------------------------------------------------"
-				+ "-----------------------------------+\n");
-	}
-
 	private void addAvailabilities() {
 		ArrayList<Listing> hostedListings = sqlMngr.selectHostsBySIN(this.currentUser.sin);
 		LocalDate[] dateFromTo = null;
@@ -1088,8 +1056,8 @@ public class CommandLine {
 		int choice = -1;
 
 		while (!hostedListings.isEmpty() && dateFromTo == null) {
-			printHostedListings(hostedListings);
-			System.out.printf("Choose a listing to add availabilities to [1-%d] or type 0 to exit: ",
+			printMethods.printHostedListings(hostedListings);
+			System.out.printf("Choose a listing to add availabilities to [1-%d] or enter 0 to exit: ",
 					hostedListings.size());
 			input = sc.nextLine().strip();
 			if (!checkInputArrayList(input, hostedListings.size())) {
@@ -1181,7 +1149,7 @@ public class CommandLine {
 		System.out.println("");
 	}
 
-	private ArrayList<AvailabilityListing> onlyConsecutiveDates(ArrayList<AvailabilityListing> booked,
+	private ArrayList<AvailabilityListing> getConsecutiveListings(ArrayList<AvailabilityListing> booked,
 			ArrayList<AvailabilityListing> listings) {
 		ArrayList<AvailabilityListing> sameListings = new ArrayList<AvailabilityListing>();
 		for (AvailabilityListing listing : listings) {
@@ -1238,15 +1206,15 @@ public class CommandLine {
 				while (input.equalsIgnoreCase("y")) {
 					if (!bookedListings.isEmpty()) {
 						printListings.removeAll(printListings);
-						printListings = onlyConsecutiveDates(bookedListings, listings);
+						printListings = getConsecutiveListings(bookedListings, listings);
 
 						if (printListings.isEmpty()) {
 							System.out.print(
-									"No more consecutive days available for this listing! Press enter to continue.");
+									"No more consecutive days available for this listing! Enter to continue. ");
 							sc.nextLine();
 							break;
 						}
-						printFilteredListings(printListings);
+						printMethods.printFilteredListings(printListings);
 						System.out.println("Choosing a date will book all consecutive days to that date.");
 					}
 
@@ -1311,26 +1279,6 @@ public class CommandLine {
 		}
 	}
 
-	private void printBooked(ArrayList<Booked> booked) {
-		System.out.println("Your bookings:");
-		System.out.println(
-				"+-----+--------------------------------+------------+------------+------------+------------+------------+-------------+");
-		System.out.printf(
-				"|  #  |   %-26s   |   Number   | PostalCode |  Country   |    From    |     To     |   Payment   |\n",
-				"Street");
-		System.out.println(
-				"+=====+================================+============+============+============+============+============+=============+");
-		int count = 0;
-		for (Booked booking : booked) {
-			count++;
-			System.out.printf("| %-3s | %-30s | %-10s | %-10s | %-10s | %-10s | %-10s | %-11s |%n", count,
-					booking.street, booking.number, booking.postalCode, booking.country,
-					booking.fromDate.toString(), booking.toDate.toString(), booking.paymentMethod);
-		}
-		System.out.println(
-				"+-----+--------------------------------+------------+------------+------------+------------+------------+-------------+\n");
-	}
-
 	private boolean checkInputArrayListBooked(String input, ArrayList<Booked> booked) {
 		int choice = -1;
 		try {
@@ -1352,35 +1300,18 @@ public class CommandLine {
 		return true;
 	}
 
-	private void printBookedWithCanceled(ArrayList<Booked> booked) {
-		System.out.println("Your bookings:");
-		System.out.println(
-				"+-----+--------------------------------+------------+------------+------------+------------+------------+-------------+------------+");
-		System.out.printf(
-				"|  #  |   %-26s   |   Number   | PostalCode |  Country   |    From    |     To     |   Payment   |  Canceled  |\n",
-				"Street");
-		System.out.println(
-				"+=====+================================+============+============+============+============+============+=============+============+");
-		int count = 0;
-		for (Booked booking : booked) {
-			count++;
-			System.out.printf("| %-3s | %-30s | %-10s | %-10s | %-10s | %-10s | %-10s | %-11s | %-10s |%n", count,
-					booking.street, booking.number, booking.postalCode, booking.country,
-					booking.fromDate.toString(), booking.toDate.toString(), booking.paymentMethod,
-					booking.canceled);
-		}
-		System.out.println(
-				"+-----+--------------------------------+------------+------------+------------+------------+------------+-------------+------------+\n");
+	private void printViewBookingOptions() {
+		System.out.println("Do you want to view only active bookings, canceled bookings or all bookings?");
+		System.out.println(" 1. Active bookings");
+		System.out.println(" 2. Canceled bookings");
+		System.out.println(" 3. All bookings");
+		System.out.print("Enter an option [1-3]: ");
 	}
 
 	private void viewBookings() {
 		String input = "";
 		while (input.equals("")) {
-			System.out.println("Do you want to view only active bookings, canceled bookings or all bookings?");
-			System.out.println("1. Active bookings");
-			System.out.println("2. Canceled bookings");
-			System.out.println("3. All bookings");
-			System.out.print("Enter an option [1-3]: ");
+			printViewBookingOptions();
 			input = sc.nextLine().strip();
 			if (input.equals("1") || input.equals("2") || input.equals("3")) {
 				break;
@@ -1399,7 +1330,7 @@ public class CommandLine {
 					System.out.println("You have no active bookings!");
 					return;
 				}
-				printBooked(booked);
+				printMethods.printBooked(booked);
 				break;
 			case "2":
 				booked = sqlMngr.selectBookedBySIN(currentUser.sin, true);
@@ -1407,7 +1338,7 @@ public class CommandLine {
 					System.out.println("You have no canceled bookings!");
 					return;
 				}
-				printBooked(booked);
+				printMethods.printBooked(booked);
 				break;
 			case "3":
 				booked = sqlMngr.selectBookedBySIN(currentUser.sin);
@@ -1415,11 +1346,11 @@ public class CommandLine {
 					System.out.println("You have no bookings!");
 					return;
 				}
-				printBookedWithCanceled(booked);
+				printMethods.printBookedWithCanceled(booked);
 				break;
 		}
 
-		System.out.print("Press enter to continue.");
+		System.out.print("Enter to continue. ");
 		sc.nextLine();
 	}
 
@@ -1445,8 +1376,8 @@ public class CommandLine {
 		int choice = -1;
 		Booked booking = null;
 		while (booking == null) {
-			printBooked(booked);
-			System.out.printf("Choose a booking to cancel [1-%d] or type 0 to exit: ", booked.size());
+			printMethods.printBooked(booked);
+			System.out.printf("Choose a booking to cancel [1-%d] or enter 0 to exit: ", booked.size());
 			input = sc.nextLine().strip();
 			if (!checkInputArrayListBooked(input, booked)) {
 				continue;
@@ -1470,11 +1401,7 @@ public class CommandLine {
 	private void viewListingBookings() {
 		String input = "";
 		while (input.equals("")) {
-			System.out.println("Do you want to view only active bookings, canceled bookings or all bookings?");
-			System.out.println("1. Active bookings");
-			System.out.println("2. Canceled bookings");
-			System.out.println("3. All bookings");
-			System.out.print("Enter an option [1-3]: ");
+			printViewBookingOptions();
 			input = sc.nextLine().strip();
 			if (input.equals("1") || input.equals("2") || input.equals("3")) {
 				break;
@@ -1493,7 +1420,7 @@ public class CommandLine {
 					System.out.println("You have no active bookings for your listings!");
 					return;
 				}
-				printBooked(booked);
+				printMethods.printBooked(booked);
 				break;
 			case "2":
 				booked = sqlMngr.selectBookedByHostListings(currentUser.sin, true);
@@ -1501,7 +1428,7 @@ public class CommandLine {
 					System.out.println("You have no canceled bookings for your listings!");
 					return;
 				}
-				printBooked(booked);
+				printMethods.printBooked(booked);
 				break;
 			case "3":
 				booked = sqlMngr.selectBookedByHostListings(currentUser.sin);
@@ -1509,11 +1436,11 @@ public class CommandLine {
 					System.out.println("You have no bookings for your listings!");
 					return;
 				}
-				printBookedWithCanceled(booked);
+				printMethods.printBookedWithCanceled(booked);
 				break;
 		}
 
-		System.out.print("Press enter to continue.");
+		System.out.print("Enter to continue. ");
 		sc.nextLine();
 	}
 
@@ -1528,8 +1455,8 @@ public class CommandLine {
 		int choice = -1;
 		Booked booking = null;
 		while (booking == null) {
-			printBooked(booked);
-			System.out.printf("Choose a booking to cancel [1-%d] or type 0 to exit: ", booked.size());
+			printMethods.printBooked(booked);
+			System.out.printf("Choose a booking to cancel [1-%d] or enter 0 to exit: ", booked.size());
 			input = sc.nextLine().strip();
 			if (!checkInputArrayListBooked(input, booked)) {
 				continue;
@@ -1551,43 +1478,42 @@ public class CommandLine {
 	}
 
 	private void reportNumBookings() {
-    String input = null;
-    LocalDate[] dateFromTo = null;
-    ArrayList<Object> result = null;
+		String input = null;
+		LocalDate[] dateFromTo = null;
+		ArrayList<Object> result = null;
 
-    System.out.println();
-    while (dateFromTo == null) {
+		System.out.println();
+		while (dateFromTo == null) {
 			System.out.print("Enter a \"from\" date and a \"to\" date (YYYY-MM-DD) seperated by commas."
 					+ " (E.g., \"2023-09-10, 2023-09-20\"): ");
 			input = sc.nextLine().replaceAll("\\s", "");
 
 			dateFromTo = checkFromToDates(input);
-      input = null;
+			input = null;
 		}
 
-    while (input == null) {
-      System.out.print("Do you want the report by city or postal code [c/p]: ");
+		while (input == null) {
+			System.out.print("Do you want the report by city or postal code [c/p]: ");
 			input = sc.nextLine().strip();
-			if (input.equalsIgnoreCase("c")){
-        input = "City";
-        result = sqlMngr.reportNumBookingsCity(dateFromTo[0], dateFromTo[1]);
-        System.out.println("\nTotal number of bookings from "+dateFromTo[0].toString()+" to "
-        +dateFromTo[1].toString()+" by city:");
-        break;
-      }
-      else if (input.equalsIgnoreCase("p")) {
-        input = "Postal Code";
-        result = sqlMngr.reportNumBookingsPostalCode(dateFromTo[0], dateFromTo[1]);
-        System.out.println("\nTotal number of bookings from "+dateFromTo[0].toString()+" to "
-        +dateFromTo[1].toString()+" by postal code:");
+			if (input.equalsIgnoreCase("c")) {
+				input = "City";
+				result = sqlMngr.reportNumBookingsCity(dateFromTo[0], dateFromTo[1]);
+				System.out.println("\nTotal number of bookings from " + dateFromTo[0].toString() + " to "
+						+ dateFromTo[1].toString() + " by city:");
+				break;
+			} else if (input.equalsIgnoreCase("p")) {
+				input = "Postal Code";
+				result = sqlMngr.reportNumBookingsPostalCode(dateFromTo[0], dateFromTo[1]);
+				System.out.println("\nTotal number of bookings from " + dateFromTo[0].toString() + " to "
+						+ dateFromTo[1].toString() + " by postal code:");
 				break;
 			} else {
 				System.out.println("That's not a proper input, please try again!");
-        input = null;
+				input = null;
 				continue;
 			}
-    }
-    // print result
+		}
+		// print result
 		System.out.println("+---------------------------+---------------+");
 		System.out.printf("| %-25s | %-13s |%n", input, "Total booking");
 		System.out.println("+===========================+===============+");
@@ -1595,5 +1521,5 @@ public class CommandLine {
 			System.out.printf("| %-25s | %-13s |%n", result.get(i), result.get(++i));
 		}
 		System.out.println("+---------------------------+---------------+\n");
-  }
+	}
 }

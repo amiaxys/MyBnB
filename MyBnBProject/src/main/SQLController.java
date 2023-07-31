@@ -24,6 +24,7 @@ public class SQLController {
 	private PreparedStatement selectAllListing = null;
 	private PreparedStatement selectListingAddr = null;
 	private PreparedStatement selectListingPostalCode = null;
+	private PreparedStatement deleteListing = null;
 	// Hosts statements
 	private PreparedStatement insertHosts = null;
 	private PreparedStatement selectHostsBySIN = null;
@@ -37,13 +38,14 @@ public class SQLController {
 	// Booked statements
 	private PreparedStatement insertBooked = null;
 	private PreparedStatement cancelBooked = null;
+	private PreparedStatement cancelBookedByListing = null;
 	private PreparedStatement selectAllBookedBySIN = null;
 	private PreparedStatement selectBookedBySIN = null;
 	private PreparedStatement selectAllBookedByHostListings = null;
 	private PreparedStatement selectBookedByHostListings = null;
-  // Report statements
-  private PreparedStatement reportNumBookingsCity = null;
-  private PreparedStatement reportNumBookingsPostalCode = null;
+	// Report statements
+	private PreparedStatement reportNumBookingsCity = null;
+	private PreparedStatement reportNumBookingsPostalCode = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -160,7 +162,7 @@ public class SQLController {
 					+ " PRIMARY KEY(Street, Number, PostalCode, Country),"
 					+ " FOREIGN KEY (SIN) REFERENCES User(SIN),"
 					+ " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES"
-					+ " Listing(Street, Number, PostalCode, Country)"
+					+ " Listing(Street, Number, PostalCode, Country) ON DELETE CASCADE"
 					+ ")");
 			// @formatter:on
 			createHostsTb.executeUpdate();
@@ -183,7 +185,7 @@ public class SQLController {
 					+ " Price DECIMAL(10,2),"
 					+ " PRIMARY KEY(Street, Number, PostalCode, Country, Date),"
 					+ " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES"
-					+ " Listing(Street, Number, PostalCode, Country)"
+					+ " Listing(Street, Number, PostalCode, Country) ON DELETE CASCADE"
 					+ ")");
 			// @formatter:on
 			createAvailabilityTb.executeUpdate();
@@ -197,6 +199,7 @@ public class SQLController {
 		try {
 			// @formatter:off
 			PreparedStatement createBookedTb = conn.prepareStatement("CREATE TABLE Booked ("
+					+ " BID INT NOT NULL AUTO_INCREMENT,"
 					+ " SIN CHAR(9) NOT NULL,"
 					+ " Street VARCHAR(40),"
 					+ " Number INT,"
@@ -206,10 +209,10 @@ public class SQLController {
 					+ " ToDate DATE,"
 					+ " PaymentMethod SET('Credit card', 'Debit card', 'Cash'),"
 					+ " Canceled BOOL NOT NULL DEFAULT 0,"
-					+ " PRIMARY KEY (Street, Number, PostalCode, Country, FromDate, ToDate),"
+					+ " PRIMARY KEY (BID),"
 					+ " FOREIGN KEY (SIN) REFERENCES User(SIN),"
 					+ " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES"
-					+ " Listing(Street, Number, PostalCode, Country)"
+					+ " Listing(Street, Number, PostalCode, Country) ON DELETE SET NULL"
 					+ ")");
 			// @formatter:on
 			createBookedTb.executeUpdate();
@@ -241,6 +244,7 @@ public class SQLController {
           			+ " WHERE Street=? AND Number=? AND PostalCode=? AND Country=? AND City=? AND Available=true");
 			selectListingPostalCode = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
           			+ " WHERE PostalCode LIKE ? AND Available=true");
+			deleteListing = conn.prepareStatement("DELETE FROM Listing WHERE Street=? AND Number=? AND PostalCode=? AND Country=?");
 			// Hosts statements
 			insertHosts = conn.prepareStatement("INSERT INTO Hosts"
 					+ " (SIN, Street, Number, PostalCode, Country)" 
@@ -255,8 +259,6 @@ public class SQLController {
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE Available=?, Price=?");
 			updateAvailability = conn.prepareStatement("UPDATE Availability SET Available=? WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND Date=?");
-			// selectAllAvailBetweenDate = conn.prepareStatement("SELECT * FROM Availability WHERE"
-			// 		+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND Date BETWEEN ? AND ?");
 			selectAvailBetweenDate = conn.prepareStatement("SELECT * FROM Availability WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND"
 					+ " (Date BETWEEN ? AND ?) AND Available=?");
@@ -270,17 +272,19 @@ public class SQLController {
 			cancelBooked = conn.prepareStatement("UPDATE Booked SET Canceled=1 WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND"
 					+ " FromDate=? AND ToDate=?");
+			cancelBookedByListing = conn.prepareStatement("UPDATE Booked SET Canceled=1 WHERE"
+					+ " Street=? AND Number=? AND PostalCode=? AND Country=?");
 			selectAllBookedBySIN = conn.prepareStatement("SELECT * FROM Booked WHERE SIN=?");
 			selectBookedBySIN = conn.prepareStatement("SELECT * FROM Booked WHERE SIN=? AND Canceled=?");
 			selectAllBookedByHostListings = conn.prepareStatement("SELECT * FROM Booked NATURAL JOIN"
 					+ " Listing NATURAL JOIN Hosts WHERE SIN=?");
 			selectBookedByHostListings = conn.prepareStatement("SELECT * FROM Booked NATURAL JOIN"
 					+ " Listing NATURAL JOIN Hosts WHERE SIN=? AND Canceled=?");
-      reportNumBookingsCity = conn.prepareStatement("SELECT City, COUNT(*) AS TotalBooking"
-          + " from Booked NATURAL JOIN Listing where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
-          + " GROUP BY CITY");
-      reportNumBookingsPostalCode = conn.prepareStatement("SELECT PostalCode, COUNT(*) AS TotalBooking"
-          + " from Booked where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?) GROUP BY PostalCode");
+      		reportNumBookingsCity = conn.prepareStatement("SELECT City, COUNT(*) AS TotalBooking"
+          			+ " from Booked NATURAL JOIN Listing where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
+          			+ " GROUP BY CITY");
+      		reportNumBookingsPostalCode = conn.prepareStatement("SELECT PostalCode, COUNT(*) AS TotalBooking"
+          			+ " from Booked where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?) GROUP BY PostalCode");
 			// @formatter:on
 		} catch (SQLException e) {
 			success = false;
@@ -337,7 +341,7 @@ public class SQLController {
 			e.printStackTrace();
 		}
 
-		if (sin == null) {
+		if (sin == null || user.sin == null) {
 			user = null;
 		}
 
@@ -365,6 +369,24 @@ public class SQLController {
 			System.err.println("Exception triggered when inserting listing! "
 					+ "Another listing with the same type and address may already exist.");
 			// e.printStackTrace();
+		}
+		return rows;
+	}
+
+	// Controls the execution of a delete query.
+	// Functionality: Delete a listing.
+	public int deleteListing(String street, int number, String postalCode, String country) {
+		int rows = 0;
+		try {
+			int count = 0;
+			deleteListing.setString(++count, street);
+			deleteListing.setInt(++count, number);
+			deleteListing.setString(++count, postalCode);
+			deleteListing.setString(++count, country);
+			rows = deleteListing.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when deleting listing!");
+			e.printStackTrace();
 		}
 		return rows;
 	}
@@ -484,76 +506,83 @@ public class SQLController {
 
 	// Controls the execution of an update query.
 	// Functionality: Update an availability.
-	/*public int updateAvailability(String street, int number, String postalCode, String country, LocalDate date,
-			boolean available) {
-		int rows = 0;
-		try {
-			int count = 0;
-			selectAllAvailBetweenDate.setString(++count, street);
-			selectAllAvailBetweenDate.setInt(++count, number);
-			selectAllAvailBetweenDate.setString(++count, postalCode);
-			selectAllAvailBetweenDate.setString(++count, country);
-			selectAllAvailBetweenDate.setObject(++count, to);
-			selectAllAvailBetweenDate.setObject(++count, from);*/
+	/*
+	 * public int updateAvailability(String street, int number, String postalCode,
+	 * String country, LocalDate date,
+	 * boolean available) {
+	 * int rows = 0;
+	 * try {
+	 * int count = 0;
+	 * selectAllAvailBetweenDate.setString(++count, street);
+	 * selectAllAvailBetweenDate.setInt(++count, number);
+	 * selectAllAvailBetweenDate.setString(++count, postalCode);
+	 * selectAllAvailBetweenDate.setString(++count, country);
+	 * selectAllAvailBetweenDate.setObject(++count, to);
+	 * selectAllAvailBetweenDate.setObject(++count, from);
+	 */
 
-	// 		ResultSet rs = selectAllAvailBetweenDate.executeQuery();
+	// ResultSet rs = selectAllAvailBetweenDate.executeQuery();
 
-	// 		count = 0;
-	// 		while (rs.next()) {
-	// 			Availability temp = new Availability();
-	// 			temp.street = rs.getString("Street");
-	// 			temp.number = rs.getInt("Number");
-	// 			temp.postalCode = rs.getString("PostalCode");
-	// 			temp.country = rs.getString("Country");
-	// 			temp.date = rs.getObject("Date", LocalDate.class);
-	// 			temp.available = rs.getBoolean("Available");
-	// 			temp.price = rs.getBigDecimal("Price");
-	// 			availabilities.add(temp);
-	// 		}
+	// count = 0;
+	// while (rs.next()) {
+	// Availability temp = new Availability();
+	// temp.street = rs.getString("Street");
+	// temp.number = rs.getInt("Number");
+	// temp.postalCode = rs.getString("PostalCode");
+	// temp.country = rs.getString("Country");
+	// temp.date = rs.getObject("Date", LocalDate.class);
+	// temp.available = rs.getBoolean("Available");
+	// temp.price = rs.getBigDecimal("Price");
+	// availabilities.add(temp);
+	// }
 
-	/*		rs.close();
-		} catch (SQLException e) {
-			System.err.println("Exception triggered when updating availability!");
-			e.printStackTrace();
-		}
-		return rows;
-	}*/
+	/*
+	 * rs.close();
+	 * } catch (SQLException e) {
+	 * System.err.println("Exception triggered when updating availability!");
+	 * e.printStackTrace();
+	 * }
+	 * return rows;
+	 * }
+	 */
 
 	// Controls the execution of a select query.
 	// Functionality: Select availabilities by date.
-	// public ArrayList<Availability> selectAvailBetweenDate(String street, int number, String postalCode, String country,
-	// 		LocalDate to, LocalDate from) {
-	// 	ArrayList<Availability> availabilities = new ArrayList<>();
-	// 	try {
-	// 		int count = 0;
-	// 		selectAllAvailBetweenDate.setString(++count, street);
-	// 		selectAllAvailBetweenDate.setInt(++count, number);
-	// 		selectAllAvailBetweenDate.setString(++count, postalCode);
-	// 		selectAllAvailBetweenDate.setString(++count, country);
-	// 		selectAllAvailBetweenDate.setObject(++count, to);
-	// 		selectAllAvailBetweenDate.setObject(++count, from);
+	// public ArrayList<Availability> selectAvailBetweenDate(String street, int
+	// number, String postalCode, String country,
+	// LocalDate to, LocalDate from) {
+	// ArrayList<Availability> availabilities = new ArrayList<>();
+	// try {
+	// int count = 0;
+	// selectAllAvailBetweenDate.setString(++count, street);
+	// selectAllAvailBetweenDate.setInt(++count, number);
+	// selectAllAvailBetweenDate.setString(++count, postalCode);
+	// selectAllAvailBetweenDate.setString(++count, country);
+	// selectAllAvailBetweenDate.setObject(++count, to);
+	// selectAllAvailBetweenDate.setObject(++count, from);
 
-	// 		ResultSet rs = selectAllAvailBetweenDate.executeQuery();
+	// ResultSet rs = selectAllAvailBetweenDate.executeQuery();
 
-	// 		count = 0;
-	// 		while (rs.next()) {
-	// 			Availability temp = new Availability();
-	// 			temp.street = rs.getString("Street");
-	// 			temp.number = rs.getInt("Number");
-	// 			temp.postalCode = rs.getString("PostalCode");
-	// 			temp.country = rs.getString("Country");
-	// 			temp.date = rs.getObject("Date", LocalDate.class);
-	// 			temp.available = rs.getBoolean("Available");
-	// 			temp.price = rs.getBigDecimal("Price");
-	// 			availabilities.add(temp);
-	// 		}
+	// count = 0;
+	// while (rs.next()) {
+	// Availability temp = new Availability();
+	// temp.street = rs.getString("Street");
+	// temp.number = rs.getInt("Number");
+	// temp.postalCode = rs.getString("PostalCode");
+	// temp.country = rs.getString("Country");
+	// temp.date = rs.getObject("Date", LocalDate.class);
+	// temp.available = rs.getBoolean("Available");
+	// temp.price = rs.getBigDecimal("Price");
+	// availabilities.add(temp);
+	// }
 
-	// 		rs.close();
-	// 	} catch (SQLException e) {
-	// 		System.err.println("Exception triggered when selecting availabilities by date!");
-	// 		e.printStackTrace();
-	// 	}
-	// 	return availabilities;
+	// rs.close();
+	// } catch (SQLException e) {
+	// System.err.println("Exception triggered when selecting availabilities by
+	// date!");
+	// e.printStackTrace();
+	// }
+	// return availabilities;
 	// }
 
 	// Controls the execution of a select query.
@@ -618,7 +647,8 @@ public class SQLController {
 
 	// Controls the execution of a select query.
 	// Functionality: Select listings by address.
-	public ArrayList<AvailabilityListing> searchListingAddr(String street, int number, String postalCode, String country,
+	public ArrayList<AvailabilityListing> searchListingAddr(String street, int number, String postalCode,
+			String country,
 			String city) {
 		ArrayList<AvailabilityListing> listings = new ArrayList<>();
 		try {
@@ -646,7 +676,7 @@ public class SQLController {
 		try {
 			ResultSet rs = selectAllListing.executeQuery();
 
-      initialAvailListings(rs, listings);
+			initialAvailListings(rs, listings);
 			rs.close();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when all selecting listing!");
@@ -663,7 +693,7 @@ public class SQLController {
 			selectListingPostalCode.setString(1, pattern);
 			ResultSet rs = selectListingPostalCode.executeQuery();
 
-      initialAvailListings(rs, listings);
+			initialAvailListings(rs, listings);
 			rs.close();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when selecting listing by postal code!");
@@ -672,28 +702,28 @@ public class SQLController {
 		return listings;
 	}
 
-  public void initialAvailListings(ResultSet rs, ArrayList<AvailabilityListing> listings) throws SQLException {
-    while (rs.next()) {
-				String tempType = rs.getString("Type");
-				String tempStreet = rs.getString("Street");
-				int tempNumber = rs.getInt("Number");
-				String tempPostalCode = rs.getString("PostalCode");
-				String tempCountry = rs.getString("Country");
-				String tempCity = rs.getString("City");
-				BigDecimal tempLatitude = rs.getBigDecimal("Latitude");
-				BigDecimal tempLongitude = rs.getBigDecimal("Longitude");
-				String tempAmenities = rs.getString("Amenities");
-				LocalDate date = rs.getObject("Date", LocalDate.class);
-				boolean available = rs.getBoolean("Available");
-				BigDecimal price = rs.getBigDecimal("Price");
-				AvailabilityListing temp = new AvailabilityListing(tempType, tempStreet, tempNumber, tempPostalCode,
-						tempCountry,
-						tempCity, tempLatitude, tempLongitude, tempAmenities, date, available, price);
-				listings.add(temp);
+	public void initialAvailListings(ResultSet rs, ArrayList<AvailabilityListing> listings) throws SQLException {
+		while (rs.next()) {
+			String tempType = rs.getString("Type");
+			String tempStreet = rs.getString("Street");
+			int tempNumber = rs.getInt("Number");
+			String tempPostalCode = rs.getString("PostalCode");
+			String tempCountry = rs.getString("Country");
+			String tempCity = rs.getString("City");
+			BigDecimal tempLatitude = rs.getBigDecimal("Latitude");
+			BigDecimal tempLongitude = rs.getBigDecimal("Longitude");
+			String tempAmenities = rs.getString("Amenities");
+			LocalDate date = rs.getObject("Date", LocalDate.class);
+			boolean available = rs.getBoolean("Available");
+			BigDecimal price = rs.getBigDecimal("Price");
+			AvailabilityListing temp = new AvailabilityListing(tempType, tempStreet, tempNumber, tempPostalCode,
+					tempCountry,
+					tempCity, tempLatitude, tempLongitude, tempAmenities, date, available, price);
+			listings.add(temp);
 		}
-  }
+	}
 
-  // Controls the execution of an insert query.
+	// Controls the execution of an insert query.
 	// Functionality: Insert a booked record.
 	public int insertBooked(String sin, String street, int number, String postalCode, String country, LocalDate from,
 			LocalDate to, String paymentMethod) {
@@ -732,6 +762,24 @@ public class SQLController {
 			rows = cancelBooked.executeUpdate();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when cancelling booked record!");
+			e.printStackTrace();
+		}
+		return rows;
+	}
+
+	// Controls the execution of an update query.
+	// Functionality: Cancel a booked record by listing.
+	public int cancelBookedByListing(String street, int number, String postalCode, String country) {
+		int rows = 0;
+		try {
+			int count = 0;
+			cancelBookedByListing.setString(++count, street);
+			cancelBookedByListing.setInt(++count, number);
+			cancelBookedByListing.setString(++count, postalCode);
+			cancelBookedByListing.setString(++count, country);
+			rows = cancelBookedByListing.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when cancelling booked record by listing!");
 			e.printStackTrace();
 		}
 		return rows;
@@ -855,21 +903,21 @@ public class SQLController {
 		return booked;
 	}
 
-  // Controls the execution of a report query.
+	// Controls the execution of a report query.
 	// Functionality: Get the total number of bookings in a date range by city.
-  public ArrayList<Object> reportNumBookingsCity(LocalDate from, LocalDate to) {
-    ArrayList<Object> result = new ArrayList<>();
+	public ArrayList<Object> reportNumBookingsCity(LocalDate from, LocalDate to) {
+		ArrayList<Object> result = new ArrayList<>();
 		try {
-      int count = 0;
+			int count = 0;
 			reportNumBookingsCity.setObject(++count, from);
 			reportNumBookingsCity.setObject(++count, to);
-      reportNumBookingsCity.setObject(++count, from);
+			reportNumBookingsCity.setObject(++count, from);
 			reportNumBookingsCity.setObject(++count, to);
 			ResultSet rs = reportNumBookingsCity.executeQuery();
 
 			while (rs.next()) {
 				result.add(rs.getString("City"));
-        result.add(rs.getString("TotalBooking"));
+				result.add(rs.getString("TotalBooking"));
 			}
 			rs.close();
 		} catch (SQLException e) {
@@ -877,23 +925,24 @@ public class SQLController {
 			e.printStackTrace();
 		}
 		return result;
-  }
+	}
 
-  // Controls the execution of a report query.
-	// Functionality: Get the total number of bookings in a date range by postal code.
-  public ArrayList<Object> reportNumBookingsPostalCode(LocalDate from, LocalDate to) {
-    ArrayList<Object> result = new ArrayList<>();
+	// Controls the execution of a report query.
+	// Functionality: Get the total number of bookings in a date range by postal
+	// code.
+	public ArrayList<Object> reportNumBookingsPostalCode(LocalDate from, LocalDate to) {
+		ArrayList<Object> result = new ArrayList<>();
 		try {
-      int count = 0;
+			int count = 0;
 			reportNumBookingsPostalCode.setObject(++count, from);
 			reportNumBookingsPostalCode.setObject(++count, to);
-      reportNumBookingsPostalCode.setObject(++count, from);
+			reportNumBookingsPostalCode.setObject(++count, from);
 			reportNumBookingsPostalCode.setObject(++count, to);
 			ResultSet rs = reportNumBookingsPostalCode.executeQuery();
 
 			while (rs.next()) {
 				result.add(rs.getString("PostalCode"));
-        result.add(rs.getString("TotalBooking"));
+				result.add(rs.getString("TotalBooking"));
 			}
 			rs.close();
 		} catch (SQLException e) {
@@ -901,7 +950,7 @@ public class SQLController {
 			e.printStackTrace();
 		}
 		return result;
-  }
+	}
 
 	/*
 	 * // Controls the execution of functionality: "3. Print schema." public
