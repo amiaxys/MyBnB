@@ -164,13 +164,14 @@ public class CommandLine {
 		System.out.println(" 0. Back.");
 		System.out.println(" 1. Report total number of bookings in a specific date range.");
 		System.out.println(" 2. Report renters by the number of bookings in a specific date range.");
-		System.out.println(" 3. Report total number of listings per city (and country). [not implemented]");
-		System.out.println(" 4. Report hosts that have a number of listings that is more than 10% of the number of"
+		System.out.println(" 3. Report total number of listings per city (and country).");
+    System.out.println(" 4. Report hosts ranked by total number of listings per country or city. [not implemented]");
+		System.out.println(" 5. Report hosts that have a number of listings that is more than 10% of the number of"
 				+ "\n   listings for every country and city. [not implemented]");
 		System.out.println(
-				" 5. Report hosts and renters with the largest number of cancellations within a year. [not implemented]");
-		System.out.println(" 6. Report the set of most popular noun phrases for each listing. [not implemented]");
-		System.out.print("Choose one of the previous options [0-6]: ");
+				" 6. Report hosts and renters with the largest number of cancellations within a year. [not implemented]");
+		System.out.println(" 7. Report the set of most popular noun phrases for each listing. [not implemented]");
+		System.out.print("Choose one of the previous options [0-7]: ");
 	}
 
 	private String runReportOptions() {
@@ -187,6 +188,9 @@ public class CommandLine {
 					break;
 				case 2:
 					reportRenterBookings();
+					break;
+        case 3:
+					reportNumListings();
 					break;
 				default:
 					System.out.println("That's not an option, please try again!");
@@ -1537,14 +1541,7 @@ public class CommandLine {
 				continue;
 			}
 		}
-		// print result
-		System.out.println("+---------------------------+---------------+");
-		System.out.printf("| %-25s | %-13s |%n", input, "Total booking");
-		System.out.println("+===========================+===============+");
-		for (int i = 0; i < result.size(); i++) {
-			System.out.printf("| %-25s | %-13s |%n", result.get(i), result.get(++i));
-		}
-		System.out.println("+---------------------------+---------------+\n");
+		printMethods.printNumBookings(input, result);
 	}
 
 	private void reportRenterBookings() {
@@ -1570,26 +1567,14 @@ public class CommandLine {
 				System.out.println("\nTotal number of bookings from " + dateFromTo[0].toString() + " to "
 						+ dateFromTo[1].toString() + " by renter and city:");
 
-				System.out.println("+----------------------+---------------------------+---------------+");
-				System.out.printf("| %-20s | %-25s | %-13s |%n", "Name", "City", "Total booking");
-				System.out.println("+======================+===========================+===============+");
-				for (int i = 0; i < result.size(); i++) {
-					System.out.printf("| %-20s | %-25s | %-13s |%n", result.get(i), result.get(++i), result.get(++i));
-				}
-				System.out.println("+----------------------+---------------------------+---------------+\n");
+				printMethods.printRenterBookingsCity(result);
 				return;
 			} else if (input.equalsIgnoreCase("n")) {
 				result = sqlMngr.reportRenterBooking(dateFromTo[0], dateFromTo[1]);
 				System.out.println("\nTotal number of bookings from " + dateFromTo[0].toString() + " to "
 						+ dateFromTo[1].toString() + " by renter:");
 
-				System.out.println("+----------------------+---------------+");
-				System.out.printf("| %-20s | %-13s |%n", "Name", "Total booking");
-				System.out.println("+======================+===============+");
-				for (int i = 0; i < result.size(); i++) {
-					System.out.printf("| %-20s | %-13s |%n", result.get(i), result.get(++i));
-				}
-				System.out.println("+----------------------+---------------+\n");
+				printMethods.printRenterBookings(result);
 				return;
 			} else {
 				System.out.println("That's not a proper input, please try again!");
@@ -1598,4 +1583,40 @@ public class CommandLine {
 			}
 		}
 	}
+
+  private void reportNumListings() {
+    String input = null;
+		ArrayList<Object> result = null;
+
+		System.out.println();
+
+		while (input == null) {
+			System.out.print("Choose the report by country, by country and city, or by country,"
+          + " city, and postal code [c/cc/ccp]: ");
+			input = sc.nextLine().strip();
+			if (input.equalsIgnoreCase("c")) {
+				result = sqlMngr.reportNumListingsCount();
+				System.out.println("\nTotal number of listings by country:");
+
+		    printMethods.printNumListingsCount(result);
+				return;
+			} else if (input.equalsIgnoreCase("cc")) {
+				result = sqlMngr.reportNumListingsCountCity();
+				System.out.println("\nTotal number of listings from by country and city:");
+
+        printMethods.printNumListingsCountCity(result);
+				return;
+			} else if (input.equalsIgnoreCase("ccp")) {
+				result = sqlMngr.reportNumListingsCountCityPost();
+				System.out.println("\nTotal number of listings from by country, city, and postal code:");
+
+        printMethods.printNumListingsCountCityPost(result);
+				return;
+			} else {
+				System.out.println("That's not a proper input, please try again!");
+				input = null;
+				continue;
+			}
+		}
+  }
 }

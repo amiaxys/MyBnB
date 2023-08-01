@@ -48,6 +48,9 @@ public class SQLController {
 	private PreparedStatement reportNumBookingsPostalCode = null;
 	private PreparedStatement reportRenterBooking = null;
 	private PreparedStatement reportRenterBookingCity = null;
+  private PreparedStatement reportNumListingsCount = null;
+  private PreparedStatement reportNumListingsCountCity = null;
+  private PreparedStatement reportNumListingsCountCityPost = null; 
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -282,18 +285,24 @@ public class SQLController {
 					+ " Listing NATURAL JOIN Hosts WHERE SIN=?");
 			selectBookedByHostListings = conn.prepareStatement("SELECT * FROM Booked NATURAL JOIN"
 					+ " Listing NATURAL JOIN Hosts WHERE SIN=? AND Canceled=?");
-      		// Report statements
-      		reportNumBookingsCity = conn.prepareStatement("SELECT City, COUNT(*) AS TotalBooking"
-          			+ " from Booked NATURAL JOIN Listing where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
-          			+ " GROUP BY CITY");
-      		reportNumBookingsPostalCode = conn.prepareStatement("SELECT PostalCode, COUNT(*) AS TotalBooking"
-          			+ " from Booked where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?) GROUP BY PostalCode");
-      		reportRenterBooking = conn.prepareStatement("SELECT Name, COUNT(SIN) AS TotalBooking"
-          			+ " from Booked NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
-          			+ " GROUP BY Name");
-      		reportRenterBookingCity = conn.prepareStatement("SELECT Name, City, COUNT(SIN) AS TotalBooking"
-          			+ " from Booked NATURAL JOIN Listing NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND"
-          			+ " (ToDate BETWEEN ? AND ?) GROUP BY Name, City");
+      // Report statements
+  		reportNumBookingsCity = conn.prepareStatement("SELECT City, COUNT(*) AS TotalBooking"
+        	+ " from Booked NATURAL JOIN Listing where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
+        	+ " GROUP BY CITY");
+    	reportNumBookingsPostalCode = conn.prepareStatement("SELECT PostalCode, COUNT(*) AS TotalBooking"
+      		+ " from Booked where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?) GROUP BY PostalCode");
+      reportRenterBooking = conn.prepareStatement("SELECT Name, COUNT(SIN) AS TotalBooking"
+    			+ " from Booked NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
+      		+ " GROUP BY Name");
+      reportRenterBookingCity = conn.prepareStatement("SELECT Name, City, COUNT(SIN) AS TotalBooking"
+    			+ " from Booked NATURAL JOIN Listing NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND"
+          + " (ToDate BETWEEN ? AND ?) GROUP BY Name, City");
+      reportNumListingsCount = conn.prepareStatement("SELECT Country, COUNT(*) AS TotalListing FROM Listing"
+          + " GROUP BY Country");
+      reportNumListingsCountCity = conn.prepareStatement("SELECT Country, City, COUNT(*) AS TotalListing FROM"
+          + " Listing GROUP BY Country, City");
+      reportNumListingsCountCityPost = conn.prepareStatement("SELECT Country, City, PostalCode, COUNT(*) AS"
+          + " TotalListing FROM Listing GROUP BY Country, City, PostalCode");
 			// @formatter:on
 		} catch (SQLException e) {
 			success = false;
@@ -1006,6 +1015,66 @@ public class SQLController {
 			rs.close();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when getting total number of bookings by renter and city!");
+			e.printStackTrace();
+		}
+		return result;
+	}
+
+  // Controls the execution of a report query.
+	// Functionality: Get the total number of listings by country.
+	public ArrayList<Object> reportNumListingsCount() {
+		ArrayList<Object> result = new ArrayList<>();
+		try {
+			ResultSet rs = reportNumListingsCount.executeQuery();
+
+			while (rs.next()) {
+				result.add(rs.getString("Country"));
+				result.add(rs.getString("TotalListing"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting total number of listings by country!");
+			e.printStackTrace();
+		}
+		return result;
+	}
+
+  // Controls the execution of a report query.
+	// Functionality: Get the total number of listings by country and city.
+	public ArrayList<Object> reportNumListingsCountCity() {
+		ArrayList<Object> result = new ArrayList<>();
+		try {
+			ResultSet rs = reportNumListingsCountCity.executeQuery();
+
+			while (rs.next()) {
+				result.add(rs.getString("Country"));
+        result.add(rs.getString("City"));
+				result.add(rs.getString("TotalListing"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting total number of listings by country and city!");
+			e.printStackTrace();
+		}
+		return result;
+	}
+
+  // Controls the execution of a report query.
+	// Functionality: Get the total number of listings by country, city and postal code.
+	public ArrayList<Object> reportNumListingsCountCityPost() {
+		ArrayList<Object> result = new ArrayList<>();
+		try {
+			ResultSet rs = reportNumListingsCountCityPost.executeQuery();
+
+			while (rs.next()) {
+				result.add(rs.getString("Country"));
+        result.add(rs.getString("City"));
+        result.add(rs.getString("PostalCode"));
+				result.add(rs.getString("TotalListing"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting total number of listings by country, city and postal code!");
 			e.printStackTrace();
 		}
 		return result;
