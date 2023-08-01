@@ -53,6 +53,8 @@ public class SQLController {
   private PreparedStatement reportNumListingsCountCityPost = null;
   private PreparedStatement reportRankHostCount = null;
   private PreparedStatement reportRankHostCountCity = null;
+  private PreparedStatement reportNumCancelled = null;
+
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
 		Class.forName(dbClassName);
@@ -282,22 +284,26 @@ public class SQLController {
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=?");
 			selectAllBookedBySIN = conn.prepareStatement("SELECT * FROM Booked WHERE SIN=?");
 			selectBookedBySIN = conn.prepareStatement("SELECT * FROM Booked WHERE SIN=? AND Canceled=?");
-			selectAllBookedByHostListings = conn.prepareStatement("SELECT * FROM Booked NATURAL JOIN"
-					+ " Listing NATURAL JOIN Hosts WHERE SIN=?");
-			selectBookedByHostListings = conn.prepareStatement("SELECT * FROM Booked NATURAL JOIN"
-					+ " Listing NATURAL JOIN Hosts WHERE SIN=? AND Canceled=?");
+			selectAllBookedByHostListings = conn.prepareStatement("SELECT A.SIN, A.Street, A.Number, A.PostalCode,"
+          + " A.Country, A.FromDate, A.ToDate, A.PaymentMethod, A.Canceled FROM Booked AS A NATURAL JOIN"
+					+ " Listing INNER JOIN Hosts AS B ON A.Street=B.Street AND A.Number=B.Number AND"
+          + " A.PostalCode=B.PostalCode AND A.Country=B.Country WHERE B.SIN=?");
+			selectBookedByHostListings = conn.prepareStatement("SELECT A.SIN, A.Street, A.Number, A.PostalCode,"
+          + " A.Country, A.FromDate, A.ToDate, A.PaymentMethod, A.Canceled FROM Booked AS A NATURAL JOIN"
+					+ " Listing INNER JOIN Hosts AS B ON A.Street=B.Street AND A.Number=B.Number AND"
+          + " A.PostalCode=B.PostalCode AND A.Country=B.Country WHERE B.SIN=? AND A.Canceled=?");
       // Report statements
   		reportNumBookingsCity = conn.prepareStatement("SELECT City, COUNT(*) AS TotalBooking"
         	+ " from Booked NATURAL JOIN Listing where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
-        	+ " GROUP BY CITY");
+        	+ " AND Canceled=0 GROUP BY CITY");
     	reportNumBookingsPostalCode = conn.prepareStatement("SELECT PostalCode, COUNT(*) AS TotalBooking"
-      		+ " from Booked where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?) GROUP BY PostalCode");
+      		+ " from Booked where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?) AND Canceled=0 GROUP BY PostalCode");
       reportRenterBooking = conn.prepareStatement("SELECT Name, COUNT(SIN) AS TotalBooking"
     			+ " from Booked NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
-      		+ " GROUP BY Name ORDER BY TotalBooking DESC");
+      		+ " AND Canceled=0 GROUP BY Name ORDER BY TotalBooking DESC");
       reportRenterBookingCity = conn.prepareStatement("SELECT Name, City, COUNT(SIN) AS TotalBooking"
     			+ " from Booked NATURAL JOIN Listing NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND"
-          + " (ToDate BETWEEN ? AND ?) GROUP BY Name, City ORDER BY TotalBooking DESC");
+          + " AND Canceled=0 (ToDate BETWEEN ? AND ?) GROUP BY Name, City ORDER BY TotalBooking DESC");
       reportNumListingsCount = conn.prepareStatement("SELECT Country, COUNT(*) AS TotalListing FROM Listing"
           + " GROUP BY Country");
       reportNumListingsCountCity = conn.prepareStatement("SELECT Country, City, COUNT(*) AS TotalListing FROM"
@@ -309,6 +315,8 @@ public class SQLController {
       reportRankHostCountCity = conn.prepareStatement("SELECT Name, Country, City, COUNT(*) AS TotalListing"
           + " FROM Listing NATURAL JOIN Hosts NATURAL JOIN User GROUP BY Country, City, Name ORDER BY"
           + " TotalListing DESC");
+      reportNumCancelled = conn.prepareStatement("SELECT Country, City, PostalCode, COUNT(*) AS"
+          + " TotalListing FROM Listing GROUP BY Country, City, PostalCode");
 			// @formatter:on
 		} catch (SQLException e) {
 			success = false;

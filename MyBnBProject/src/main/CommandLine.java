@@ -114,19 +114,9 @@ public class CommandLine {
 	 * ------------ Private functions ------------
 	 */
 
-	// Print not signed in menu options
-	private static void menu() {
-		System.out.println("=========MENU=========");
-		System.out.println(" 0. Exit.");
-		System.out.println(" 1. Create an account.");
-		System.out.println(" 2. Sign in.");
-		System.out.println(" 3. Run reports.");
-		System.out.print("Choose one of the previous options [0-3]: ");
-	}
-
 	// Loop through and execute menu options
 	private String runMenuOptions() {
-		menu(); // Print Menu
+		printMethods.menu(); // Print Menu
 		String input = sc.nextLine();
 		try {
 			int choice = Integer.parseInt(input);
@@ -158,24 +148,8 @@ public class CommandLine {
 		return input;
 	}
 
-	// Print report options
-	private static void reportOptions() {
-		System.out.println("\n*********REPORT OPTIONS*********");
-		System.out.println(" 0. Back.");
-		System.out.println(" 1. Report total number of bookings in a specific date range.");
-		System.out.println(" 2. Report renters ranked by the number of bookings in a specific date range.");
-		System.out.println(" 3. Report total number of listings.");
-    System.out.println(" 4. Report hosts ranked by total number of listings.");
-		System.out.println(" 5. Report hosts that have a number of listings that is more than 10% of the number of"
-				+ "\n\tlistings for every country and city. [not implemented]");
-		System.out.println(
-				" 6. Report hosts and renters with the largest number of cancellations within a year. [not implemented]");
-		System.out.println(" 7. Report the set of most popular noun phrases for each listing. [not implemented]");
-		System.out.print("Choose one of the previous options [0-7]: ");
-	}
-
 	private String runReportOptions() {
-		reportOptions(); // Print report options
+		printMethods.reportOptions(); // Print report options
 		String input = sc.nextLine();
 		try {
 			int choice = Integer.parseInt(input);
@@ -195,6 +169,11 @@ public class CommandLine {
         case 4:
 					reportRankHost();
 					break;
+        case 5:
+					break;
+        case 6:
+					//reportNumCancelled();
+					break;
 				default:
 					System.out.println("That's not an option, please try again!");
 					break;
@@ -207,26 +186,9 @@ public class CommandLine {
 		return input;
 	}
 
-	// Print signed in menu (user menu) options
-	private static void userMenu() {
-		System.out.println("\n=========USER MENU=========");
-		System.out.println(" 0. Exit.");
-		System.out.println(" 1. Create a listing.");
-		System.out.println(" 2. Add availabilities to listings.");
-		System.out.println(" 3. Search for listings.");
-		System.out.println(" 4. View your bookings.");
-		System.out.println(" 5. Cancel a booking.");
-		System.out.println(" 6. View your listings' bookings.");
-		System.out.println(" 7. Cancel a listing's booking.");
-		System.out.println(" 8. Delete a listing.");
-		System.out.println(" 10. Sign out.");
-		// add delete account later
-		System.out.print("Choose one of the previous options [0-10]: ");
-	}
-
 	// Loop through and execute user menu options
 	private String runUserMenuOptions() {
-		userMenu(); // Print Menu
+		printMethods.userMenu(); // Print Menu
 		String input = sc.nextLine();
 		try {
 			int choice = Integer.parseInt(input);
@@ -276,18 +238,8 @@ public class CommandLine {
 		return input;
 	}
 
-	// Print search options
-	private static void searchOptions() {
-		System.out.println("\n*********SEARCH OPTIONS*********");
-		System.out.println("0. Back.");
-		System.out.println("1. Search by exact address.");
-		System.out.println("2. Search by latitude and longitude.");
-		System.out.println("3. Search by postal code.");
-		System.out.print("Choose one of the previous options [0-3]: ");
-	}
-
 	private String runSearchOptions() {
-		searchOptions(); // Print search options
+		printMethods.searchOptions(); // Print search options
 		String input = sc.nextLine();
 		ArrayList<AvailabilityListing> listings = null;
 		try {
@@ -1575,7 +1527,6 @@ public class CommandLine {
 		ArrayList<Object> result = null;
 
 		System.out.println();
-
 		while (input == null) {
 			System.out.print("Choose the report by country, by country and city, or by country,"
           + " city, and postal code [c/cc/ccp]: ");
@@ -1611,7 +1562,6 @@ public class CommandLine {
 		ArrayList<Object> result = null;
 
 		System.out.println();
-
 		while (input == null) {
 			System.out.print("Choose the report by country or by country and city [c/cc]: ");
 			input = sc.nextLine().strip();
@@ -1634,4 +1584,26 @@ public class CommandLine {
 			}
 		}
   }
+
+  // private void reportNumCancelled() {
+  //   String input = null;
+  //   int year;
+	// 	ArrayList<Object> result = null;
+
+	// 	System.out.println();
+	// 	while (input == null) {
+  //     try {
+  //       System.out.print("Enter a year: ");
+	// 		  input = sc.nextLine().strip();
+  //       year = Integer.parseInt(input);
+  //       result = sqlMngr.reportNumCancelled(year);
+
+	// 			System.out.println("\nHosts and renters with the largest number of cancellations within "+year+":");
+	// 	    printMethods.printNumCancelled(result);
+  //     } catch (NumberFormatException e) {
+  //       System.out.println("That's not a number, please try again!");
+  //       input = null;
+  //     }
+	// 	}
+  // }
 }

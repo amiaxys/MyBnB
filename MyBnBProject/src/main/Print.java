@@ -7,6 +7,55 @@ import java.util.ArrayList;
 public class Print {
     DecimalFormat coordinatesDf = new DecimalFormat("#.####");
 
+	  public void menu() {    // Print not signed in menu options
+		  System.out.println("=========MENU=========");
+		  System.out.println(" 0. Exit.");
+		  System.out.println(" 1. Create an account.");
+		  System.out.println(" 2. Sign in.");
+		  System.out.println(" 3. Run reports.");
+		  System.out.print("Choose one of the previous options [0-3]: ");
+	  }
+
+    public void reportOptions() {
+      System.out.println("\n*********REPORT OPTIONS*********");
+      System.out.println(" 0. Back.");
+      System.out.println(" 1. Report total number of bookings in a specific date range.");
+      System.out.println(" 2. Report renters ranked by the number of bookings in a specific date range.");
+      System.out.println(" 3. Report total number of listings.");
+      System.out.println(" 4. Report hosts ranked by total number of listings.");
+      System.out.println(" 5. Report hosts that have a number of listings that is more than 10% of the number of"
+          + "\n\tlistings for every country and city. [not implemented]");
+      System.out.println(
+          " 6. Report hosts and renters with the largest number of cancellations within a year.");
+      System.out.println(" 7. Report the set of most popular noun phrases (in comments) for each listing. [not implemented]");
+      System.out.print("Choose one of the previous options [0-7]: ");
+    }
+
+	  public void userMenu() { // Print signed in menu (user menu) options
+		  System.out.println("\n=========USER MENU=========");
+		  System.out.println(" 0. Exit.");
+		  System.out.println(" 1. Create a listing.");
+		  System.out.println(" 2. Add availabilities to listings.");
+		  System.out.println(" 3. Search for listings.");
+		  System.out.println(" 4. View your bookings.");
+		  System.out.println(" 5. Cancel a booking.");
+		  System.out.println(" 6. View your listings' bookings.");
+		  System.out.println(" 7. Cancel a listing's booking.");
+		  System.out.println(" 8. Delete a listing.");
+		  System.out.println(" 10. Sign out.");
+		  // add delete account later
+		  System.out.print("Choose one of the previous options [0-10]: ");
+	  }
+
+    public void searchOptions() {
+      System.out.println("\n*********SEARCH OPTIONS*********");
+      System.out.println("0. Back.");
+      System.out.println("1. Search by exact address.");
+      System.out.println("2. Search by latitude and longitude.");
+      System.out.println("3. Search by postal code.");
+      System.out.print("Choose one of the previous options [0-3]: ");
+    }
+
     public void printAmenities() {
       System.out.println("Wifi\t\t\t\tKitchen\t\t\tWasher\nDryer"
           + "\t\t\t\tAir conditioning\tHeating\nDedicated workspace\t\tTV"
