@@ -163,11 +163,11 @@ public class CommandLine {
 		System.out.println("\n*********REPORT OPTIONS*********");
 		System.out.println(" 0. Back.");
 		System.out.println(" 1. Report total number of bookings in a specific date range.");
-		System.out.println(" 2. Report renters by the number of bookings in a specific date range.");
-		System.out.println(" 3. Report total number of listings per city (and country).");
-    System.out.println(" 4. Report hosts ranked by total number of listings per country or city. [not implemented]");
+		System.out.println(" 2. Report renters ranked by the number of bookings in a specific date range.");
+		System.out.println(" 3. Report total number of listings.");
+    System.out.println(" 4. Report hosts ranked by total number of listings.");
 		System.out.println(" 5. Report hosts that have a number of listings that is more than 10% of the number of"
-				+ "\n   listings for every country and city. [not implemented]");
+				+ "\n\tlistings for every country and city. [not implemented]");
 		System.out.println(
 				" 6. Report hosts and renters with the largest number of cancellations within a year. [not implemented]");
 		System.out.println(" 7. Report the set of most popular noun phrases for each listing. [not implemented]");
@@ -191,6 +191,9 @@ public class CommandLine {
 					break;
         case 3:
 					reportNumListings();
+					break;
+        case 4:
+					reportRankHost();
 					break;
 				default:
 					System.out.println("That's not an option, please try again!");
@@ -532,15 +535,6 @@ public class CommandLine {
 		return true;
 	}
 
-	private void printAmenities() {
-		System.out.println("Wifi\t\t\t\tKitchen\t\t\tWasher\nDryer"
-				+ "\t\t\t\tAir conditioning\tHeating\nDedicated workspace\t\tTV"
-				+ "\t\t\tHair dryer\nIron\t\t\t\tPool\t\t\tHot tub\nFree parking"
-				+ "\t\t\tEV charger\t\tCrib\nGym\t\t\t\tBBQ grill\t\tBreakfast"
-				+ "\nIndoor fireplace\t\tSmoking allowed\t\tBeachfront"
-				+ "\nWaterfront\t\t\tSki-in/ski-out\t\tSmoke alarm\nCarbon monoxide alarm");
-	}
-
 	// Function that handles the feature: "Create a listing."
 	private void createListing() {
 		Listing listing = new Listing();
@@ -613,7 +607,7 @@ public class CommandLine {
 		}
 
 		System.out.println("\nSelect any of the following amenities/characteristics:\n");
-		printAmenities();
+		printMethods.printAmenities();
 		System.out.println();
 		while (listing.amenities == null) {
 			System.out.print("Enter a list of amenities above separated by commas. (E.g., \"Wifi, Hot tub, Gym\"): ");
@@ -715,7 +709,7 @@ public class CommandLine {
 			input = sc.nextLine().strip();
 			if (input.equalsIgnoreCase("y")) {
 				System.out.println();
-				printAmenities();
+				printMethods.printAmenities();
 				System.out.println();
 
 				while (amenities == null) {
@@ -1328,18 +1322,10 @@ public class CommandLine {
 		return true;
 	}
 
-	private void printViewBookingOptions() {
-		System.out.println("Do you want to view only active bookings, canceled bookings or all bookings?");
-		System.out.println(" 1. Active bookings");
-		System.out.println(" 2. Canceled bookings");
-		System.out.println(" 3. All bookings");
-		System.out.print("Enter an option [1-3]: ");
-	}
-
 	private void viewBookings() {
 		String input = "";
 		while (input.equals("")) {
-			printViewBookingOptions();
+			printMethods.printViewBookingOptions();
 			input = sc.nextLine().strip();
 			if (input.equals("1") || input.equals("2") || input.equals("3")) {
 				break;
@@ -1429,7 +1415,7 @@ public class CommandLine {
 	private void viewListingBookings() {
 		String input = "";
 		while (input.equals("")) {
-			printViewBookingOptions();
+			printMethods.printViewBookingOptions();
 			input = sc.nextLine().strip();
 			if (input.equals("1") || input.equals("2") || input.equals("3")) {
 				break;
@@ -1564,15 +1550,15 @@ public class CommandLine {
 			input = sc.nextLine().strip();
 			if (input.equalsIgnoreCase("y")) {
 				result = sqlMngr.reportRenterBookingCity(dateFromTo[0], dateFromTo[1]);
-				System.out.println("\nTotal number of bookings from " + dateFromTo[0].toString() + " to "
-						+ dateFromTo[1].toString() + " by renter and city:");
+				System.out.println("\nRenters ranked by total number of bookings from "
+            + dateFromTo[0].toString() + " to " + dateFromTo[1].toString() + " by city:");
 
 				printMethods.printRenterBookingsCity(result);
 				return;
 			} else if (input.equalsIgnoreCase("n")) {
 				result = sqlMngr.reportRenterBooking(dateFromTo[0], dateFromTo[1]);
-				System.out.println("\nTotal number of bookings from " + dateFromTo[0].toString() + " to "
-						+ dateFromTo[1].toString() + " by renter:");
+				System.out.println("\nRenters ranked by total number of bookings from "
+            + dateFromTo[0].toString() + " to " + dateFromTo[1].toString() + ":");
 
 				printMethods.printRenterBookings(result);
 				return;
@@ -1611,6 +1597,35 @@ public class CommandLine {
 				System.out.println("\nTotal number of listings from by country, city, and postal code:");
 
         printMethods.printNumListingsCountCityPost(result);
+				return;
+			} else {
+				System.out.println("That's not a proper input, please try again!");
+				input = null;
+				continue;
+			}
+		}
+  }
+
+  private void reportRankHost() {
+    String input = null;
+		ArrayList<Object> result = null;
+
+		System.out.println();
+
+		while (input == null) {
+			System.out.print("Choose the report by country or by country and city [c/cc]: ");
+			input = sc.nextLine().strip();
+			if (input.equalsIgnoreCase("c")) {
+				result = sqlMngr.reportRankHostCount();
+				System.out.println("\nHosts ranked by total number of listings per country:");
+
+		    printMethods.printRankHostCount(result);
+				return;
+			} else if (input.equalsIgnoreCase("cc")) {
+				result = sqlMngr.reportRankHostCountCity();
+				System.out.println("\nHosts ranked by total number of listings per country and city:");
+
+        printMethods.printRankHostCountCity(result);
 				return;
 			} else {
 				System.out.println("That's not a proper input, please try again!");

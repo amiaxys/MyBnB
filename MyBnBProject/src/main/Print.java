@@ -7,6 +7,23 @@ import java.util.ArrayList;
 public class Print {
     DecimalFormat coordinatesDf = new DecimalFormat("#.####");
 
+    public void printAmenities() {
+      System.out.println("Wifi\t\t\t\tKitchen\t\t\tWasher\nDryer"
+          + "\t\t\t\tAir conditioning\tHeating\nDedicated workspace\t\tTV"
+          + "\t\t\tHair dryer\nIron\t\t\t\tPool\t\t\tHot tub\nFree parking"
+          + "\t\t\tEV charger\t\tCrib\nGym\t\t\t\tBBQ grill\t\tBreakfast"
+          + "\nIndoor fireplace\t\tSmoking allowed\t\tBeachfront"
+          + "\nWaterfront\t\t\tSki-in/ski-out\t\tSmoke alarm\nCarbon monoxide alarm");
+    }
+
+    public void printViewBookingOptions() {
+      System.out.println("Do you want to view only active bookings, canceled bookings or all bookings?");
+      System.out.println(" 1. Active bookings");
+      System.out.println(" 2. Canceled bookings");
+      System.out.println(" 3. All bookings");
+      System.out.print("Enter an option [1-3]: ");
+    }
+
     public void printFilteredListings(ArrayList<AvailabilityListing> listings) {
 		int count = 0;
 		System.out.println("\nResult: " + listings.size() + " listings\n");
@@ -98,7 +115,7 @@ public class Print {
 		System.out.println("+---------------------------+---------------+\n");
   }
 
-  public void printRenterBookings(ArrayList<Object> result) {
+  public void printRenterBookingsCity(ArrayList<Object> result) {
     System.out.println("+----------------------+---------------------------+---------------+");
 		System.out.printf("| %-20s | %-25s | %-13s |%n", "Name", "City", "Total booking");
 		System.out.println("+======================+===========================+===============+");
@@ -108,7 +125,7 @@ public class Print {
 		System.out.println("+----------------------+---------------------------+---------------+\n");
   }
 
-  public void printRenterBookingsCity(ArrayList<Object> result) {
+  public void printRenterBookings(ArrayList<Object> result) {
     System.out.println("+----------------------+---------------+");
 		System.out.printf("| %-20s | %-13s |%n", "Name", "Total booking");
 		System.out.println("+======================+===============+");
@@ -146,5 +163,25 @@ public class Print {
 	    System.out.printf("| %-25s | %-25s | %-11s | %-13s |%n", result.get(i), result.get(++i), result.get(++i), result.get(++i));
     }
     System.out.println("+---------------------------+---------------------------+-------------+---------------+\n");
+  }
+
+  public void printRankHostCount(ArrayList<Object> result) {
+    System.out.println("+----------------------+---------------------------+---------------+");
+		System.out.printf("| %-20s | %-25s | %-13s |%n", "Name", "Country", "Total listing");
+    System.out.println("+======================+===========================+===============+");
+		for (int i = 0; i < result.size(); i++) {
+	    System.out.printf("| %-20s | %-25s | %-13s |%n", result.get(i), result.get(++i), result.get(++i));
+    }
+    System.out.println("+----------------------+---------------------------+---------------+\n");
+  }
+
+  public void printRankHostCountCity(ArrayList<Object> result) {
+    System.out.println("+----------------------+---------------------------+---------------------------+---------------+");
+		System.out.printf("| %-20s | %-25s | %-25s | %-13s |%n", "Name", "Country", "City", "Total listing");
+    System.out.println("+======================+===========================+===========================+===============+");
+		for (int i = 0; i < result.size(); i++) {
+	    System.out.printf("| %-20s | %-25s | %-25s | %-13s |%n", result.get(i), result.get(++i), result.get(++i), result.get(++i));
+    }
+    System.out.println("+----------------------+---------------------------+---------------------------+---------------+\n");
   }
 }

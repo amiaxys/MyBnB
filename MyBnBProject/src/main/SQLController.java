@@ -50,8 +50,9 @@ public class SQLController {
 	private PreparedStatement reportRenterBookingCity = null;
   private PreparedStatement reportNumListingsCount = null;
   private PreparedStatement reportNumListingsCountCity = null;
-  private PreparedStatement reportNumListingsCountCityPost = null; 
-
+  private PreparedStatement reportNumListingsCountCityPost = null;
+  private PreparedStatement reportRankHostCount = null;
+  private PreparedStatement reportRankHostCountCity = null;
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
 		Class.forName(dbClassName);
@@ -293,16 +294,21 @@ public class SQLController {
       		+ " from Booked where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?) GROUP BY PostalCode");
       reportRenterBooking = conn.prepareStatement("SELECT Name, COUNT(SIN) AS TotalBooking"
     			+ " from Booked NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
-      		+ " GROUP BY Name");
+      		+ " GROUP BY Name ORDER BY TotalBooking DESC");
       reportRenterBookingCity = conn.prepareStatement("SELECT Name, City, COUNT(SIN) AS TotalBooking"
     			+ " from Booked NATURAL JOIN Listing NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND"
-          + " (ToDate BETWEEN ? AND ?) GROUP BY Name, City");
+          + " (ToDate BETWEEN ? AND ?) GROUP BY Name, City ORDER BY TotalBooking DESC");
       reportNumListingsCount = conn.prepareStatement("SELECT Country, COUNT(*) AS TotalListing FROM Listing"
           + " GROUP BY Country");
       reportNumListingsCountCity = conn.prepareStatement("SELECT Country, City, COUNT(*) AS TotalListing FROM"
           + " Listing GROUP BY Country, City");
       reportNumListingsCountCityPost = conn.prepareStatement("SELECT Country, City, PostalCode, COUNT(*) AS"
           + " TotalListing FROM Listing GROUP BY Country, City, PostalCode");
+      reportRankHostCount = conn.prepareStatement("SELECT Name, Country, COUNT(*) AS TotalListing FROM Listing"
+          + " NATURAL JOIN Hosts NATURAL JOIN User GROUP BY Country, Name ORDER BY TotalListing DESC");
+      reportRankHostCountCity = conn.prepareStatement("SELECT Name, Country, City, COUNT(*) AS TotalListing"
+          + " FROM Listing NATURAL JOIN Hosts NATURAL JOIN User GROUP BY Country, City, Name ORDER BY"
+          + " TotalListing DESC");
 			// @formatter:on
 		} catch (SQLException e) {
 			success = false;
@@ -1075,6 +1081,47 @@ public class SQLController {
 			rs.close();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when getting total number of listings by country, city and postal code!");
+			e.printStackTrace();
+		}
+		return result;
+	}
+
+  // Controls the execution of a report query.
+	// Functionality: Get the hosts ranked by total number of listing per country.
+	public ArrayList<Object> reportRankHostCount() {
+		ArrayList<Object> result = new ArrayList<>();
+		try {
+			ResultSet rs = reportRankHostCount.executeQuery();
+
+			while (rs.next()) {
+				result.add(rs.getString("Name"));
+        result.add(rs.getString("Country"));
+				result.add(rs.getString("TotalListing"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting hosts by total number of listing per country!");
+			e.printStackTrace();
+		}
+		return result;
+	}
+
+  // Controls the execution of a report query.
+	// Functionality: Get the hosts ranked by total number of listing per country and city.
+  public ArrayList<Object> reportRankHostCountCity() {
+		ArrayList<Object> result = new ArrayList<>();
+		try {
+			ResultSet rs = reportRankHostCountCity.executeQuery();
+
+			while (rs.next()) {
+				result.add(rs.getString("Name"));
+        result.add(rs.getString("Country"));
+        result.add(rs.getString("City"));
+				result.add(rs.getString("TotalListing"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting hosts by total number of listing per country and city!");
 			e.printStackTrace();
 		}
 		return result;
