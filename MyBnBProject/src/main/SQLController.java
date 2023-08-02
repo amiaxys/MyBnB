@@ -344,8 +344,9 @@ public class SQLController {
       reportRankHostCountCity = conn.prepareStatement("SELECT Name, Country, City, COUNT(*) AS TotalListing"
           + " FROM Listing NATURAL JOIN Hosts NATURAL JOIN User GROUP BY Country, City, Name ORDER BY"
           + " TotalListing DESC");
-      reportNumCancelled = conn.prepareStatement("SELECT Country, City, PostalCode, COUNT(*) AS"
-          + " TotalListing FROM Listing GROUP BY Country, City, PostalCode");
+      reportNumCancelled = conn.prepareStatement("SELECT Name, COUNT(A.BID) AS TotalCancelled FROM User NATURAL"
+          + " JOIN Cancellation as A INNER JOIN Booked as B ON A.BID=B.BID WHERE FromDate LIKE ? OR ToDate LIKE"
+          + " ? GROUP BY Name ORDER BY TotalCancelled DESC");
 			// @formatter:on
 		} catch (SQLException e) {
 			success = false;
@@ -1226,5 +1227,27 @@ public class SQLController {
 			e.printStackTrace();
 		}
 		return rows;
+	}
+
+  // Controls the execution of a report query.
+	// Functionality: Get the users ranked by total number of cancellations in a year.
+  public ArrayList<Object> reportNumCancelled(int year) {
+		ArrayList<Object> result = new ArrayList<>();
+		try {
+      int count = 0;
+			reportNumCancelled.setString(++count, year+"-__-__");
+			reportNumCancelled.setString(++count, year+"-__-__");
+			ResultSet rs = reportNumCancelled.executeQuery();
+
+			while (rs.next()) {
+				result.add(rs.getString("Name"));
+        result.add(rs.getString("TotalCancelled"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting users by total number of cancellations in a year!");
+			e.printStackTrace();
+		}
+		return result;
 	}
 }

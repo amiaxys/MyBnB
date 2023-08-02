@@ -172,7 +172,7 @@ public class CommandLine {
         case 5:
 					break;
         case 6:
-					//reportNumCancelled();
+					reportNumCancelled();
 					break;
 				default:
 					System.out.println("That's not an option, please try again!");
@@ -1183,8 +1183,11 @@ public class CommandLine {
 				printListings.addAll(listings);
 				while (input.equalsIgnoreCase("y")) {
 					if (!bookedListings.isEmpty()) {
+            System.out.println("old size: "+printListings.size());
 						printListings.removeAll(printListings);
+            System.out.println("new size: "+printListings.size());
 						printListings = getConsecutiveListings(bookedListings, listings);
+            System.out.println("consecutive size: "+printListings.size());
 
 						if (printListings.isEmpty()) {
 							System.out.print(
@@ -1597,25 +1600,25 @@ public class CommandLine {
 		}
   }
 
-  // private void reportNumCancelled() {
-  //   String input = null;
-  //   int year;
-	// 	ArrayList<Object> result = null;
+  private void reportNumCancelled() {
+    String input = null;
+    int year;
+		ArrayList<Object> result = null;
 
-	// 	System.out.println();
-	// 	while (input == null) {
-  //     try {
-  //       System.out.print("Enter a year: ");
-	// 		  input = sc.nextLine().strip();
-  //       year = Integer.parseInt(input);
-  //       result = sqlMngr.reportNumCancelled(year);
+		System.out.println();
+		while (input == null) {
+      try {
+        System.out.print("Enter a year: ");
+			  input = sc.nextLine().strip();
+        year = Integer.parseInt(input);
+        result = sqlMngr.reportNumCancelled(year);
 
-	// 			System.out.println("\nHosts and renters with the largest number of cancellations within "+year+":");
-	// 	    printMethods.printNumCancelled(result);
-  //     } catch (NumberFormatException e) {
-  //       System.out.println("That's not a number, please try again!");
-  //       input = null;
-  //     }
-	// 	}
-  // }
+				System.out.println("\nHosts and renters with the largest number of cancellations within the year "+year+":");
+		    printMethods.printNumCancelled(result);
+      } catch (NumberFormatException e) {
+        System.out.println("That's not a number, please try again!");
+        input = null;
+      }
+		}
+  }
 }
