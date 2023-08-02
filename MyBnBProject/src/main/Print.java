@@ -26,7 +26,7 @@ public class Print {
       System.out.println(" 5. Report hosts that have a number of listings that is more than 10% of the number of"
           + "\n\tlistings for every country and city. [not implemented]");
       System.out.println(
-          " 6. Report hosts and renters ranked by the number of cancellations within a year.");
+          " 6. Report hosts and renters with the largest number of cancellations within a year.");
       System.out.println(" 7. Report the set of most popular noun phrases (in comments) for each listing. [not implemented]");
       System.out.print("Choose one of the previous options [0-7]: ");
     }

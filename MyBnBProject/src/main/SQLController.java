@@ -58,6 +58,8 @@ public class SQLController {
   private PreparedStatement reportRankHostCount = null;
   private PreparedStatement reportRankHostCountCity = null;
   private PreparedStatement reportNumCancelled = null;
+  // View statments
+  PreparedStatement createLargestCancelView = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -346,7 +348,11 @@ public class SQLController {
           + " TotalListing DESC");
       reportNumCancelled = conn.prepareStatement("SELECT Name, COUNT(A.BID) AS TotalCancelled FROM User NATURAL"
           + " JOIN Cancellation as A INNER JOIN Booked as B ON A.BID=B.BID WHERE FromDate LIKE ? OR ToDate LIKE"
-          + " ? GROUP BY Name ORDER BY TotalCancelled DESC");
+          + " ? GROUP BY Name HAVING TotalCancelled in (SELECT TotalCancelled FROM LargestCancellation)");
+      // View statements
+      createLargestCancelView = conn.prepareStatement("CREATE OR REPLACE VIEW LargestCancellation As SELECT DISTINCT"
+          + " COUNT(A.BID) AS TotalCancelled FROM User NATURAL JOIN Cancellation AS A INNER JOIN Booked AS B ON"
+          + " A.BID=B.BID WHERE FromDate LIKE ? OR ToDate LIKE ? GROUP BY Name ORDER BY TotalCancelled DESC LIMIT 1");
 			// @formatter:on
 		} catch (SQLException e) {
 			success = false;
@@ -1230,9 +1236,38 @@ public class SQLController {
 	}
 
   // Controls the execution of a report query.
-	// Functionality: Get the users ranked by total number of cancellations in a year.
+	// Functionality: Get the users with the largest total number of cancellations within a year.
   public ArrayList<Object> reportNumCancelled(int year) {
 		ArrayList<Object> result = new ArrayList<>();
+		try {
+      String date = year+"-__-__";
+      int count = 0;
+      try {
+        // create LargestCancellation view
+			  createLargestCancelView.setString(++count, date);
+			  createLargestCancelView.setString(++count, date);
+        createLargestCancelView.executeUpdate();
+      } catch (SQLException e) {
+        System.err.println("Exception triggered when creating or updating LargestCancellation view!");
+			  e.printStackTrace();
+        return null;
+      }
+      count = 0;
+			reportNumCancelled.setString(++count, date);
+			reportNumCancelled.setString(++count, date);
+			ResultSet rs = reportNumCancelled.executeQuery();
+
+			while (rs.next()) {
+				result.add(rs.getString("Name"));
+        result.add(rs.getString("TotalCancelled"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting users with the largest total number of cancellations within a year!");
+			e.printStackTrace();
+		}
+		return result;
+    /* ArrayList<Object> result = new ArrayList<>();
 		try {
       int count = 0;
 			reportNumCancelled.setString(++count, year+"-__-__");
@@ -1245,9 +1280,9 @@ public class SQLController {
 			}
 			rs.close();
 		} catch (SQLException e) {
-			System.err.println("Exception triggered when getting users by total number of cancellations in a year!");
+			System.err.println("Exception triggered when getting users with the largest total number of cancellations within a year!");
 			e.printStackTrace();
 		}
-		return result;
+		return result; */
 	}
 }
