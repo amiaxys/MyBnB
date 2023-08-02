@@ -31,8 +31,9 @@ public class Print {
       System.out.print("Choose one of the previous options [0-7]: ");
     }
 
-	  public void userMenu() { // Print signed in menu (user menu) options
+	  public void userMenu(String name) { // Print signed in menu (user menu) options
 		  System.out.println("\n=========USER MENU=========");
+      System.out.println("Welcome back "+name+"!");
 		  System.out.println(" 0. Exit.");
 		  System.out.println(" 1. Create a listing.");
 		  System.out.println(" 2. Add availabilities to listings.");

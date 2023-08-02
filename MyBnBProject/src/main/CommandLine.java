@@ -188,7 +188,7 @@ public class CommandLine {
 
 	// Loop through and execute user menu options
 	private String runUserMenuOptions() {
-		printMethods.userMenu(); // Print Menu
+		printMethods.userMenu(currentUser.name); // Print Menu
 		String input = sc.nextLine();
 		try {
 			int choice = Integer.parseInt(input);
@@ -542,14 +542,14 @@ public class CommandLine {
 
 				System.out.print("Enter the latitude (in decimal values): ");
 				input = sc.nextLine();
-				if (!isValid(input, 7)) {
+				if (!isValid(input, 8)) {
 					continue;
 				}
 				listing.latitude = new BigDecimal(coordinatesDf.format(Double.parseDouble(input)));
 
 				System.out.print("Enter the longitude (in decimal values): ");
 				input = sc.nextLine();
-				if (!isValid(input, 8)) {
+				if (!isValid(input, 9)) {
 					continue;
 				}
 				listing.longitude = new BigDecimal(coordinatesDf.format(Double.parseDouble(input)));
@@ -615,6 +615,10 @@ public class CommandLine {
 			int rows = sqlMngr.cancelBookedByListing(listing.street, listing.number, listing.postalCode,
 					listing.country);
 			System.out.println("\nBooked rows affected: " + rows + "\n");
+      ArrayList<Booked> bookings = sqlMngr.selectBookedByAddress(listing.street, listing.number,
+          listing.postalCode, listing.country);
+      rows = sqlMngr.insertCancellation(currentUser.sin, bookings);
+			System.out.println("\nCancellation rows affected: " + rows + "\n");
 			rows = sqlMngr.deleteListing(listing.street, listing.number, listing.postalCode, listing.country);
 			System.out.println("\nListing rows affected: " + rows + "\n");
 			choice = 0;
@@ -1358,6 +1362,10 @@ public class CommandLine {
 			int rows = sqlMngr.cancelBooked(booking.street, booking.number, booking.postalCode, booking.country,
 					booking.fromDate, booking.toDate);
 			System.out.println("Booking rows affected: " + rows);
+      ArrayList<Booked> temp = new ArrayList<>();
+      temp.add(booking);
+      rows = sqlMngr.insertCancellation(currentUser.sin, temp);
+			System.out.println("Cancellation rows affected: " + rows);
 
 			updateAllAvailabilities(booking.street, booking.number, booking.postalCode, booking.country,
 					booking.fromDate, booking.toDate, true);
@@ -1437,6 +1445,10 @@ public class CommandLine {
 			int rows = sqlMngr.cancelBooked(booking.street, booking.number, booking.postalCode, booking.country,
 					booking.fromDate, booking.toDate);
 			System.out.println("Booking rows affected: " + rows);
+      ArrayList<Booked> temp = new ArrayList<>();
+      temp.add(booking);
+      rows = sqlMngr.insertCancellation(currentUser.sin, temp);
+      System.out.println("Cancellation rows affected: " + rows);
 
 			updateAllAvailabilities(booking.street, booking.number, booking.postalCode, booking.country,
 					booking.fromDate, booking.toDate, true);

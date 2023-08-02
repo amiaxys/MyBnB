@@ -43,6 +43,10 @@ public class SQLController {
 	private PreparedStatement selectBookedBySIN = null;
 	private PreparedStatement selectAllBookedByHostListings = null;
 	private PreparedStatement selectBookedByHostListings = null;
+  private PreparedStatement selectBookedID = null;
+  private PreparedStatement selectBookedByAddress = null;
+  // Cancellation statements
+  private PreparedStatement insertCancellation = null;
 	// Report statements
 	private PreparedStatement reportNumBookingsCity = null;
 	private PreparedStatement reportNumBookingsPostalCode = null;
@@ -230,6 +234,24 @@ public class SQLController {
 			System.err.println("Booked table already exists!");
 			// e.printStackTrace();
 		}
+
+    try {
+			// @formatter:off
+			PreparedStatement createCancellationTb = conn.prepareStatement("CREATE TABLE Cancellation ("
+					+ " BID INT NOT NULL,"
+					+ " SIN CHAR(9) NOT NULL,"
+					+ " PRIMARY KEY (BID),"
+					+ " FOREIGN KEY (BID) REFERENCES Booked(BID),"
+					+ " FOREIGN KEY (SIN) REFERENCES User(SIN)"
+					+ ")");
+			// @formatter:on
+			createCancellationTb.executeUpdate();
+			createCancellationTb.close();
+		} catch (SQLException e) {
+			// success = false;
+			System.err.println("Booked table already exists!");
+			// e.printStackTrace();
+		}
 		return success;
 	}
 
@@ -292,6 +314,13 @@ public class SQLController {
           + " A.Country, A.FromDate, A.ToDate, A.PaymentMethod, A.Canceled FROM Booked AS A NATURAL JOIN"
 					+ " Listing INNER JOIN Hosts AS B ON A.Street=B.Street AND A.Number=B.Number AND"
           + " A.PostalCode=B.PostalCode AND A.Country=B.Country WHERE B.SIN=? AND A.Canceled=?");
+      selectBookedID = conn.prepareStatement("SELECT BID FROM BOOKED WHERE SIN=? AND Street=? AND"
+          + " Number=? AND PostalCode=? AND Country=? AND FromDate=? AND ToDate=?");
+      selectBookedByAddress = conn.prepareStatement("SELECT * FROM BOOKED WHERE Street=? AND"
+          + " Number=? AND PostalCode=? AND Country=?");
+      // Cancellation statements
+      insertCancellation = conn.prepareStatement("INSERT INTO Cancellation (BID, SIN) VALUES (?, ?) ON DUPLICATE KEY"
+          + " UPDATE SIN=SIN");
       // Report statements
   		reportNumBookingsCity = conn.prepareStatement("SELECT City, COUNT(*) AS TotalBooking"
         	+ " from Booked NATURAL JOIN Listing where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
@@ -935,6 +964,39 @@ public class SQLController {
 		return booked;
 	}
 
+  // Controls the execution of a select query.
+	// Functionality: Select booked records by address.
+	public ArrayList<Booked> selectBookedByAddress(String street, int number, String postalCode, String country) {
+		ArrayList<Booked> booked = new ArrayList<>();
+		try {
+      int count = 0;
+			selectBookedByAddress.setString(++count, street);
+			selectBookedByAddress.setInt(++count, number);
+      selectBookedByAddress.setString(++count, postalCode);
+      selectBookedByAddress.setString(++count, country);
+			ResultSet rs = selectBookedByAddress.executeQuery();
+
+			while (rs.next()) {
+				Booked temp = new Booked();
+				temp.sin = rs.getString("SIN");
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				temp.fromDate = rs.getObject("FromDate", LocalDate.class);
+				temp.toDate = rs.getObject("ToDate", LocalDate.class);
+				temp.paymentMethod = rs.getString("PaymentMethod");
+				temp.canceled = rs.getBoolean("Canceled");
+				booked.add(temp);
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting canceled booked records by address!");
+			e.printStackTrace();
+		}
+		return booked;
+	}
+
 	// Controls the execution of a report query.
 	// Functionality: Get the total number of bookings in a date range by city.
 	public ArrayList<Object> reportNumBookingsCity(LocalDate from, LocalDate to) {
@@ -1133,5 +1195,36 @@ public class SQLController {
 			e.printStackTrace();
 		}
 		return result;
+	}
+
+  // Controls the execution of an insert query.
+	// Functionality: Insert a cancellation.
+	public int insertCancellation(String sinCancel, ArrayList<Booked> bookings) {
+		int rows = 0;
+		try {
+      for (Booked booking: bookings) {
+        int count = 0;
+        selectBookedID.setString(++count, booking.sin);
+        selectBookedID.setString(++count, booking.street);
+        selectBookedID.setInt(++count, booking.number);
+        selectBookedID.setString(++count, booking.postalCode);
+        selectBookedID.setString(++count, booking.country);
+        selectBookedID.setObject(++count, booking.fromDate);
+        selectBookedID.setObject(++count, booking.toDate);
+        ResultSet rs = selectBookedID.executeQuery();
+        rs.next();
+        int bid = rs.getInt("BID");
+        rs.close();
+
+        count = 0;
+		  	insertCancellation.setInt(++count, bid);
+			  insertCancellation.setString(++count, sinCancel);
+			  rows += insertCancellation.executeUpdate();
+      }
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when inserting cancellation record.");
+			e.printStackTrace();
+		}
+		return rows;
 	}
 }
