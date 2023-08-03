@@ -117,7 +117,7 @@ public class CommandLine {
 	// Loop through and execute menu options
 	private String runMenuOptions() {
 		printMethods.menu(); // Print Menu
-		String input = sc.nextLine();
+		String input = sc.nextLine().strip();
 		try {
 			int choice = Integer.parseInt(input);
 			// Activate the desired functionality
@@ -150,7 +150,7 @@ public class CommandLine {
 
 	private String runReportOptions() {
 		printMethods.reportOptions(); // Print report options
-		String input = sc.nextLine();
+		String input = sc.nextLine().strip();
 		try {
 			int choice = Integer.parseInt(input);
 			// Activate the desired functionality
@@ -163,15 +163,15 @@ public class CommandLine {
 				case 2:
 					reportRenterBookings();
 					break;
-        case 3:
+				case 3:
 					reportNumListings();
 					break;
-        case 4:
+				case 4:
 					reportRankHost();
 					break;
-        case 5:
+				case 5:
 					break;
-        case 6:
+				case 6:
 					reportNumCancelled();
 					break;
 				default:
@@ -188,11 +188,27 @@ public class CommandLine {
 
 	// Loop through and execute user menu options
 	private String runUserMenuOptions() {
-		printMethods.userMenu(currentUser.name); // Print Menu
-		String input = sc.nextLine();
+		ArrayList<Booked> updatedBooked = sqlMngr.selectUpdatedBookedBySIN(currentUser.sin);
+		boolean updated = false;
+
+		if (!updatedBooked.isEmpty()) {
+			updated = true;
+		}
+
+		printMethods.userMenu(currentUser.name != null ? currentUser.name : "", updated); // Print Menu
+		String input = sc.nextLine().strip();
+
+		if (updated && input.equalsIgnoreCase("u")) {
+			printMethods.printBookedWithCanceled(updatedBooked, true);
+			sqlMngr.updateBookedStatusBySIN(currentUser.sin);
+			System.out.print("Enter to continue. ");
+			sc.nextLine();
+			return input;
+		}
+
 		try {
 			int choice = Integer.parseInt(input);
-			// Activate the desired functionality
+			// Choose the desired functionality
 			switch (choice) {
 				case 0:
 					break;
@@ -203,24 +219,27 @@ public class CommandLine {
 					this.addAvailabilities();
 					break;
 				case 3:
+					this.changeAvailabilityPrice();
+					break;
+				case 4:
 					String searchInput;
 					do {
 						searchInput = this.runSearchOptions();
 					} while (searchInput.compareTo("0") != 0);
 					break;
-				case 4:
+				case 5:
 					this.viewBookings();
 					break;
-				case 5:
+				case 6:
 					this.cancelBooked();
 					break;
-				case 6:
+				case 7:
 					this.viewListingBookings();
 					break;
-				case 7:
+				case 8:
 					this.cancelListingBooked();
 					break;
-				case 8:
+				case 9:
 					this.deleteListing();
 					break;
 				case 10:
@@ -240,7 +259,7 @@ public class CommandLine {
 
 	private String runSearchOptions() {
 		printMethods.searchOptions(); // Print search options
-		String input = sc.nextLine();
+		String input = sc.nextLine().strip();
 		ArrayList<AvailabilityListing> listings = null;
 		try {
 			int choice = Integer.parseInt(input);
@@ -341,6 +360,7 @@ public class CommandLine {
 					continue;
 				}
 				user.sin = input;
+
 				if (console == null) {
 					System.out.print("Error! Cannot get Console instance\nEnter password (8-250 characters): ");
 					input = sc.nextLine();
@@ -348,9 +368,8 @@ public class CommandLine {
 					char[] passwordChar = console.readPassword("Enter password (8-250 characters): ");
 					input = new String(passwordChar);
 				}
-
-				System.out.print("Enter password (8-250 characters): ");
-				input = sc.nextLine();
+				//System.out.print("Enter password (8-250 characters): ");
+				//input = sc.nextLine();
 				int tempLen = input.length();
 				if (tempLen >= 8 && tempLen <= 250) {
 					user.password = passMethods.getSaltHashedPassword(input, user.salt);
@@ -613,11 +632,11 @@ public class CommandLine {
 
 			Listing listing = listings.get(choice - 1);
 			int rows = sqlMngr.cancelBookedByListing(listing.street, listing.number, listing.postalCode,
-					listing.country);
+					listing.country, true);
 			System.out.println("\nBooked rows affected: " + rows + "\n");
-      ArrayList<Booked> bookings = sqlMngr.selectBookedByAddress(listing.street, listing.number,
-          listing.postalCode, listing.country);
-      rows = sqlMngr.insertCancellation(currentUser.sin, bookings);
+			ArrayList<Booked> bookings = sqlMngr.selectBookedByAddress(listing.street, listing.number,
+					listing.postalCode, listing.country);
+			rows = sqlMngr.insertCancellation(currentUser.sin, bookings);
 			System.out.println("\nCancellation rows affected: " + rows + "\n");
 			rows = sqlMngr.deleteListing(listing.street, listing.number, listing.postalCode, listing.country);
 			System.out.println("\nListing rows affected: " + rows + "\n");
@@ -1109,6 +1128,86 @@ public class CommandLine {
 		}
 	}
 
+	private void changeAvailabilityPrice() {
+		ArrayList<Listing> hostedListings = sqlMngr.selectHostsBySIN(this.currentUser.sin);
+		LocalDate[] dateFromTo = null;
+		BigDecimal price = null;
+		String input;
+		int choice = -1;
+
+		while (!hostedListings.isEmpty() && dateFromTo == null) {
+			printMethods.printHostedListings(hostedListings);
+			System.out.printf("Choose a listing to change the price of [1-%d] or enter 0 to exit: ",
+					hostedListings.size());
+			input = sc.nextLine().strip();
+			if (!checkInputArrayList(input, hostedListings.size())) {
+				continue;
+			}
+
+			choice = Integer.parseInt(input);
+			if (choice == 0) {
+				break;
+			}
+
+			Listing listing = hostedListings.get(choice - 1);
+			System.out.print("Enter a \"from\" date and a \"to\" date (YYYY-MM-DD) seperated by commas."
+					+ " (E.g., \"2023-09-10, 2023-09-20\"): ");
+			input = sc.nextLine().replaceAll("\\s", "");
+
+			dateFromTo = checkFromToDates(input);
+			if (dateFromTo == null) {
+				dateFromTo = null;
+				continue;
+			}
+
+			ArrayList<Availability> availabilities = sqlMngr.selectAvailBetweenDate(listing.street, listing.number,
+					listing.postalCode, listing.country, dateFromTo[0], dateFromTo[1]);
+
+			if (availabilities.isEmpty()) {
+				System.out.println("Those dates don't have availabilities, please try again!");
+				continue;
+			}
+
+			System.out.print("Enter a price per day in decimal form: ");
+			input = sc.nextLine().strip();
+			try {
+				price = new BigDecimal(priceDf.format(Double.parseDouble(input)));
+			} catch (NumberFormatException e) {
+				System.out.println("That's not a decimal, please try again!");
+				dateFromTo = null;
+				continue;
+			}
+
+			int rows = 0;
+			boolean existBooked = false;
+			for (Availability availability : availabilities) {
+				if (!availability.available) {
+					existBooked = true;
+				}
+				rows += sqlMngr.updateAvailability(listing.street, listing.number, listing.postalCode,
+						listing.country, availability.date, price);
+			}
+			System.out.println("Availability rows affected: " + rows);
+
+			rows = 0;
+			if (existBooked) {
+				ArrayList<Booked> booked = sqlMngr.selectBookedByAddressDate(listing.street, listing.number,
+						listing.postalCode, listing.country, dateFromTo[0], dateFromTo[1], false);
+
+				for (Booked booking : booked) {
+					BigDecimal totalPrice = sqlMngr.sumAvailBetweenDate(listing.street, listing.number,
+							listing.postalCode, listing.country, booking.fromDate, booking.toDate);
+					rows += sqlMngr.updateBookedPrice(booking.bid, totalPrice, true);
+				}
+			}
+			System.out.println("Booked rows affected: " + rows);
+		}
+
+		if (hostedListings.isEmpty()) {
+			System.out.println("You host no listings to change the price of!");
+		}
+	}
+
 	private boolean isValidPaymentMethod(String input) {
 		if (paymentMethods.contains(input.toLowerCase())) {
 			return true;
@@ -1183,11 +1282,11 @@ public class CommandLine {
 				printListings.addAll(listings);
 				while (input.equalsIgnoreCase("y")) {
 					if (!bookedListings.isEmpty()) {
-            System.out.println("old size: "+printListings.size());
+						System.out.println("old size: " + printListings.size());
 						printListings.removeAll(printListings);
-            System.out.println("new size: "+printListings.size());
+						System.out.println("new size: " + printListings.size());
 						printListings = getConsecutiveListings(bookedListings, listings);
-            System.out.println("consecutive size: "+printListings.size());
+						System.out.println("consecutive size: " + printListings.size());
 
 						if (printListings.isEmpty()) {
 							System.out.print(
@@ -1243,10 +1342,11 @@ public class CommandLine {
 					continue;
 				}
 
-				rows = sqlMngr.insertBooked(currentUser.sin, bookedListings.get(0).street, bookedListings.get(0).number,
+				rows = sqlMngr.insertBooked(currentUser.sin, bookedListings.get(0).street,
+						bookedListings.get(0).number,
 						bookedListings.get(0).postalCode,
 						bookedListings.get(0).country, bookedListings.get(0).date,
-						bookedListings.get(bookedListings.size() - 1).date, input);
+						bookedListings.get(bookedListings.size() - 1).date, input, totalPrice);
 
 				System.out.println("Booking rows affected: " + rows);
 
@@ -1319,7 +1419,7 @@ public class CommandLine {
 					System.out.println("You have no bookings!");
 					return;
 				}
-				printMethods.printBookedWithCanceled(booked);
+				printMethods.printBookedWithCanceled(booked, false);
 				break;
 		}
 
@@ -1363,11 +1463,11 @@ public class CommandLine {
 			booking = booked.get(choice - 1);
 
 			int rows = sqlMngr.cancelBooked(booking.street, booking.number, booking.postalCode, booking.country,
-					booking.fromDate, booking.toDate);
+					booking.fromDate, booking.toDate, false);
 			System.out.println("Booking rows affected: " + rows);
-      ArrayList<Booked> temp = new ArrayList<>();
-      temp.add(booking);
-      rows = sqlMngr.insertCancellation(currentUser.sin, temp);
+			ArrayList<Booked> temp = new ArrayList<>();
+			temp.add(booking);
+			rows = sqlMngr.insertCancellation(currentUser.sin, temp);
 			System.out.println("Cancellation rows affected: " + rows);
 
 			updateAllAvailabilities(booking.street, booking.number, booking.postalCode, booking.country,
@@ -1413,7 +1513,7 @@ public class CommandLine {
 					System.out.println("You have no bookings for your listings!");
 					return;
 				}
-				printMethods.printBookedWithCanceled(booked);
+				printMethods.printBookedWithCanceled(booked, false);
 				break;
 		}
 
@@ -1446,12 +1546,12 @@ public class CommandLine {
 			booking = booked.get(choice - 1);
 
 			int rows = sqlMngr.cancelBooked(booking.street, booking.number, booking.postalCode, booking.country,
-					booking.fromDate, booking.toDate);
+					booking.fromDate, booking.toDate, true);
 			System.out.println("Booking rows affected: " + rows);
-      ArrayList<Booked> temp = new ArrayList<>();
-      temp.add(booking);
-      rows = sqlMngr.insertCancellation(currentUser.sin, temp);
-      System.out.println("Cancellation rows affected: " + rows);
+			ArrayList<Booked> temp = new ArrayList<>();
+			temp.add(booking);
+			rows = sqlMngr.insertCancellation(currentUser.sin, temp);
+			System.out.println("Cancellation rows affected: " + rows);
 
 			updateAllAvailabilities(booking.street, booking.number, booking.postalCode, booking.country,
 					booking.fromDate, booking.toDate, true);
@@ -1518,14 +1618,14 @@ public class CommandLine {
 			if (input.equalsIgnoreCase("y")) {
 				result = sqlMngr.reportRenterBookingCity(dateFromTo[0], dateFromTo[1]);
 				System.out.println("\nRenters ranked by total number of bookings from "
-            + dateFromTo[0].toString() + " to " + dateFromTo[1].toString() + " by city:");
+						+ dateFromTo[0].toString() + " to " + dateFromTo[1].toString() + " by city:");
 
 				printMethods.printRenterBookingsCity(result);
 				return;
 			} else if (input.equalsIgnoreCase("n")) {
 				result = sqlMngr.reportRenterBooking(dateFromTo[0], dateFromTo[1]);
 				System.out.println("\nRenters ranked by total number of bookings from "
-            + dateFromTo[0].toString() + " to " + dateFromTo[1].toString() + ":");
+						+ dateFromTo[0].toString() + " to " + dateFromTo[1].toString() + ":");
 
 				printMethods.printRenterBookings(result);
 				return;
@@ -1537,32 +1637,32 @@ public class CommandLine {
 		}
 	}
 
-  private void reportNumListings() {
-    String input = null;
+	private void reportNumListings() {
+		String input = null;
 		ArrayList<Object> result = null;
 
 		System.out.println();
 		while (input == null) {
 			System.out.print("Choose the report by country, by country and city, or by country,"
-          + " city, and postal code [c/cc/ccp]: ");
+					+ " city, and postal code [c/cc/ccp]: ");
 			input = sc.nextLine().strip();
 			if (input.equalsIgnoreCase("c")) {
 				result = sqlMngr.reportNumListingsCount();
 				System.out.println("\nTotal number of listings by country:");
 
-		    printMethods.printNumListingsCount(result);
+				printMethods.printNumListingsCount(result);
 				return;
 			} else if (input.equalsIgnoreCase("cc")) {
 				result = sqlMngr.reportNumListingsCountCity();
 				System.out.println("\nTotal number of listings from by country and city:");
 
-        printMethods.printNumListingsCountCity(result);
+				printMethods.printNumListingsCountCity(result);
 				return;
 			} else if (input.equalsIgnoreCase("ccp")) {
 				result = sqlMngr.reportNumListingsCountCityPost();
 				System.out.println("\nTotal number of listings from by country, city, and postal code:");
 
-        printMethods.printNumListingsCountCityPost(result);
+				printMethods.printNumListingsCountCityPost(result);
 				return;
 			} else {
 				System.out.println("That's not a proper input, please try again!");
@@ -1570,10 +1670,10 @@ public class CommandLine {
 				continue;
 			}
 		}
-  }
+	}
 
-  private void reportRankHost() {
-    String input = null;
+	private void reportRankHost() {
+		String input = null;
 		ArrayList<Object> result = null;
 
 		System.out.println();
@@ -1584,13 +1684,13 @@ public class CommandLine {
 				result = sqlMngr.reportRankHostCount();
 				System.out.println("\nHosts ranked by total number of listings per country:");
 
-		    printMethods.printRankHostCount(result);
+				printMethods.printRankHostCount(result);
 				return;
 			} else if (input.equalsIgnoreCase("cc")) {
 				result = sqlMngr.reportRankHostCountCity();
 				System.out.println("\nHosts ranked by total number of listings per country and city:");
 
-        printMethods.printRankHostCountCity(result);
+				printMethods.printRankHostCountCity(result);
 				return;
 			} else {
 				System.out.println("That's not a proper input, please try again!");
@@ -1598,27 +1698,28 @@ public class CommandLine {
 				continue;
 			}
 		}
-  }
+	}
 
-  private void reportNumCancelled() {
-    String input = null;
-    int year;
+	private void reportNumCancelled() {
+		String input = null;
+		int year;
 		ArrayList<Object> result = null;
 
 		System.out.println();
 		while (input == null) {
-      try {
-        System.out.print("Enter a year: ");
-			  input = sc.nextLine().strip();
-        year = Integer.parseInt(input);
-        result = sqlMngr.reportNumCancelled(year);
+			try {
+				System.out.print("Enter a year: ");
+				input = sc.nextLine().strip();
+				year = Integer.parseInt(input);
+				result = sqlMngr.reportNumCancelled(year);
 
-				System.out.println("\nHosts and renters with the largest number of cancellations within the year "+year+":");
-		    printMethods.printNumCancelled(result);
-      } catch (NumberFormatException e) {
-        System.out.println("That's not a number, please try again!");
-        input = null;
-      }
+				System.out.println(
+						"\nHosts and renters with the largest number of cancellations within the year " + year + ":");
+				printMethods.printNumCancelled(result);
+			} catch (NumberFormatException e) {
+				System.out.println("That's not a number, please try again!");
+				input = null;
+			}
 		}
-  }
+	}
 }

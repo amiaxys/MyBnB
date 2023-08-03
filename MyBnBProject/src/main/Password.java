@@ -6,7 +6,7 @@ import java.security.SecureRandom;
 
 // Password helper class
 public class Password {
-    // Code from:
+	// Code from:
 	// https://www.javaguides.net/2020/02/java-sha-256-hash-with-salt-example.html
 	public byte[] getSalt() {
 		SecureRandom random = new SecureRandom();

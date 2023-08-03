@@ -32,34 +32,40 @@ public class SQLController {
 	private PreparedStatement insertAvailability = null;
 	private PreparedStatement insertOrUpdateAvailability = null;
 	private PreparedStatement updateAvailability = null;
-	// private PreparedStatement selectAllAvailBetweenDate = null;
+	private PreparedStatement updateAvailabilityPrice = null;
+	private PreparedStatement selectAllAvailBetweenDate = null;
 	private PreparedStatement selectAvailBetweenDate = null;
+	private PreparedStatement sumAvailBetweenDate = null;
 	private PreparedStatement deleteAvailBetweenDate = null;
 	// Booked statements
 	private PreparedStatement insertBooked = null;
+	private PreparedStatement updateBookedPriceByBIN = null;
+	private PreparedStatement updateBookedUpdatedBySIN = null;
 	private PreparedStatement cancelBooked = null;
 	private PreparedStatement cancelBookedByListing = null;
 	private PreparedStatement selectAllBookedBySIN = null;
 	private PreparedStatement selectBookedBySIN = null;
 	private PreparedStatement selectAllBookedByHostListings = null;
 	private PreparedStatement selectBookedByHostListings = null;
-  private PreparedStatement selectBookedID = null;
-  private PreparedStatement selectBookedByAddress = null;
-  // Cancellation statements
-  private PreparedStatement insertCancellation = null;
+	private PreparedStatement selectBookedID = null;
+	private PreparedStatement selectBookedByAddress = null;
+	private PreparedStatement selectBookedByAddressDate = null;
+	private PreparedStatement selectBookedUpdatedBySIN = null;
+	// Cancellation statements
+	private PreparedStatement insertCancellation = null;
 	// Report statements
 	private PreparedStatement reportNumBookingsCity = null;
 	private PreparedStatement reportNumBookingsPostalCode = null;
 	private PreparedStatement reportRenterBooking = null;
 	private PreparedStatement reportRenterBookingCity = null;
-  private PreparedStatement reportNumListingsCount = null;
-  private PreparedStatement reportNumListingsCountCity = null;
-  private PreparedStatement reportNumListingsCountCityPost = null;
-  private PreparedStatement reportRankHostCount = null;
-  private PreparedStatement reportRankHostCountCity = null;
-  private PreparedStatement reportNumCancelled = null;
-  // View statments
-  PreparedStatement createLargestCancelView = null;
+	private PreparedStatement reportNumListingsCount = null;
+	private PreparedStatement reportNumListingsCountCity = null;
+	private PreparedStatement reportNumListingsCountCityPost = null;
+	private PreparedStatement reportRankHostCount = null;
+	private PreparedStatement reportRankHostCountCity = null;
+	private PreparedStatement reportNumCancelled = null;
+	// View statments
+	PreparedStatement createLargestCancelView = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -222,7 +228,9 @@ public class SQLController {
 					+ " FromDate DATE,"
 					+ " ToDate DATE,"
 					+ " PaymentMethod SET('Credit card', 'Debit card', 'Cash'),"
+					+ " Price DECIMAL(10,2),"
 					+ " Canceled BOOL NOT NULL DEFAULT 0,"
+					+ " Updated BOOL NOT NULL DEFAULT 0,"
 					+ " PRIMARY KEY (BID),"
 					+ " FOREIGN KEY (SIN) REFERENCES User(SIN),"
 					+ " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES"
@@ -237,7 +245,7 @@ public class SQLController {
 			// e.printStackTrace();
 		}
 
-    try {
+		try {
 			// @formatter:off
 			PreparedStatement createCancellationTb = conn.prepareStatement("CREATE TABLE Cancellation ("
 					+ " BID INT NOT NULL,"
@@ -260,100 +268,115 @@ public class SQLController {
 	private boolean prepareStatements() {
 		boolean success = true;
 		try {
-			// @formatter:off
 			// User statements
 			insertUser = conn.prepareStatement("INSERT INTO User"
-					+ " (SIN, Password, Salt, Name, Address, Birthdate, Occupation)" 
+					+ " (SIN, Password, Salt, Name, Address, Birthdate, Occupation)"
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?)");
 			selectUserBySIN = conn.prepareStatement("SELECT * FROM User WHERE SIN=?");
 			// Listing statements
 			insertListing = conn.prepareStatement("INSERT INTO Listing"
-					+ " (Type, Street, Number, PostalCode, Country, City, Latitude, Longitude, Amenities)" 
+					+ " (Type, Street, Number, PostalCode, Country, City, Latitude, Longitude, Amenities)"
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 			selectAllListing = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
-          			+ " WHERE Available=true");
+					+ " WHERE Available=true");
 			selectListingAddr = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
-          			+ " WHERE Street=? AND Number=? AND PostalCode=? AND Country=? AND City=? AND Available=true");
+					+ " WHERE Street=? AND Number=? AND PostalCode=? AND Country=? AND City=? AND Available=true");
 			selectListingPostalCode = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
-          			+ " WHERE PostalCode LIKE ? AND Available=true");
-			deleteListing = conn.prepareStatement("DELETE FROM Listing WHERE Street=? AND Number=? AND PostalCode=? AND Country=?");
+					+ " WHERE PostalCode LIKE ? AND Available=true");
+			deleteListing = conn
+					.prepareStatement("DELETE FROM Listing WHERE Street=? AND Number=? AND PostalCode=? AND Country=?");
 			// Hosts statements
 			insertHosts = conn.prepareStatement("INSERT INTO Hosts"
-					+ " (SIN, Street, Number, PostalCode, Country)" 
+					+ " (SIN, Street, Number, PostalCode, Country)"
 					+ " VALUES (?, ?, ?, ?, ?)");
 			selectHostsBySIN = conn.prepareStatement("SELECT * FROM Hosts WHERE SIN=?");
 			// Availability statements
 			insertAvailability = conn.prepareStatement("INSERT INTO Availability"
-					+ " (Street, Number, PostalCode, Country, Date, Available, Price)" 
+					+ " (Street, Number, PostalCode, Country, Date, Available, Price)"
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?)");
 			insertOrUpdateAvailability = conn.prepareStatement("INSERT INTO Availability"
 					+ " (Street, Number, PostalCode, Country, Date, Available, Price)"
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE Available=?, Price=?");
 			updateAvailability = conn.prepareStatement("UPDATE Availability SET Available=? WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND Date=?");
+			updateAvailabilityPrice = conn.prepareStatement("UPDATE Availability SET Price=? WHERE"
+					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND Date=?");
+			selectAllAvailBetweenDate = conn.prepareStatement("SELECT * FROM Availability WHERE"
+					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND"
+					+ " (Date BETWEEN ? AND ?)");
 			selectAvailBetweenDate = conn.prepareStatement("SELECT * FROM Availability WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND"
 					+ " (Date BETWEEN ? AND ?) AND Available=?");
+			sumAvailBetweenDate = conn.prepareStatement("SELECT SUM(Price) AS TotalPrice FROM Availability WHERE"
+					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND"
+					+ " (Date BETWEEN ? AND ?)");
 			deleteAvailBetweenDate = conn.prepareStatement("DELETE FROM Availability WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND"
 					+ " (Date BETWEEN ? AND ?) AND Available=?");
 			// Booked statements
 			insertBooked = conn.prepareStatement("INSERT INTO Booked"
-					+ " (SIN, Street, Number, PostalCode, Country, FromDate, ToDate, PaymentMethod)" 
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-			cancelBooked = conn.prepareStatement("UPDATE Booked SET Canceled=1 WHERE"
+					+ " (SIN, Street, Number, PostalCode, Country, FromDate, ToDate, PaymentMethod, Price)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+			updateBookedPriceByBIN = conn.prepareStatement("UPDATE Booked SET Price=?, Updated=? WHERE BID=?");
+			updateBookedUpdatedBySIN = conn.prepareStatement("UPDATE Booked SET Updated=0 WHERE SIN=?");
+			cancelBooked = conn.prepareStatement("UPDATE Booked SET Canceled=1, Updated=? WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND"
 					+ " FromDate=? AND ToDate=?");
-			cancelBookedByListing = conn.prepareStatement("UPDATE Booked SET Canceled=1 WHERE"
+			cancelBookedByListing = conn.prepareStatement("UPDATE Booked SET Canceled=1, Updated=? WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=?");
 			selectAllBookedBySIN = conn.prepareStatement("SELECT * FROM Booked WHERE SIN=?");
 			selectBookedBySIN = conn.prepareStatement("SELECT * FROM Booked WHERE SIN=? AND Canceled=?");
-			selectAllBookedByHostListings = conn.prepareStatement("SELECT A.SIN, A.Street, A.Number, A.PostalCode,"
-          + " A.Country, A.FromDate, A.ToDate, A.PaymentMethod, A.Canceled FROM Booked AS A NATURAL JOIN"
+			selectAllBookedByHostListings = conn.prepareStatement("SELECT A.BID, A.SIN, A.Street, A.Number, A.PostalCode,"
+					+ " A.Country, A.FromDate, A.ToDate, A.PaymentMethod, A.Price, A.Canceled FROM Booked AS A NATURAL JOIN"
 					+ " Listing INNER JOIN Hosts AS B ON A.Street=B.Street AND A.Number=B.Number AND"
-          + " A.PostalCode=B.PostalCode AND A.Country=B.Country WHERE B.SIN=?");
-			selectBookedByHostListings = conn.prepareStatement("SELECT A.SIN, A.Street, A.Number, A.PostalCode,"
-          + " A.Country, A.FromDate, A.ToDate, A.PaymentMethod, A.Canceled FROM Booked AS A NATURAL JOIN"
+					+ " A.PostalCode=B.PostalCode AND A.Country=B.Country WHERE B.SIN=?");
+			selectBookedByHostListings = conn.prepareStatement("SELECT A.BID, A.SIN, A.Street, A.Number, A.PostalCode,"
+					+ " A.Country, A.FromDate, A.ToDate, A.PaymentMethod, A.Price, A.Canceled FROM Booked AS A NATURAL JOIN"
 					+ " Listing INNER JOIN Hosts AS B ON A.Street=B.Street AND A.Number=B.Number AND"
-          + " A.PostalCode=B.PostalCode AND A.Country=B.Country WHERE B.SIN=? AND A.Canceled=?");
-      selectBookedID = conn.prepareStatement("SELECT BID FROM BOOKED WHERE SIN=? AND Street=? AND"
-          + " Number=? AND PostalCode=? AND Country=? AND FromDate=? AND ToDate=?");
-      selectBookedByAddress = conn.prepareStatement("SELECT * FROM BOOKED WHERE Street=? AND"
-          + " Number=? AND PostalCode=? AND Country=?");
-      // Cancellation statements
-      insertCancellation = conn.prepareStatement("INSERT INTO Cancellation (BID, SIN) VALUES (?, ?) ON DUPLICATE KEY"
-          + " UPDATE SIN=SIN");
-      // Report statements
-  		reportNumBookingsCity = conn.prepareStatement("SELECT City, COUNT(*) AS TotalBooking"
-        	+ " from Booked NATURAL JOIN Listing where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
-        	+ " AND Canceled=0 GROUP BY CITY");
-    	reportNumBookingsPostalCode = conn.prepareStatement("SELECT PostalCode, COUNT(*) AS TotalBooking"
-      		+ " from Booked where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?) AND Canceled=0 GROUP BY PostalCode");
-      reportRenterBooking = conn.prepareStatement("SELECT Name, COUNT(SIN) AS TotalBooking"
-    			+ " from Booked NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
-      		+ " AND Canceled=0 GROUP BY Name ORDER BY TotalBooking DESC");
-      reportRenterBookingCity = conn.prepareStatement("SELECT Name, City, COUNT(SIN) AS TotalBooking"
-    			+ " from Booked NATURAL JOIN Listing NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND"
-          + " AND Canceled=0 (ToDate BETWEEN ? AND ?) GROUP BY Name, City ORDER BY TotalBooking DESC");
-      reportNumListingsCount = conn.prepareStatement("SELECT Country, COUNT(*) AS TotalListing FROM Listing"
-          + " GROUP BY Country");
-      reportNumListingsCountCity = conn.prepareStatement("SELECT Country, City, COUNT(*) AS TotalListing FROM"
-          + " Listing GROUP BY Country, City");
-      reportNumListingsCountCityPost = conn.prepareStatement("SELECT Country, City, PostalCode, COUNT(*) AS"
-          + " TotalListing FROM Listing GROUP BY Country, City, PostalCode");
-      reportRankHostCount = conn.prepareStatement("SELECT Name, Country, COUNT(*) AS TotalListing FROM Listing"
-          + " NATURAL JOIN Hosts NATURAL JOIN User GROUP BY Country, Name ORDER BY TotalListing DESC");
-      reportRankHostCountCity = conn.prepareStatement("SELECT Name, Country, City, COUNT(*) AS TotalListing"
-          + " FROM Listing NATURAL JOIN Hosts NATURAL JOIN User GROUP BY Country, City, Name ORDER BY"
-          + " TotalListing DESC");
-      reportNumCancelled = conn.prepareStatement("SELECT Name, COUNT(A.BID) AS TotalCancelled FROM User NATURAL"
-          + " JOIN Cancellation as A INNER JOIN Booked as B ON A.BID=B.BID WHERE FromDate LIKE ? OR ToDate LIKE"
-          + " ? GROUP BY Name HAVING TotalCancelled in (SELECT TotalCancelled FROM LargestCancellation)");
-      // View statements
-      createLargestCancelView = conn.prepareStatement("CREATE OR REPLACE VIEW LargestCancellation As SELECT DISTINCT"
-          + " COUNT(A.BID) AS TotalCancelled FROM User NATURAL JOIN Cancellation AS A INNER JOIN Booked AS B ON"
-          + " A.BID=B.BID WHERE FromDate LIKE ? OR ToDate LIKE ? GROUP BY Name ORDER BY TotalCancelled DESC LIMIT 1");
-			// @formatter:on
+					+ " A.PostalCode=B.PostalCode AND A.Country=B.Country WHERE B.SIN=? AND A.Canceled=?");
+			selectBookedID = conn.prepareStatement("SELECT BID FROM BOOKED WHERE SIN=? AND Street=? AND"
+					+ " Number=? AND PostalCode=? AND Country=? AND FromDate=? AND ToDate=?");
+			selectBookedByAddress = conn.prepareStatement("SELECT * FROM BOOKED WHERE Street=? AND"
+					+ " Number=? AND PostalCode=? AND Country=?");
+			selectBookedByAddressDate = conn.prepareStatement("SELECT * FROM BOOKED WHERE Street=? AND"
+					+ " Number=? AND PostalCode=? AND Country=? AND"
+					+ " ((FromDate>=? AND FromDate<=?) OR (ToDate>=? AND ToDate<=?)) AND Canceled=?");
+			selectBookedUpdatedBySIN = conn.prepareStatement("SELECT * FROM BOOKED WHERE SIN=? AND Updated=1");
+			// Cancellation statements
+			insertCancellation = conn
+					.prepareStatement("INSERT INTO Cancellation (BID, SIN) VALUES (?, ?) ON DUPLICATE KEY"
+							+ " UPDATE SIN=SIN");
+			// Report statements
+			reportNumBookingsCity = conn.prepareStatement("SELECT City, COUNT(*) AS TotalBooking"
+					+ " from Booked NATURAL JOIN Listing where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
+					+ " AND Canceled=0 GROUP BY CITY");
+			reportNumBookingsPostalCode = conn.prepareStatement("SELECT PostalCode, COUNT(*) AS TotalBooking"
+					+ " from Booked where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?) AND Canceled=0 GROUP BY PostalCode");
+			reportRenterBooking = conn.prepareStatement("SELECT Name, COUNT(SIN) AS TotalBooking"
+					+ " from Booked NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND (ToDate BETWEEN ? AND ?)"
+					+ " AND Canceled=0 GROUP BY Name ORDER BY TotalBooking DESC");
+			reportRenterBookingCity = conn.prepareStatement("SELECT Name, City, COUNT(SIN) AS TotalBooking"
+					+ " from Booked NATURAL JOIN Listing NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND"
+					+ " AND Canceled=0 (ToDate BETWEEN ? AND ?) GROUP BY Name, City ORDER BY TotalBooking DESC");
+			reportNumListingsCount = conn.prepareStatement("SELECT Country, COUNT(*) AS TotalListing FROM Listing"
+					+ " GROUP BY Country");
+			reportNumListingsCountCity = conn.prepareStatement("SELECT Country, City, COUNT(*) AS TotalListing FROM"
+					+ " Listing GROUP BY Country, City");
+			reportNumListingsCountCityPost = conn.prepareStatement("SELECT Country, City, PostalCode, COUNT(*) AS"
+					+ " TotalListing FROM Listing GROUP BY Country, City, PostalCode");
+			reportRankHostCount = conn.prepareStatement("SELECT Name, Country, COUNT(*) AS TotalListing FROM Listing"
+					+ " NATURAL JOIN Hosts NATURAL JOIN User GROUP BY Country, Name ORDER BY TotalListing DESC");
+			reportRankHostCountCity = conn.prepareStatement("SELECT Name, Country, City, COUNT(*) AS TotalListing"
+					+ " FROM Listing NATURAL JOIN Hosts NATURAL JOIN User GROUP BY Country, City, Name ORDER BY"
+					+ " TotalListing DESC");
+			reportNumCancelled = conn.prepareStatement("SELECT Name, COUNT(A.BID) AS TotalCancelled FROM User NATURAL"
+					+ " JOIN Cancellation as A INNER JOIN Booked as B ON A.BID=B.BID WHERE FromDate LIKE ? OR ToDate LIKE"
+					+ " ? GROUP BY Name HAVING TotalCancelled in (SELECT TotalCancelled FROM LargestCancellation)");
+			// View statements
+			createLargestCancelView = conn
+					.prepareStatement("CREATE OR REPLACE VIEW LargestCancellation As SELECT DISTINCT"
+							+ " COUNT(A.BID) AS TotalCancelled FROM User NATURAL JOIN Cancellation AS A INNER JOIN Booked AS B ON"
+							+ " A.BID=B.BID WHERE FromDate LIKE ? OR ToDate LIKE ? GROUP BY Name ORDER BY TotalCancelled DESC LIMIT 1");
 		} catch (SQLException e) {
 			success = false;
 			System.err.println("Prepared statements could not be created!");
@@ -552,7 +575,7 @@ public class SQLController {
 	}
 
 	// Controls the execution of an update query.
-	// Functionality: Update an availability.
+	// Functionality: Update an availability's availability.
 	public int updateAvailability(String street, int number, String postalCode, String country, LocalDate date,
 			boolean available) {
 		int rows = 0;
@@ -565,6 +588,27 @@ public class SQLController {
 			updateAvailability.setString(++count, country);
 			updateAvailability.setObject(++count, date);
 			rows = updateAvailability.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when updating availability!");
+			e.printStackTrace();
+		}
+		return rows;
+	}
+
+	// Controls the execution of an update query.
+	// Functionality: Update an availability's price.
+	public int updateAvailability(String street, int number, String postalCode, String country, LocalDate date,
+			BigDecimal price) {
+		int rows = 0;
+		try {
+			int count = 0;
+			updateAvailabilityPrice.setBigDecimal(++count, price);
+			updateAvailabilityPrice.setString(++count, street);
+			updateAvailabilityPrice.setInt(++count, number);
+			updateAvailabilityPrice.setString(++count, postalCode);
+			updateAvailabilityPrice.setString(++count, country);
+			updateAvailabilityPrice.setObject(++count, date);
+			rows = updateAvailabilityPrice.executeUpdate();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when updating availability!");
 			e.printStackTrace();
@@ -616,42 +660,41 @@ public class SQLController {
 
 	// Controls the execution of a select query.
 	// Functionality: Select availabilities by date.
-	// public ArrayList<Availability> selectAvailBetweenDate(String street, int
-	// number, String postalCode, String country,
-	// LocalDate to, LocalDate from) {
-	// ArrayList<Availability> availabilities = new ArrayList<>();
-	// try {
-	// int count = 0;
-	// selectAllAvailBetweenDate.setString(++count, street);
-	// selectAllAvailBetweenDate.setInt(++count, number);
-	// selectAllAvailBetweenDate.setString(++count, postalCode);
-	// selectAllAvailBetweenDate.setString(++count, country);
-	// selectAllAvailBetweenDate.setObject(++count, to);
-	// selectAllAvailBetweenDate.setObject(++count, from);
 
-	// ResultSet rs = selectAllAvailBetweenDate.executeQuery();
+	public ArrayList<Availability> selectAvailBetweenDate(String street, int number, String postalCode, String country,
+			LocalDate to, LocalDate from) {
+		ArrayList<Availability> availabilities = new ArrayList<>();
+		try {
+			int count = 0;
+			selectAllAvailBetweenDate.setString(++count, street);
+			selectAllAvailBetweenDate.setInt(++count, number);
+			selectAllAvailBetweenDate.setString(++count, postalCode);
+			selectAllAvailBetweenDate.setString(++count, country);
+			selectAllAvailBetweenDate.setObject(++count, to);
+			selectAllAvailBetweenDate.setObject(++count, from);
 
-	// count = 0;
-	// while (rs.next()) {
-	// Availability temp = new Availability();
-	// temp.street = rs.getString("Street");
-	// temp.number = rs.getInt("Number");
-	// temp.postalCode = rs.getString("PostalCode");
-	// temp.country = rs.getString("Country");
-	// temp.date = rs.getObject("Date", LocalDate.class);
-	// temp.available = rs.getBoolean("Available");
-	// temp.price = rs.getBigDecimal("Price");
-	// availabilities.add(temp);
-	// }
+			ResultSet rs = selectAllAvailBetweenDate.executeQuery();
 
-	// rs.close();
-	// } catch (SQLException e) {
-	// System.err.println("Exception triggered when selecting availabilities by
-	// date!");
-	// e.printStackTrace();
-	// }
-	// return availabilities;
-	// }
+			count = 0;
+			while (rs.next()) {
+				Availability temp = new Availability();
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				temp.date = rs.getObject("Date", LocalDate.class);
+				temp.available = rs.getBoolean("Available");
+				temp.price = rs.getBigDecimal("Price");
+				availabilities.add(temp);
+			}
+
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting availabilities by date!");
+			e.printStackTrace();
+		}
+		return availabilities;
+	}
 
 	// Controls the execution of a select query.
 	// Functionality: Select availabilities by date and available.
@@ -689,6 +732,35 @@ public class SQLController {
 			e.printStackTrace();
 		}
 		return availabilities;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select sum availabilities's price by date.
+	public BigDecimal sumAvailBetweenDate(String street, int number, String postalCode, String country,
+			LocalDate from, LocalDate to) {
+		BigDecimal sum = null;
+		try {
+			int count = 0;
+			sumAvailBetweenDate.setString(++count, street);
+			sumAvailBetweenDate.setInt(++count, number);
+			sumAvailBetweenDate.setString(++count, postalCode);
+			sumAvailBetweenDate.setString(++count, country);
+			sumAvailBetweenDate.setObject(++count, from);
+			sumAvailBetweenDate.setObject(++count, to);
+
+			ResultSet rs = sumAvailBetweenDate.executeQuery();
+
+			count = 0;
+			while (rs.next()) {
+				sum = rs.getBigDecimal("TotalPrice");
+			}
+
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when summing availabilities's price by date!");
+			e.printStackTrace();
+		}
+		return sum;
 	}
 
 	// Controls the execution of a delete query.
@@ -794,7 +866,7 @@ public class SQLController {
 	// Controls the execution of an insert query.
 	// Functionality: Insert a booked record.
 	public int insertBooked(String sin, String street, int number, String postalCode, String country, LocalDate from,
-			LocalDate to, String paymentMethod) {
+			LocalDate to, String paymentMethod, BigDecimal price) {
 		int rows = 0;
 		try {
 			int count = 0;
@@ -806,6 +878,7 @@ public class SQLController {
 			insertBooked.setObject(++count, from);
 			insertBooked.setObject(++count, to);
 			insertBooked.setString(++count, paymentMethod);
+			insertBooked.setBigDecimal(++count, price);
 			rows = insertBooked.executeUpdate();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when inserting booked record!");
@@ -815,12 +888,45 @@ public class SQLController {
 	}
 
 	// Controls the execution of an update query.
-	// Functionality: Cancel a booked record.
-	public int cancelBooked(String street, int number, String postalCode, String country, LocalDate from,
-			LocalDate to) {
+	// Functionality: Update a booked record's price.
+	public int updateBookedPrice(int bid, BigDecimal price, boolean update) {
 		int rows = 0;
 		try {
 			int count = 0;
+			updateBookedPriceByBIN.setBigDecimal(++count, price);
+			updateBookedPriceByBIN.setBoolean(++count, update);
+			updateBookedPriceByBIN.setInt(++count, bid);
+			rows = updateBookedPriceByBIN.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when updating booked record!");
+			e.printStackTrace();
+		}
+		return rows;
+	}
+
+	// Controls the execution of an update query.
+	// Functionality: Update a booked record's status (updated) by SIN.
+	public int updateBookedStatusBySIN(String sin) {
+		int rows = 0;
+		try {
+			int count = 0;
+			updateBookedUpdatedBySIN.setString(++count, sin);
+			rows = updateBookedUpdatedBySIN.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when updating booked record!");
+			e.printStackTrace();
+		}
+		return rows;
+	}
+
+	// Controls the execution of an update query.
+	// Functionality: Cancel a booked record.
+	public int cancelBooked(String street, int number, String postalCode, String country, LocalDate from,
+			LocalDate to, boolean update) {
+		int rows = 0;
+		try {
+			int count = 0;
+			cancelBooked.setBoolean(++count, update);
 			cancelBooked.setString(++count, street);
 			cancelBooked.setInt(++count, number);
 			cancelBooked.setString(++count, postalCode);
@@ -837,10 +943,11 @@ public class SQLController {
 
 	// Controls the execution of an update query.
 	// Functionality: Cancel a booked record by listing.
-	public int cancelBookedByListing(String street, int number, String postalCode, String country) {
+	public int cancelBookedByListing(String street, int number, String postalCode, String country, boolean update) {
 		int rows = 0;
 		try {
 			int count = 0;
+			cancelBookedByListing.setBoolean(++count, update);
 			cancelBookedByListing.setString(++count, street);
 			cancelBookedByListing.setInt(++count, number);
 			cancelBookedByListing.setString(++count, postalCode);
@@ -863,6 +970,7 @@ public class SQLController {
 
 			while (rs.next()) {
 				Booked temp = new Booked();
+				temp.bid = rs.getInt("BID");
 				temp.sin = rs.getString("SIN");
 				temp.street = rs.getString("Street");
 				temp.number = rs.getInt("Number");
@@ -871,6 +979,7 @@ public class SQLController {
 				temp.fromDate = rs.getObject("FromDate", LocalDate.class);
 				temp.toDate = rs.getObject("ToDate", LocalDate.class);
 				temp.paymentMethod = rs.getString("PaymentMethod");
+				temp.price = rs.getBigDecimal("Price");
 				temp.canceled = rs.getBoolean("Canceled");
 				booked.add(temp);
 			}
@@ -893,6 +1002,7 @@ public class SQLController {
 
 			while (rs.next()) {
 				Booked temp = new Booked();
+				temp.bid = rs.getInt("BID");
 				temp.sin = rs.getString("SIN");
 				temp.street = rs.getString("Street");
 				temp.number = rs.getInt("Number");
@@ -901,6 +1011,7 @@ public class SQLController {
 				temp.fromDate = rs.getObject("FromDate", LocalDate.class);
 				temp.toDate = rs.getObject("ToDate", LocalDate.class);
 				temp.paymentMethod = rs.getString("PaymentMethod");
+				temp.price = rs.getBigDecimal("Price");
 				temp.canceled = rs.getBoolean("Canceled");
 				booked.add(temp);
 			}
@@ -922,6 +1033,7 @@ public class SQLController {
 
 			while (rs.next()) {
 				Booked temp = new Booked();
+				temp.bid = rs.getInt("BID");
 				temp.sin = rs.getString("SIN");
 				temp.street = rs.getString("Street");
 				temp.number = rs.getInt("Number");
@@ -930,6 +1042,7 @@ public class SQLController {
 				temp.fromDate = rs.getObject("FromDate", LocalDate.class);
 				temp.toDate = rs.getObject("ToDate", LocalDate.class);
 				temp.paymentMethod = rs.getString("PaymentMethod");
+				temp.price = rs.getBigDecimal("Price");
 				temp.canceled = rs.getBoolean("Canceled");
 				booked.add(temp);
 			}
@@ -952,6 +1065,7 @@ public class SQLController {
 
 			while (rs.next()) {
 				Booked temp = new Booked();
+				temp.bid = rs.getInt("BID");
 				temp.sin = rs.getString("SIN");
 				temp.street = rs.getString("Street");
 				temp.number = rs.getInt("Number");
@@ -960,6 +1074,7 @@ public class SQLController {
 				temp.fromDate = rs.getObject("FromDate", LocalDate.class);
 				temp.toDate = rs.getObject("ToDate", LocalDate.class);
 				temp.paymentMethod = rs.getString("PaymentMethod");
+				temp.price = rs.getBigDecimal("Price");
 				temp.canceled = rs.getBoolean("Canceled");
 				booked.add(temp);
 			}
@@ -971,20 +1086,21 @@ public class SQLController {
 		return booked;
 	}
 
-  // Controls the execution of a select query.
+	// Controls the execution of a select query.
 	// Functionality: Select booked records by address.
 	public ArrayList<Booked> selectBookedByAddress(String street, int number, String postalCode, String country) {
 		ArrayList<Booked> booked = new ArrayList<>();
 		try {
-      int count = 0;
+			int count = 0;
 			selectBookedByAddress.setString(++count, street);
 			selectBookedByAddress.setInt(++count, number);
-      selectBookedByAddress.setString(++count, postalCode);
-      selectBookedByAddress.setString(++count, country);
+			selectBookedByAddress.setString(++count, postalCode);
+			selectBookedByAddress.setString(++count, country);
 			ResultSet rs = selectBookedByAddress.executeQuery();
 
 			while (rs.next()) {
 				Booked temp = new Booked();
+				temp.bid = rs.getInt("BID");
 				temp.sin = rs.getString("SIN");
 				temp.street = rs.getString("Street");
 				temp.number = rs.getInt("Number");
@@ -999,6 +1115,78 @@ public class SQLController {
 			rs.close();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when selecting canceled booked records by address!");
+			e.printStackTrace();
+		}
+		return booked;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select booked records by address and date.
+	public ArrayList<Booked> selectBookedByAddressDate(String street, int number, String postalCode, String country,
+			LocalDate from, LocalDate to, boolean canceled) {
+		ArrayList<Booked> booked = new ArrayList<>();
+		try {
+			int count = 0;
+			selectBookedByAddressDate.setString(++count, street);
+			selectBookedByAddressDate.setInt(++count, number);
+			selectBookedByAddressDate.setString(++count, postalCode);
+			selectBookedByAddressDate.setString(++count, country);
+			selectBookedByAddressDate.setObject(++count, from);
+			selectBookedByAddressDate.setObject(++count, to);
+			selectBookedByAddressDate.setObject(++count, from);
+			selectBookedByAddressDate.setObject(++count, to);
+			selectBookedByAddressDate.setBoolean(++count, canceled);
+			ResultSet rs = selectBookedByAddressDate.executeQuery();
+
+			while (rs.next()) {
+				Booked temp = new Booked();
+				temp.bid = rs.getInt("BID");
+				temp.sin = rs.getString("SIN");
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				temp.fromDate = rs.getObject("FromDate", LocalDate.class);
+				temp.toDate = rs.getObject("ToDate", LocalDate.class);
+				temp.paymentMethod = rs.getString("PaymentMethod");
+				temp.price = rs.getBigDecimal("Price");
+				temp.canceled = rs.getBoolean("Canceled");
+				booked.add(temp);
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting canceled booked records by address and date!");
+			e.printStackTrace();
+		}
+		return booked;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select updated booked records by SIN.
+	public ArrayList<Booked> selectUpdatedBookedBySIN(String sin) {
+		ArrayList<Booked> booked = new ArrayList<>();
+		try {
+			selectBookedUpdatedBySIN.setString(1, sin);
+			ResultSet rs = selectBookedUpdatedBySIN.executeQuery();
+
+			while (rs.next()) {
+				Booked temp = new Booked();
+				temp.bid = rs.getInt("BID");
+				temp.sin = rs.getString("SIN");
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				temp.fromDate = rs.getObject("FromDate", LocalDate.class);
+				temp.toDate = rs.getObject("ToDate", LocalDate.class);
+				temp.paymentMethod = rs.getString("PaymentMethod");
+				temp.price = rs.getBigDecimal("Price");
+				temp.canceled = rs.getBoolean("Canceled");
+				booked.add(temp);
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting updated booked records by SIN!");
 			e.printStackTrace();
 		}
 		return booked;
@@ -1103,7 +1291,7 @@ public class SQLController {
 		return result;
 	}
 
-  // Controls the execution of a report query.
+	// Controls the execution of a report query.
 	// Functionality: Get the total number of listings by country.
 	public ArrayList<Object> reportNumListingsCount() {
 		ArrayList<Object> result = new ArrayList<>();
@@ -1122,7 +1310,7 @@ public class SQLController {
 		return result;
 	}
 
-  // Controls the execution of a report query.
+	// Controls the execution of a report query.
 	// Functionality: Get the total number of listings by country and city.
 	public ArrayList<Object> reportNumListingsCountCity() {
 		ArrayList<Object> result = new ArrayList<>();
@@ -1131,7 +1319,7 @@ public class SQLController {
 
 			while (rs.next()) {
 				result.add(rs.getString("Country"));
-        result.add(rs.getString("City"));
+				result.add(rs.getString("City"));
 				result.add(rs.getString("TotalListing"));
 			}
 			rs.close();
@@ -1142,8 +1330,9 @@ public class SQLController {
 		return result;
 	}
 
-  // Controls the execution of a report query.
-	// Functionality: Get the total number of listings by country, city and postal code.
+	// Controls the execution of a report query.
+	// Functionality: Get the total number of listings by country, city and postal
+	// code.
 	public ArrayList<Object> reportNumListingsCountCityPost() {
 		ArrayList<Object> result = new ArrayList<>();
 		try {
@@ -1151,19 +1340,20 @@ public class SQLController {
 
 			while (rs.next()) {
 				result.add(rs.getString("Country"));
-        result.add(rs.getString("City"));
-        result.add(rs.getString("PostalCode"));
+				result.add(rs.getString("City"));
+				result.add(rs.getString("PostalCode"));
 				result.add(rs.getString("TotalListing"));
 			}
 			rs.close();
 		} catch (SQLException e) {
-			System.err.println("Exception triggered when getting total number of listings by country, city and postal code!");
+			System.err.println(
+					"Exception triggered when getting total number of listings by country, city and postal code!");
 			e.printStackTrace();
 		}
 		return result;
 	}
 
-  // Controls the execution of a report query.
+	// Controls the execution of a report query.
 	// Functionality: Get the hosts ranked by total number of listing per country.
 	public ArrayList<Object> reportRankHostCount() {
 		ArrayList<Object> result = new ArrayList<>();
@@ -1172,7 +1362,7 @@ public class SQLController {
 
 			while (rs.next()) {
 				result.add(rs.getString("Name"));
-        result.add(rs.getString("Country"));
+				result.add(rs.getString("Country"));
 				result.add(rs.getString("TotalListing"));
 			}
 			rs.close();
@@ -1183,51 +1373,53 @@ public class SQLController {
 		return result;
 	}
 
-  // Controls the execution of a report query.
-	// Functionality: Get the hosts ranked by total number of listing per country and city.
-  public ArrayList<Object> reportRankHostCountCity() {
+	// Controls the execution of a report query.
+	// Functionality: Get the hosts ranked by total number of listing per country
+	// and city.
+	public ArrayList<Object> reportRankHostCountCity() {
 		ArrayList<Object> result = new ArrayList<>();
 		try {
 			ResultSet rs = reportRankHostCountCity.executeQuery();
 
 			while (rs.next()) {
 				result.add(rs.getString("Name"));
-        result.add(rs.getString("Country"));
-        result.add(rs.getString("City"));
+				result.add(rs.getString("Country"));
+				result.add(rs.getString("City"));
 				result.add(rs.getString("TotalListing"));
 			}
 			rs.close();
 		} catch (SQLException e) {
-			System.err.println("Exception triggered when getting hosts by total number of listing per country and city!");
+			System.err
+					.println("Exception triggered when getting hosts by total number of listing per country and city!");
 			e.printStackTrace();
 		}
 		return result;
 	}
 
-  // Controls the execution of an insert query.
+	// Controls the execution of an insert query.
 	// Functionality: Insert a cancellation.
 	public int insertCancellation(String sinCancel, ArrayList<Booked> bookings) {
 		int rows = 0;
 		try {
-      for (Booked booking: bookings) {
-        int count = 0;
-        selectBookedID.setString(++count, booking.sin);
-        selectBookedID.setString(++count, booking.street);
-        selectBookedID.setInt(++count, booking.number);
-        selectBookedID.setString(++count, booking.postalCode);
-        selectBookedID.setString(++count, booking.country);
-        selectBookedID.setObject(++count, booking.fromDate);
-        selectBookedID.setObject(++count, booking.toDate);
-        ResultSet rs = selectBookedID.executeQuery();
-        rs.next();
-        int bid = rs.getInt("BID");
-        rs.close();
+			for (Booked booking : bookings) {
+				int count = 0;
+				selectBookedID.setString(++count, booking.sin);
+				selectBookedID.setString(++count, booking.street);
+				selectBookedID.setInt(++count, booking.number);
+				selectBookedID.setString(++count, booking.postalCode);
+				selectBookedID.setString(++count, booking.country);
+				selectBookedID.setObject(++count, booking.fromDate);
+				selectBookedID.setObject(++count, booking.toDate);
+				ResultSet rs = selectBookedID.executeQuery();
+				rs.next();
+				int bid = rs.getInt("BID");
+				rs.close();
 
-        count = 0;
-		  	insertCancellation.setInt(++count, bid);
-			  insertCancellation.setString(++count, sinCancel);
-			  rows += insertCancellation.executeUpdate();
-      }
+				count = 0;
+				insertCancellation.setInt(++count, bid);
+				insertCancellation.setString(++count, sinCancel);
+				rows += insertCancellation.executeUpdate();
+			}
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when inserting cancellation record.");
 			e.printStackTrace();
@@ -1235,54 +1427,60 @@ public class SQLController {
 		return rows;
 	}
 
-  // Controls the execution of a report query.
-	// Functionality: Get the users with the largest total number of cancellations within a year.
-  public ArrayList<Object> reportNumCancelled(int year) {
+	// Controls the execution of a report query.
+	// Functionality: Get the users with the largest total number of cancellations
+	// within a year.
+	public ArrayList<Object> reportNumCancelled(int year) {
 		ArrayList<Object> result = new ArrayList<>();
 		try {
-      String date = year+"-__-__";
-      int count = 0;
-      try {
-        // create LargestCancellation view
-			  createLargestCancelView.setString(++count, date);
-			  createLargestCancelView.setString(++count, date);
-        createLargestCancelView.executeUpdate();
-      } catch (SQLException e) {
-        System.err.println("Exception triggered when creating or updating LargestCancellation view!");
-			  e.printStackTrace();
-        return null;
-      }
-      count = 0;
+			String date = year + "-__-__";
+			int count = 0;
+			try {
+				// create LargestCancellation view
+				createLargestCancelView.setString(++count, date);
+				createLargestCancelView.setString(++count, date);
+				createLargestCancelView.executeUpdate();
+			} catch (SQLException e) {
+				System.err.println("Exception triggered when creating or updating LargestCancellation view!");
+				e.printStackTrace();
+				return null;
+			}
+			count = 0;
 			reportNumCancelled.setString(++count, date);
 			reportNumCancelled.setString(++count, date);
 			ResultSet rs = reportNumCancelled.executeQuery();
 
 			while (rs.next()) {
 				result.add(rs.getString("Name"));
-        result.add(rs.getString("TotalCancelled"));
+				result.add(rs.getString("TotalCancelled"));
 			}
 			rs.close();
 		} catch (SQLException e) {
-			System.err.println("Exception triggered when getting users with the largest total number of cancellations within a year!");
+			System.err.println(
+					"Exception triggered when getting users with the largest total number of cancellations within a year!");
 			e.printStackTrace();
 		}
 		return result;
-    /* ArrayList<Object> result = new ArrayList<>();
-		try {
-      int count = 0;
-			reportNumCancelled.setString(++count, year+"-__-__");
-			reportNumCancelled.setString(++count, year+"-__-__");
-			ResultSet rs = reportNumCancelled.executeQuery();
-
-			while (rs.next()) {
-				result.add(rs.getString("Name"));
-        result.add(rs.getString("TotalCancelled"));
-			}
-			rs.close();
-		} catch (SQLException e) {
-			System.err.println("Exception triggered when getting users with the largest total number of cancellations within a year!");
-			e.printStackTrace();
-		}
-		return result; */
+		/*
+		 * ArrayList<Object> result = new ArrayList<>();
+		 * try {
+		 * int count = 0;
+		 * reportNumCancelled.setString(++count, year+"-__-__");
+		 * reportNumCancelled.setString(++count, year+"-__-__");
+		 * ResultSet rs = reportNumCancelled.executeQuery();
+		 * 
+		 * while (rs.next()) {
+		 * result.add(rs.getString("Name"));
+		 * result.add(rs.getString("TotalCancelled"));
+		 * }
+		 * rs.close();
+		 * } catch (SQLException e) {
+		 * System.err.
+		 * println("Exception triggered when getting users with the largest total number of cancellations within a year!"
+		 * );
+		 * e.printStackTrace();
+		 * }
+		 * return result;
+		 */
 	}
 }
