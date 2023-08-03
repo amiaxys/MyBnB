@@ -47,7 +47,6 @@ public class SQLController {
 	private PreparedStatement selectBookedBySIN = null;
 	private PreparedStatement selectAllBookedByHostListings = null;
 	private PreparedStatement selectBookedByHostListings = null;
-	private PreparedStatement selectBookedID = null;
 	private PreparedStatement selectBookedByAddress = null;
 	private PreparedStatement selectBookedByAddressDate = null;
 	private PreparedStatement selectBookedUpdatedBySIN = null;
@@ -64,6 +63,7 @@ public class SQLController {
 	private PreparedStatement reportRankHostCount = null;
 	private PreparedStatement reportRankHostCountCity = null;
 	private PreparedStatement reportNumCancelled = null;
+  private PreparedStatement reportHost10Percent = null;
 	// View statments
 	PreparedStatement createLargestCancelView = null;
 
@@ -334,8 +334,6 @@ public class SQLController {
 					+ " A.Country, A.FromDate, A.ToDate, A.PaymentMethod, A.Price, A.Canceled FROM Booked AS A NATURAL JOIN"
 					+ " Listing INNER JOIN Hosts AS B ON A.Street=B.Street AND A.Number=B.Number AND"
 					+ " A.PostalCode=B.PostalCode AND A.Country=B.Country WHERE B.SIN=? AND A.Canceled=?");
-			selectBookedID = conn.prepareStatement("SELECT BID FROM BOOKED WHERE SIN=? AND Street=? AND"
-					+ " Number=? AND PostalCode=? AND Country=? AND FromDate=? AND ToDate=?");
 			selectBookedByAddress = conn.prepareStatement("SELECT * FROM BOOKED WHERE Street=? AND"
 					+ " Number=? AND PostalCode=? AND Country=?");
 			selectBookedByAddressDate = conn.prepareStatement("SELECT * FROM BOOKED WHERE Street=? AND"
@@ -372,6 +370,10 @@ public class SQLController {
 			reportNumCancelled = conn.prepareStatement("SELECT Name, COUNT(A.BID) AS TotalCancelled FROM User NATURAL"
 					+ " JOIN Cancellation as A INNER JOIN Booked as B ON A.BID=B.BID WHERE FromDate LIKE ? OR ToDate LIKE"
 					+ " ? GROUP BY Name HAVING TotalCancelled in (SELECT TotalCancelled FROM LargestCancellation)");
+      reportHost10Percent = conn.prepareStatement("SELECT B.Name, A.City, A.Country, COUNT(*) AS NumberListing, Total AS"
+          + " TotalListing FROM Listing AS A NATURAL JOIN Hosts NATURAL JOIN User AS B NATURAL JOIN (SELECT L.City,"
+          + " L.Country, COUNT(*) AS Total FROM Listing AS L NATURAL JOIN Hosts GROUP BY L.Country, L.City ORDER BY"
+          + " Total) AS T GROUP BY A.Country, A.City, B.Name HAVING NumberListing > (TotalListing * 0.1) ORDER BY TotalListing");
 			// View statements
 			createLargestCancelView = conn
 					.prepareStatement("CREATE OR REPLACE VIEW LargestCancellation As SELECT DISTINCT"
@@ -1194,8 +1196,8 @@ public class SQLController {
 
 	// Controls the execution of a report query.
 	// Functionality: Get the total number of bookings in a date range by city.
-	public ArrayList<Object> reportNumBookingsCity(LocalDate from, LocalDate to) {
-		ArrayList<Object> result = new ArrayList<>();
+	public ArrayList<String> reportNumBookingsCity(LocalDate from, LocalDate to) {
+		ArrayList<String> result = new ArrayList<>();
 		try {
 			int count = 0;
 			reportNumBookingsCity.setObject(++count, from);
@@ -1219,8 +1221,8 @@ public class SQLController {
 	// Controls the execution of a report query.
 	// Functionality: Get the total number of bookings in a date range by postal
 	// code.
-	public ArrayList<Object> reportNumBookingsPostalCode(LocalDate from, LocalDate to) {
-		ArrayList<Object> result = new ArrayList<>();
+	public ArrayList<String> reportNumBookingsPostalCode(LocalDate from, LocalDate to) {
+		ArrayList<String> result = new ArrayList<>();
 		try {
 			int count = 0;
 			reportNumBookingsPostalCode.setObject(++count, from);
@@ -1243,8 +1245,8 @@ public class SQLController {
 
 	// Controls the execution of a report query.
 	// Functionality: Get the total number of bookings in a date range by renter.
-	public ArrayList<Object> reportRenterBooking(LocalDate from, LocalDate to) {
-		ArrayList<Object> result = new ArrayList<>();
+	public ArrayList<String> reportRenterBooking(LocalDate from, LocalDate to) {
+		ArrayList<String> result = new ArrayList<>();
 		try {
 			int count = 0;
 			reportRenterBooking.setObject(++count, from);
@@ -1268,8 +1270,8 @@ public class SQLController {
 	// Controls the execution of a report query.
 	// Functionality: Get the total number of bookings in a date range by renter and
 	// city.
-	public ArrayList<Object> reportRenterBookingCity(LocalDate from, LocalDate to) {
-		ArrayList<Object> result = new ArrayList<>();
+	public ArrayList<String> reportRenterBookingCity(LocalDate from, LocalDate to) {
+		ArrayList<String> result = new ArrayList<>();
 		try {
 			int count = 0;
 			reportRenterBookingCity.setObject(++count, from);
@@ -1293,8 +1295,8 @@ public class SQLController {
 
 	// Controls the execution of a report query.
 	// Functionality: Get the total number of listings by country.
-	public ArrayList<Object> reportNumListingsCount() {
-		ArrayList<Object> result = new ArrayList<>();
+	public ArrayList<String> reportNumListingsCount() {
+		ArrayList<String> result = new ArrayList<>();
 		try {
 			ResultSet rs = reportNumListingsCount.executeQuery();
 
@@ -1312,8 +1314,8 @@ public class SQLController {
 
 	// Controls the execution of a report query.
 	// Functionality: Get the total number of listings by country and city.
-	public ArrayList<Object> reportNumListingsCountCity() {
-		ArrayList<Object> result = new ArrayList<>();
+	public ArrayList<String> reportNumListingsCountCity() {
+		ArrayList<String> result = new ArrayList<>();
 		try {
 			ResultSet rs = reportNumListingsCountCity.executeQuery();
 
@@ -1333,8 +1335,8 @@ public class SQLController {
 	// Controls the execution of a report query.
 	// Functionality: Get the total number of listings by country, city and postal
 	// code.
-	public ArrayList<Object> reportNumListingsCountCityPost() {
-		ArrayList<Object> result = new ArrayList<>();
+	public ArrayList<String> reportNumListingsCountCityPost() {
+		ArrayList<String> result = new ArrayList<>();
 		try {
 			ResultSet rs = reportNumListingsCountCityPost.executeQuery();
 
@@ -1355,8 +1357,8 @@ public class SQLController {
 
 	// Controls the execution of a report query.
 	// Functionality: Get the hosts ranked by total number of listing per country.
-	public ArrayList<Object> reportRankHostCount() {
-		ArrayList<Object> result = new ArrayList<>();
+	public ArrayList<String> reportRankHostCount() {
+		ArrayList<String> result = new ArrayList<>();
 		try {
 			ResultSet rs = reportRankHostCount.executeQuery();
 
@@ -1376,8 +1378,8 @@ public class SQLController {
 	// Controls the execution of a report query.
 	// Functionality: Get the hosts ranked by total number of listing per country
 	// and city.
-	public ArrayList<Object> reportRankHostCountCity() {
-		ArrayList<Object> result = new ArrayList<>();
+	public ArrayList<String> reportRankHostCountCity() {
+		ArrayList<String> result = new ArrayList<>();
 		try {
 			ResultSet rs = reportRankHostCountCity.executeQuery();
 
@@ -1403,20 +1405,7 @@ public class SQLController {
 		try {
 			for (Booked booking : bookings) {
 				int count = 0;
-				selectBookedID.setString(++count, booking.sin);
-				selectBookedID.setString(++count, booking.street);
-				selectBookedID.setInt(++count, booking.number);
-				selectBookedID.setString(++count, booking.postalCode);
-				selectBookedID.setString(++count, booking.country);
-				selectBookedID.setObject(++count, booking.fromDate);
-				selectBookedID.setObject(++count, booking.toDate);
-				ResultSet rs = selectBookedID.executeQuery();
-				rs.next();
-				int bid = rs.getInt("BID");
-				rs.close();
-
-				count = 0;
-				insertCancellation.setInt(++count, bid);
+				insertCancellation.setInt(++count, booking.bid);
 				insertCancellation.setString(++count, sinCancel);
 				rows += insertCancellation.executeUpdate();
 			}
@@ -1430,8 +1419,8 @@ public class SQLController {
 	// Controls the execution of a report query.
 	// Functionality: Get the users with the largest total number of cancellations
 	// within a year.
-	public ArrayList<Object> reportNumCancelled(int year) {
-		ArrayList<Object> result = new ArrayList<>();
+	public ArrayList<String> reportNumCancelled(int year) {
+		ArrayList<String> result = new ArrayList<>();
 		try {
 			String date = year + "-__-__";
 			int count = 0;
@@ -1461,26 +1450,29 @@ public class SQLController {
 			e.printStackTrace();
 		}
 		return result;
-		/*
-		 * ArrayList<Object> result = new ArrayList<>();
-		 * try {
-		 * int count = 0;
-		 * reportNumCancelled.setString(++count, year+"-__-__");
-		 * reportNumCancelled.setString(++count, year+"-__-__");
-		 * ResultSet rs = reportNumCancelled.executeQuery();
-		 * 
-		 * while (rs.next()) {
-		 * result.add(rs.getString("Name"));
-		 * result.add(rs.getString("TotalCancelled"));
-		 * }
-		 * rs.close();
-		 * } catch (SQLException e) {
-		 * System.err.
-		 * println("Exception triggered when getting users with the largest total number of cancellations within a year!"
-		 * );
-		 * e.printStackTrace();
-		 * }
-		 * return result;
-		 */
+	}
+
+  // Controls the execution of a report query.
+	// Functionality: Get the hosts that have number of listings that is more than
+  //      10% of the total number of listings in each city and country
+	public ArrayList<String> reportHost10Percent() {
+		ArrayList<String> result = new ArrayList<>();
+		try {
+			ResultSet rs = reportHost10Percent.executeQuery();
+
+			while (rs.next()) {
+				result.add(rs.getString("Name"));
+				result.add(rs.getString("City"));
+				result.add(rs.getString("Country"));
+        result.add(rs.getString("NumberListing"));
+				result.add(rs.getString("TotalListing"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err
+					.println("Exception triggered when getting hosts with more than 10% of total listings in each country and city!");
+			e.printStackTrace();
+		}
+		return result;
 	}
 }

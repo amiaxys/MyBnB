@@ -170,6 +170,7 @@ public class CommandLine {
 					reportRankHost();
 					break;
 				case 5:
+          reportHost10Percent();
 					break;
 				case 6:
 					reportNumCancelled();
@@ -1561,7 +1562,7 @@ public class CommandLine {
 	private void reportNumBookings() {
 		String input = null;
 		LocalDate[] dateFromTo = null;
-		ArrayList<Object> result = null;
+		ArrayList<String> result = null;
 
 		System.out.println();
 		while (dateFromTo == null) {
@@ -1600,7 +1601,7 @@ public class CommandLine {
 	private void reportRenterBookings() {
 		String input = null;
 		LocalDate[] dateFromTo = null;
-		ArrayList<Object> result = null;
+		ArrayList<String> result = null;
 
 		System.out.println();
 		while (dateFromTo == null) {
@@ -1639,7 +1640,7 @@ public class CommandLine {
 
 	private void reportNumListings() {
 		String input = null;
-		ArrayList<Object> result = null;
+		ArrayList<String> result = null;
 
 		System.out.println();
 		while (input == null) {
@@ -1674,7 +1675,7 @@ public class CommandLine {
 
 	private void reportRankHost() {
 		String input = null;
-		ArrayList<Object> result = null;
+		ArrayList<String> result = null;
 
 		System.out.println();
 		while (input == null) {
@@ -1703,7 +1704,7 @@ public class CommandLine {
 	private void reportNumCancelled() {
 		String input = null;
 		int year;
-		ArrayList<Object> result = null;
+		ArrayList<String> result = null;
 
 		System.out.println();
 		while (input == null) {
@@ -1722,4 +1723,11 @@ public class CommandLine {
 			}
 		}
 	}
+
+  private void reportHost10Percent() {
+    ArrayList<String> result = sqlMngr.reportHost10Percent();
+    System.out.println(
+				"\nHosts with more than 10% of the total number of listings in each city and country:");
+		printMethods.printHost10Percent(result);
+  }
 }

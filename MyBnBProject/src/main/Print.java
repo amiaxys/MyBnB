@@ -24,8 +24,8 @@ public class Print {
 		System.out.println(" 2. Report renters ranked by the number of bookings in a specific date range.");
 		System.out.println(" 3. Report total number of listings.");
 		System.out.println(" 4. Report hosts ranked by total number of listings.");
-		System.out.println(" 5. Report hosts that have a number of listings that is more than 10% of the number of"
-				+ "\n\tlistings for every country and city. [not implemented]");
+		System.out.println(" 5. Report hosts that have a number of listings that is more than 10% of the total number of"
+				+ "\n\tlistings for every country and city.");
 		System.out.println(
 				" 6. Report hosts and renters with the largest number of cancellations within a year.");
 		System.out.println(
@@ -165,7 +165,7 @@ public class Print {
 				"+-----+--------------------------------+------------+-------------+--------------------------+------------+------------+-------------+------------+------------+\n");
 	}
 
-	public void printNumBookings(String attr, ArrayList<Object> result) {
+	public void printNumBookings(String attr, ArrayList<String> result) {
 		System.out.println("+---------------------------+---------------+");
 		System.out.printf("| %-25s | %-13s |%n", attr, "Total booking");
 		System.out.println("+===========================+===============+");
@@ -175,7 +175,7 @@ public class Print {
 		System.out.println("+---------------------------+---------------+\n");
 	}
 
-	public void printRenterBookingsCity(ArrayList<Object> result) {
+	public void printRenterBookingsCity(ArrayList<String> result) {
 		System.out.println("+----------------------+---------------------------+---------------+");
 		System.out.printf("| %-20s | %-25s | %-13s |%n", "Name", "City", "Total booking");
 		System.out.println("+======================+===========================+===============+");
@@ -185,7 +185,7 @@ public class Print {
 		System.out.println("+----------------------+---------------------------+---------------+\n");
 	}
 
-	public void printRenterBookings(ArrayList<Object> result) {
+	public void printRenterBookings(ArrayList<String> result) {
 		System.out.println("+----------------------+---------------+");
 		System.out.printf("| %-20s | %-13s |%n", "Name", "Total booking");
 		System.out.println("+======================+===============+");
@@ -195,7 +195,7 @@ public class Print {
 		System.out.println("+----------------------+---------------+\n");
 	}
 
-	public void printNumListingsCount(ArrayList<Object> result) {
+	public void printNumListingsCount(ArrayList<String> result) {
 		System.out.println("+---------------------------+---------------+");
 		System.out.printf("| %-25s | %-13s |%n", "Country", "Total listing");
 		System.out.println("+===========================+===============+");
@@ -205,7 +205,7 @@ public class Print {
 		System.out.println("+---------------------------+---------------+\n");
 	}
 
-	public void printNumListingsCountCity(ArrayList<Object> result) {
+	public void printNumListingsCountCity(ArrayList<String> result) {
 		System.out.println("+---------------------------+---------------------------+---------------+");
 		System.out.printf("| %-25s | %-25s | %-13s |%n", "Country", "City", "Total listing");
 		System.out.println("+===========================+===========================+===============+");
@@ -215,7 +215,7 @@ public class Print {
 		System.out.println("+---------------------------+---------------------------+---------------+\n");
 	}
 
-	public void printNumListingsCountCityPost(ArrayList<Object> result) {
+	public void printNumListingsCountCityPost(ArrayList<String> result) {
 		System.out.println("+---------------------------+---------------------------+-------------+---------------+");
 		System.out.printf("| %-25s | %-25s | %-11s | %-13s |%n", "Country", "City", "Postal code", "Total listing");
 		System.out.println("+===========================+===========================+=============+===============+");
@@ -226,7 +226,7 @@ public class Print {
 		System.out.println("+---------------------------+---------------------------+-------------+---------------+\n");
 	}
 
-	public void printRankHostCount(ArrayList<Object> result) {
+	public void printRankHostCount(ArrayList<String> result) {
 		System.out.println("+----------------------+---------------------------+---------------+");
 		System.out.printf("| %-20s | %-25s | %-13s |%n", "Name", "Country", "Total listing");
 		System.out.println("+======================+===========================+===============+");
@@ -236,7 +236,7 @@ public class Print {
 		System.out.println("+----------------------+---------------------------+---------------+\n");
 	}
 
-	public void printRankHostCountCity(ArrayList<Object> result) {
+	public void printRankHostCountCity(ArrayList<String> result) {
 		System.out.println(
 				"+----------------------+---------------------------+---------------------------+---------------+");
 		System.out.printf("| %-20s | %-25s | %-25s | %-13s |%n", "Name", "Country", "City", "Total listing");
@@ -250,7 +250,7 @@ public class Print {
 				"+----------------------+---------------------------+---------------------------+---------------+\n");
 	}
 
-	public void printNumCancelled(ArrayList<Object> result) {
+	public void printNumCancelled(ArrayList<String> result) {
 		System.out.println("+----------------------+--------------------+");
 		System.out.printf("| %-20s | %-18s |%n", "Name", "Total cancellation");
 		System.out.println("+======================+====================+");
@@ -258,5 +258,16 @@ public class Print {
 			System.out.printf("| %-20s | %-18s |%n", result.get(i), result.get(++i));
 		}
 		System.out.println("+----------------------+--------------------+\n");
+	}
+
+  public void printHost10Percent(ArrayList<String> result) {
+		System.out.println("+----------------------+---------------------------+---------------------------+-------------------+---------------+");
+		System.out.printf("| %-20s | %-25s | %-25s | %-17s | %-13s |%n", "Name", "City", "Country", "Number of Listing", "Total Listing");
+		System.out.println("+======================+===========================+===========================+===================+===============+");
+		for (int i = 0; i < result.size(); i++) {
+			System.out.printf("| %-20s | %-25s | %-25s | %-17s | %-13s |%n", result.get(i), result.get(++i), result.get(++i), result.get(++i),
+          result.get(++i));
+		}
+		System.out.println("+----------------------+---------------------------+---------------------------+-------------------+---------------+\n");
 	}
 }
