@@ -37,6 +37,7 @@ public class SQLController {
 	private PreparedStatement selectAvailBetweenDate = null;
 	private PreparedStatement sumAvailBetweenDate = null;
 	private PreparedStatement deleteAvailBetweenDate = null;
+  private PreparedStatement getMinMaxPrice = null;
 	// Booked statements
 	private PreparedStatement insertBooked = null;
 	private PreparedStatement updateBookedPriceByBIN = null;
@@ -289,7 +290,7 @@ public class SQLController {
 			insertHosts = conn.prepareStatement("INSERT INTO Hosts"
 					+ " (SIN, Street, Number, PostalCode, Country)"
 					+ " VALUES (?, ?, ?, ?, ?)");
-			selectHostsBySIN = conn.prepareStatement("SELECT * FROM Hosts WHERE SIN=?");
+			selectHostsBySIN = conn.prepareStatement("SELECT * FROM Hosts NATURAL JOIN Listing WHERE SIN=?");
 			// Availability statements
 			insertAvailability = conn.prepareStatement("INSERT INTO Availability"
 					+ " (Street, Number, PostalCode, Country, Date, Available, Price)"
@@ -313,6 +314,8 @@ public class SQLController {
 			deleteAvailBetweenDate = conn.prepareStatement("DELETE FROM Availability WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND"
 					+ " (Date BETWEEN ? AND ?) AND Available=?");
+      getMinMaxPrice = conn.prepareStatement("SELECT Type, MIN(Price), MAX(Price) FROM Listing NATURAL JOIN"
+          + " Availability WHERE Type=? GROUP BY Type ORDER BY MIN(Price), MAX(Price)");
 			// Booked statements
 			insertBooked = conn.prepareStatement("INSERT INTO Booked"
 					+ " (SIN, Street, Number, PostalCode, Country, FromDate, ToDate, PaymentMethod, Price)"
@@ -514,6 +517,7 @@ public class SQLController {
 
 			while (rs.next()) {
 				Listing temp = new Listing();
+        temp.type = rs.getString("Type");
 				temp.street = rs.getString("Street");
 				temp.number = rs.getInt("Number");
 				temp.postalCode = rs.getString("PostalCode");
@@ -1473,6 +1477,42 @@ public class SQLController {
 					.println("Exception triggered when getting hosts with more than 10% of total listings in each country and city!");
 			e.printStackTrace();
 		}
+		return result;
+	}
+
+  // Controls the execution of a select query.
+	// Functionality: Get the minimum and maximum prices for a type of listing.
+	public ArrayList<Double> getPriceRange(String type) {
+		ArrayList<Double> result = new ArrayList<>();
+		try {
+      getMinMaxPrice.setObject(1, type);
+			ResultSet rs = getMinMaxPrice.executeQuery();
+
+			while (rs.next()) {
+				result.add(rs.getDouble("MIN(Price)"));
+				result.add(rs.getDouble("MAX(Price)"));
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err
+					.println("Exception triggered when getting the minimum and maximum prices for a type of listing!");
+			e.printStackTrace();
+		}
+    if (result.size() == 0) {
+      if (type.equalsIgnoreCase("apartment")) {
+        result.add(300.0);
+        result.add(800.0);
+      }
+      else if (type.equalsIgnoreCase("house")) {
+        result.add(400.0);
+        result.add(1000.0);
+      }
+      else {
+        result.add(85.0);
+        result.add(200.0);
+      }
+    }
+
 		return result;
 	}
 }

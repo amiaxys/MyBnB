@@ -596,11 +596,11 @@ public class CommandLine {
           + "TV, Pool, Free parking, Beachfront, Waterfront, Smoke alarm\n");
     }
     else if (listing.type.equals("house")) {
-      System.out.println("Suggestions for apartments: Wifi, Kitchen, Washer, Dryer, Air conditioning, Heating, Dedicated workspace, \n"
+      System.out.println("Suggestions for houses: Wifi, Kitchen, Washer, Dryer, Air conditioning, Heating, Dedicated workspace, \n"
           + "TV, Free parking, Smoke alarm, Carbon monoxide alarm\n");
     }
-    else if (listing.type.equals("room")) {
-      System.out.println("Suggestions for apartments: Wifi, Kitchen, Washer, Air conditioning, Heating, Dedicated workspace, Free parking\n");
+    else {
+      System.out.println("Suggestions for rooms: Wifi, Kitchen, Washer, Air conditioning, Heating, Dedicated workspace, Free parking\n");
     }
 
 		while (listing.amenities == null) {
@@ -1121,6 +1121,10 @@ public class CommandLine {
 			}
 
 			if (available) {
+        ArrayList<Double> result = sqlMngr.getPriceRange(listing.type);
+        System.out.println("\nSuggested price range for " + listing.type + ": $" + priceDf.format(result.get(0))
+            + " - $" + priceDf.format(result.get(1)));
+
 				System.out.print("Enter a price per day in decimal form: ");
 				input = sc.nextLine().strip();
 				try {
