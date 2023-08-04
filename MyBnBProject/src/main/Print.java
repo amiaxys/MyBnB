@@ -223,7 +223,7 @@ public class Print {
 	}
 
 	public void printBookedWithSIN(ArrayList<Booked> booked) {
-		System.out.println("Your bookings:");
+		System.out.println("Your listings' bookings:");
 		System.out.println(
 				"+-----+-----------+--------------------------------+------------+-------------+--------------------------+------------+------------+-------------+------------+");
 		System.out.printf(
@@ -243,7 +243,7 @@ public class Print {
 	}
 
 	public void printBookedWithSINCanceled(ArrayList<Booked> booked, boolean updated) {
-		System.out.printf("Your %sbookings:\n", updated ? "updated " : "");
+		System.out.printf("Your listings' %sbookings:\n", updated ? "updated " : "");
 		System.out.println(
 				"+-----+-----------+--------------------------------+------------+-------------+--------------------------+------------+------------+-------------+------------+----------+");
 		System.out.printf(

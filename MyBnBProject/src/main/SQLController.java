@@ -474,11 +474,11 @@ public class SQLController {
 							+ " VALUES (?, ?, ?, ?, ?)");
 			insertCommentOnUser = conn.prepareStatement("INSERT INTO CommentOnUser (CID, SINComment) VALUES (?, ?)");
 			selectCommentByListing = conn.prepareStatement(
-					"SELECT * FROM User INNER JOIN Comment ON User.SIN=Comment.SIN INNER JOIN CommentOnListing ON Comment.CID=CommentOnListing.CID"
+					"SELECT * FROM User RIGHT JOIN Comment ON User.SIN=Comment.SIN INNER JOIN CommentOnListing ON Comment.CID=CommentOnListing.CID"
 							+ " WHERE CommentOnListing.Street=? AND CommentOnListing.Number=?"
 							+ " AND CommentOnListing.PostalCode=? AND CommentOnListing.Country=?");
 			selectCommentByUser = conn
-					.prepareStatement("SELECT * FROM User INNER JOIN Comment ON User.SIN=Comment.SIN INNER JOIN"
+					.prepareStatement("SELECT * FROM User RIGHT JOIN Comment ON User.SIN=Comment.SIN INNER JOIN"
 							+ " CommentOnUser ON Comment.CID=CommentOnUser.CID WHERE CommentOnUser.SINComment=?");
 			selectCommentMadeByUser = conn
 					.prepareStatement("SELECT * FROM Comment LEFT JOIN CommentOnUser ON Comment.CID=CommentOnUser.CID"

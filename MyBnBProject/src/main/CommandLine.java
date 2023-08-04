@@ -1302,6 +1302,8 @@ public class CommandLine {
 	}
 
 	private void bookListing(ArrayList<AvailabilityListing> listings) {
+		viewListingComments(listings);
+
 		String input = "";
 		while (!listings.isEmpty()) {
 			System.out.print("Do you want to book a listing? [y/n]: ");
@@ -1398,25 +1400,41 @@ public class CommandLine {
 		}
 	}
 
-	private boolean checkInputArrayListBooked(String input, ArrayList<Booked> booked) {
-		int choice = -1;
-		try {
-			choice = Integer.parseInt(input);
-		} catch (NumberFormatException e) {
-			System.out.println("That's not a number, please try again!");
-			return false;
+	private void viewListingComments(ArrayList<AvailabilityListing> listings) {
+		String input = "";
+		while (input.equals("")) {
+			System.out.print("Do you want to view comments for a listing? [y/n]: ");
+			input = sc.nextLine().strip();
+			if (input.equalsIgnoreCase("n") || input.equalsIgnoreCase("y")) {
+				break;
+			} else {
+				System.out.println("That's not proper input, please try again!");
+				input = "";
+			}
 		}
 
-		if (choice == 0) {
-			return true;
-		}
+		while (input.equalsIgnoreCase("y")) {
+			System.out.printf("Choose a listing to view comments [1-%d]: ", listings.size());
+			input = sc.nextLine().replaceAll("\\s", "");
+			if (!checkInputClamp(input, listings.size(), true)) {
+				continue;
+			}
+			int choice = Integer.parseInt(input);
+			if (choice == 0) {
+				break;
+			}
 
-		if (choice < 1 || choice > booked.size()) {
-			System.out.println("That's not an option, please try again!");
-			return false;
+			ArrayList<Comment> comments = sqlMngr.selectCommentByListing(listings.get(choice - 1).street,
+					listings.get(choice - 1).number, listings.get(choice - 1).postalCode,
+					listings.get(choice - 1).country);
+			printMethods.printComments(comments);
+			System.out.print("View comments for another listing? [y/n]: ");
+			input = sc.nextLine().strip();
+			if (!(input.equalsIgnoreCase("n") || input.equalsIgnoreCase("y"))) {
+				System.out.println("That's not proper input!");
+				input = "y";
+			}
 		}
-
-		return true;
 	}
 
 	private void viewBookings() {
@@ -1479,7 +1497,7 @@ public class CommandLine {
 			printMethods.printBooked(booked);
 			System.out.printf("Choose a booking to cancel [1-%d] or enter 0 to exit: ", booked.size());
 			input = sc.nextLine().strip();
-			if (!checkInputArrayListBooked(input, booked)) {
+			if (!checkInputClamp(input, booked.size(), true)) {
 				continue;
 			}
 			choice = Integer.parseInt(input);
@@ -1516,7 +1534,7 @@ public class CommandLine {
 			}
 		}
 
-		ArrayList<Booked> booked;
+		ArrayList<Booked> booked = new ArrayList<>();
 
 		switch (input) {
 			case "1":
@@ -1545,8 +1563,50 @@ public class CommandLine {
 				break;
 		}
 
+		viewUserComments(booked);
+
 		System.out.print("Enter to continue. ");
 		sc.nextLine();
+	}
+
+	private void viewUserComments(ArrayList<Booked> booked) {
+		String input = "";
+		while (input.equals("")) {
+			System.out.print("Would you like to view comments of a booked user [y/n]? ");
+			input = sc.nextLine().strip();
+			if (input.equalsIgnoreCase("y") || input.equalsIgnoreCase("n")) {
+				break;
+			} else {
+				System.out.println("That's not a valid option, please try again!");
+				input = "";
+			}
+		}
+
+		if (input.equalsIgnoreCase("y")) {
+			input = "";
+			int choice = -1;
+			Booked booking = null;
+			while (booking == null) {
+				System.out.printf("Choose a booking to view user comments of [1-%d] or enter 0 to exit: ",
+						booked.size());
+				input = sc.nextLine().strip();
+				if (!checkInputClamp(input, booked.size(), true)) {
+					continue;
+				}
+				choice = Integer.parseInt(input);
+				if (choice == 0) {
+					break;
+				}
+
+				booking = booked.get(choice - 1);
+				ArrayList<Comment> comments = sqlMngr.selectCommentByUser(booking.sin);
+				if (comments.isEmpty()) {
+					System.out.println("This user has no comments!");
+					return;
+				}
+				printMethods.printComments(comments);
+			}
+		}
 	}
 
 	private void cancelListingBooked() {
@@ -1563,7 +1623,7 @@ public class CommandLine {
 			printMethods.printBooked(booked);
 			System.out.printf("Choose a booking to cancel [1-%d] or enter 0 to exit: ", booked.size());
 			input = sc.nextLine().strip();
-			if (!checkInputArrayListBooked(input, booked)) {
+			if (!checkInputClamp(input, booked.size(), true)) {
 				continue;
 			}
 			choice = Integer.parseInt(input);
