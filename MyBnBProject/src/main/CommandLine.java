@@ -570,6 +570,9 @@ public class CommandLine {
 				input = sc.nextLine();
 				if (!isValid(input, 8)) {
 					continue;
+				} else if (Integer.parseInt(input) < -90 || Integer.parseInt(input) > 90) {
+					System.out.println("Latitude in decimal format range from -90 to 90. Try again!");
+					continue;
 				}
 				listing.latitude = new BigDecimal(coordinatesDf.format(Double.parseDouble(input)));
 
@@ -577,7 +580,11 @@ public class CommandLine {
 				input = sc.nextLine();
 				if (!isValid(input, 9)) {
 					continue;
+				} else if (Integer.parseInt(input) < -180 || Integer.parseInt(input) > 180) {
+					System.out.println("Longitude in decimal format range from -180 to 180. Try again!");
+					continue;
 				}
+
 				listing.longitude = new BigDecimal(coordinatesDf.format(Double.parseDouble(input)));
 			} catch (NumberFormatException e) {
 				System.out.println("That's not a number, please try again!");
@@ -587,6 +594,20 @@ public class CommandLine {
 		System.out.println("\nSelect any of the following amenities/characteristics:\n");
 		printMethods.printAmenities();
 		System.out.println();
+		// print suggestions for amenities based on listing type
+		if (listing.type.equals("apartment")) {
+			System.out.println(
+					"Suggestions for apartments: Wifi, Kitchen, Washer, Dryer, Air conditioning, Heating, Dedicated workspace, \n"
+							+ "TV, Pool, Free parking, Beachfront, Waterfront, Smoke alarm\n");
+		} else if (listing.type.equals("house")) {
+			System.out.println(
+					"Suggestions for houses: Wifi, Kitchen, Washer, Dryer, Air conditioning, Heating, Dedicated workspace, \n"
+							+ "TV, Free parking, Smoke alarm, Carbon monoxide alarm\n");
+		} else {
+			System.out.println(
+					"Suggestions for rooms: Wifi, Kitchen, Washer, Air conditioning, Heating, Dedicated workspace, Free parking\n");
+		}
+
 		while (listing.amenities == null) {
 			System.out.print("Enter a list of amenities above separated by commas. (E.g., \"Wifi, Hot tub, Gym\"): ");
 			input = sc.nextLine().strip().replaceAll("((?<=,)\\s||\\s(?=,))", "");
@@ -1110,6 +1131,10 @@ public class CommandLine {
 			}
 
 			if (available) {
+				ArrayList<Double> result = sqlMngr.getPriceRange(listing.type);
+				System.out.println("\nSuggested price range for " + listing.type + ": $" + priceDf.format(result.get(0))
+						+ " - $" + priceDf.format(result.get(1)));
+
 				System.out.print("Enter a price per day in decimal form: ");
 				input = sc.nextLine().strip();
 				try {
@@ -1680,16 +1705,17 @@ public class CommandLine {
 				printMethods.printCommentsUserListing(comments);
 				break;
 			case "3":
-			  	input = "";
+				input = "";
 				ArrayList<Listing> listings = null;
-			 	while (input.equals("")) {
+				while (input.equals("")) {
 					listings = sqlMngr.selectHostsBySIN(currentUser.sin);
 					if (listings.isEmpty()) {
 						System.out.println("You have no listings!");
 						return;
 					}
 					printMethods.printHostedListings(listings);
-					System.out.printf("Choose a listing to view comments on [1-%d] or enter 0 to exit: ", listings.size());
+					System.out.printf("Choose a listing to view comments on [1-%d] or enter 0 to exit: ",
+							listings.size());
 					input = sc.nextLine().strip();
 					if (!checkInputClamp(input, listings.size(), true)) {
 						input = "";
