@@ -3,6 +3,7 @@ package main;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 public class SQLController {
@@ -19,11 +20,13 @@ public class SQLController {
 	// User statements
 	private PreparedStatement insertUser = null;
 	private PreparedStatement selectUserBySIN = null;
+	private PreparedStatement selectUserByListingBooked = null;
 	// Listing statements
 	private PreparedStatement insertListing = null;
 	private PreparedStatement selectAllListing = null;
 	private PreparedStatement selectListingAddr = null;
 	private PreparedStatement selectListingPostalCode = null;
+	private PreparedStatement selectListingBooked = null;
 	private PreparedStatement deleteListing = null;
 	// Hosts statements
 	private PreparedStatement insertHosts = null;
@@ -63,9 +66,16 @@ public class SQLController {
 	private PreparedStatement reportRankHostCount = null;
 	private PreparedStatement reportRankHostCountCity = null;
 	private PreparedStatement reportNumCancelled = null;
-  private PreparedStatement reportHost10Percent = null;
+	private PreparedStatement reportHost10Percent = null;
 	// View statments
 	PreparedStatement createLargestCancelView = null;
+	// Comment statements
+	private PreparedStatement insertComment = null;
+	private PreparedStatement insertCommentOnListing = null;
+	private PreparedStatement insertCommentOnUser = null;
+	private PreparedStatement selectCommentByListing = null;
+	private PreparedStatement selectCommentByUser = null;
+	private PreparedStatement selectCommentMadeByUser = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -262,6 +272,60 @@ public class SQLController {
 			System.err.println("Booked table already exists!");
 			// e.printStackTrace();
 		}
+
+		try {
+			PreparedStatement createCommentTb = conn.prepareStatement("CREATE TABLE Comment ("
+					+ " CID INT NOT NULL AUTO_INCREMENT,"
+					+ " SIN CHAR(9),"
+					+ " Rating TINYINT,"
+					+ " Text TEXT(65000),"
+					+ " Date DATETIME DEFAULT CURRENT_TIMESTAMP,"
+					+ " PRIMARY KEY(CID),"
+					+ " FOREIGN KEY (SIN) REFERENCES User(SIN)"
+					+ ")");
+			createCommentTb.executeUpdate();
+			createCommentTb.close();
+		} catch (SQLException e) {
+			// success = false;
+			System.err.println("Comment table already exists!");
+			e.printStackTrace();
+		}
+
+		try {
+			PreparedStatement createCommentUserTb = conn.prepareStatement("CREATE TABLE CommentOnUser ("
+					+ " CID INT,"
+					+ " SINComment CHAR(9),"
+					+ " PRIMARY KEY(CID),"
+					+ " FOREIGN KEY (CID) REFERENCES Comment(CID),"
+					+ " FOREIGN KEY (SINComment) REFERENCES User(SIN)"
+					+ ")");
+			createCommentUserTb.executeUpdate();
+			createCommentUserTb.close();
+		} catch (SQLException e) {
+			// success = false;
+			System.err.println("CommentOnUser table already exists!");
+			e.printStackTrace();
+		}
+
+		try {
+			PreparedStatement createCommentListingTb = conn.prepareStatement("CREATE TABLE CommentOnListing ("
+					+ " CID INT,"
+					+ " Street VARCHAR(40),"
+					+ " Number INT,"
+					+ " PostalCode VARCHAR(10),"
+					+ " Country VARCHAR(56),"
+					+ " PRIMARY KEY(CID),"
+					+ " FOREIGN KEY (CID) REFERENCES Comment(CID),"
+					+ " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES Listing(Street, Number, PostalCode, Country)"
+					+ ")");
+			createCommentListingTb.executeUpdate();
+			createCommentListingTb.close();
+		} catch (SQLException e) {
+			// success = false;
+			System.err.println("CommentOnListing table already exists!");
+			e.printStackTrace();
+		}
+
 		return success;
 	}
 
@@ -273,6 +337,10 @@ public class SQLController {
 					+ " (SIN, Password, Salt, Name, Address, Birthdate, Occupation)"
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?)");
 			selectUserBySIN = conn.prepareStatement("SELECT * FROM User WHERE SIN=?");
+			selectUserByListingBooked = conn.prepareStatement("SELECT DISTINCT User.* FROM User"
+					+ " INNER JOIN Booked ON User.SIN=Booked.SIN"
+					+ " INNER JOIN Hosts ON Booked.Street=Hosts.Street AND Booked.Number=Hosts.Number"
+					+ " AND Booked.PostalCode=Hosts.PostalCode AND Booked.Country=Hosts.Country WHERE Hosts.SIN=?");
 			// Listing statements
 			insertListing = conn.prepareStatement("INSERT INTO Listing"
 					+ " (Type, Street, Number, PostalCode, Country, City, Latitude, Longitude, Amenities)"
@@ -283,6 +351,9 @@ public class SQLController {
 					+ " WHERE Street=? AND Number=? AND PostalCode=? AND Country=? AND City=? AND Available=true");
 			selectListingPostalCode = conn.prepareStatement("SELECT * FROM Listing NATURAL JOIN Availability"
 					+ " WHERE PostalCode LIKE ? AND Available=true");
+			selectListingBooked = conn.prepareStatement("SELECT Listing.* FROM Listing INNER JOIN Booked"
+					+ " ON Listing.Street=Booked.Street AND Listing.Number=Booked.Number"
+					+ " AND Listing.PostalCode=Booked.PostalCode AND Listing.Country=Booked.Country WHERE Booked.SIN=?");
 			deleteListing = conn
 					.prepareStatement("DELETE FROM Listing WHERE Street=? AND Number=? AND PostalCode=? AND Country=?");
 			// Hosts statements
@@ -326,12 +397,10 @@ public class SQLController {
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=?");
 			selectAllBookedBySIN = conn.prepareStatement("SELECT * FROM Booked WHERE SIN=?");
 			selectBookedBySIN = conn.prepareStatement("SELECT * FROM Booked WHERE SIN=? AND Canceled=?");
-			selectAllBookedByHostListings = conn.prepareStatement("SELECT A.BID, A.SIN, A.Street, A.Number, A.PostalCode,"
-					+ " A.Country, A.FromDate, A.ToDate, A.PaymentMethod, A.Price, A.Canceled FROM Booked AS A NATURAL JOIN"
+			selectAllBookedByHostListings = conn.prepareStatement("SELECT A.* FROM Booked AS A NATURAL JOIN"
 					+ " Listing INNER JOIN Hosts AS B ON A.Street=B.Street AND A.Number=B.Number AND"
 					+ " A.PostalCode=B.PostalCode AND A.Country=B.Country WHERE B.SIN=?");
-			selectBookedByHostListings = conn.prepareStatement("SELECT A.BID, A.SIN, A.Street, A.Number, A.PostalCode,"
-					+ " A.Country, A.FromDate, A.ToDate, A.PaymentMethod, A.Price, A.Canceled FROM Booked AS A NATURAL JOIN"
+			selectBookedByHostListings = conn.prepareStatement("SELECT A.* FROM Booked AS A NATURAL JOIN"
 					+ " Listing INNER JOIN Hosts AS B ON A.Street=B.Street AND A.Number=B.Number AND"
 					+ " A.PostalCode=B.PostalCode AND A.Country=B.Country WHERE B.SIN=? AND A.Canceled=?");
 			selectBookedByAddress = conn.prepareStatement("SELECT * FROM BOOKED WHERE Street=? AND"
@@ -370,15 +439,33 @@ public class SQLController {
 			reportNumCancelled = conn.prepareStatement("SELECT Name, COUNT(A.BID) AS TotalCancelled FROM User NATURAL"
 					+ " JOIN Cancellation as A INNER JOIN Booked as B ON A.BID=B.BID WHERE FromDate LIKE ? OR ToDate LIKE"
 					+ " ? GROUP BY Name HAVING TotalCancelled in (SELECT TotalCancelled FROM LargestCancellation)");
-      reportHost10Percent = conn.prepareStatement("SELECT B.Name, A.City, A.Country, COUNT(*) AS NumberListing, Total AS"
-          + " TotalListing FROM Listing AS A NATURAL JOIN Hosts NATURAL JOIN User AS B NATURAL JOIN (SELECT L.City,"
-          + " L.Country, COUNT(*) AS Total FROM Listing AS L NATURAL JOIN Hosts GROUP BY L.Country, L.City ORDER BY"
-          + " Total) AS T GROUP BY A.Country, A.City, B.Name HAVING NumberListing > (TotalListing * 0.1) ORDER BY TotalListing");
+			reportHost10Percent = conn
+					.prepareStatement("SELECT B.Name, A.City, A.Country, COUNT(*) AS NumberListing, Total AS"
+							+ " TotalListing FROM Listing AS A NATURAL JOIN Hosts NATURAL JOIN User AS B NATURAL JOIN (SELECT L.City,"
+							+ " L.Country, COUNT(*) AS Total FROM Listing AS L NATURAL JOIN Hosts GROUP BY L.Country, L.City ORDER BY"
+							+ " Total) AS T GROUP BY A.Country, A.City, B.Name HAVING NumberListing > (TotalListing * 0.1) ORDER BY TotalListing");
 			// View statements
 			createLargestCancelView = conn
 					.prepareStatement("CREATE OR REPLACE VIEW LargestCancellation As SELECT DISTINCT"
 							+ " COUNT(A.BID) AS TotalCancelled FROM User NATURAL JOIN Cancellation AS A INNER JOIN Booked AS B ON"
 							+ " A.BID=B.BID WHERE FromDate LIKE ? OR ToDate LIKE ? GROUP BY Name ORDER BY TotalCancelled DESC LIMIT 1");
+			// Comment statements
+			insertComment = conn.prepareStatement("INSERT INTO Comment (SIN, Rating, Text) VALUES (?, ?, ?)",
+					Statement.RETURN_GENERATED_KEYS);
+			insertCommentOnListing = conn
+					.prepareStatement("INSERT INTO CommentOnListing (CID, Street, Number, PostalCode, Country)"
+							+ " VALUES (?, ?, ?, ?, ?)");
+			insertCommentOnUser = conn.prepareStatement("INSERT INTO CommentOnUser (CID, SINComment) VALUES (?, ?)");
+			selectCommentByListing = conn.prepareStatement(
+					"SELECT * FROM User INNER JOIN Comment ON User.SIN=Comment.SIN INNER JOIN CommentOnListing ON Comment.CID=CommentOnListing.CID"
+							+ " WHERE CommentOnListing.Street=? AND CommentOnListing.Number=?"
+							+ " AND CommentOnListing.PostalCode=? AND CommentOnListing.Country=?");
+			selectCommentByUser = conn
+					.prepareStatement("SELECT * FROM User INNER JOIN Comment ON User.SIN=Comment.SIN INNER JOIN"
+							+ " CommentOnUser ON Comment.CID=CommentOnUser.CID WHERE CommentOnUser.SINComment=?");
+			selectCommentMadeByUser = conn
+					.prepareStatement("SELECT * FROM Comment LEFT JOIN CommentOnUser ON Comment.CID=CommentOnUser.CID"
+							+ " LEFT JOIN CommentOnListing ON Comment.CID=CommentOnListing.CID WHERE Comment.SIN=?");
 		} catch (SQLException e) {
 			success = false;
 			System.err.println("Prepared statements could not be created!");
@@ -439,6 +526,36 @@ public class SQLController {
 		}
 
 		return user;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select users by listing booked.
+	public ArrayList<User> selectUserByListingBooked(String sin) {
+		ArrayList<User> users = new ArrayList<User>();
+		try {
+			int count = 0;
+			selectUserByListingBooked.setString(++count, sin);
+			ResultSet rs = selectUserByListingBooked.executeQuery();
+
+			while (rs.next()) {
+				User user = new User();
+				user.sin = rs.getString("SIN");
+				user.password = rs.getString("Password");
+				user.salt = rs.getBytes("Salt");
+				user.name = rs.getString("Name");
+				user.address = rs.getString("Address");
+				user.birthdate = rs.getObject("Birthdate", LocalDate.class);
+				user.occupation = rs.getString("Occupation");
+				users.add(user);
+			}
+
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting users by listing booked!");
+			e.printStackTrace();
+		}
+
+		return users;
 	}
 
 	// Controls the execution of an insert query.
@@ -839,6 +956,35 @@ public class SQLController {
 			rs.close();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when selecting listing by postal code!");
+			e.printStackTrace();
+		}
+		return listings;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select listings by SIN's booked records.
+	public ArrayList<Listing> selectListingByBooked(String sin) {
+		ArrayList<Listing> listings = new ArrayList<>();
+		try {
+			selectListingBooked.setString(1, sin);
+			ResultSet rs = selectListingBooked.executeQuery();
+
+			while (rs.next()) {
+				Listing temp = new Listing();
+				temp.type = rs.getString("Type");
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				temp.city = rs.getString("City");
+				temp.latitude = rs.getBigDecimal("Latitude");
+				temp.longitude = rs.getBigDecimal("Longitude");
+				listings.add(temp);
+			}
+
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting listing by user's booked records!");
 			e.printStackTrace();
 		}
 		return listings;
@@ -1452,9 +1598,9 @@ public class SQLController {
 		return result;
 	}
 
-  // Controls the execution of a report query.
+	// Controls the execution of a report query.
 	// Functionality: Get the hosts that have number of listings that is more than
-  //      10% of the total number of listings in each city and country
+	// 10% of the total number of listings in each city and country
 	public ArrayList<String> reportHost10Percent() {
 		ArrayList<String> result = new ArrayList<>();
 		try {
@@ -1464,15 +1610,183 @@ public class SQLController {
 				result.add(rs.getString("Name"));
 				result.add(rs.getString("City"));
 				result.add(rs.getString("Country"));
-        result.add(rs.getString("NumberListing"));
+				result.add(rs.getString("NumberListing"));
 				result.add(rs.getString("TotalListing"));
 			}
 			rs.close();
 		} catch (SQLException e) {
 			System.err
-					.println("Exception triggered when getting hosts with more than 10% of total listings in each country and city!");
+					.println(
+							"Exception triggered when getting hosts with more than 10% of total listings in each country and city!");
 			e.printStackTrace();
 		}
 		return result;
+	}
+
+	// Controls the execution of an insert query.
+	// Functionality: Insert a comment.
+	private int insertComment(String sin, int rating, String text) {
+		int cid = -1;
+		try {
+			int count = 0;
+			insertComment.setString(++count, sin);
+			if (rating == 0) {
+				insertComment.setNull(++count, java.sql.Types.TINYINT);
+			} else {
+				insertComment.setInt(++count, rating);
+			}
+			insertComment.setString(++count, text);
+			insertComment.executeUpdate();
+			ResultSet rs = insertComment.getGeneratedKeys();
+			if (rs.next()) {
+				cid = rs.getInt(1);
+			}
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when inserting comment.");
+			e.printStackTrace();
+		}
+		return cid;
+	}
+
+	// Controls the execution of an insert query.
+	// Functionality: Insert a comment on a listing.
+	public int insertCommentOnListing(String sin, int rating, String text, String street, int number,
+			String postalCode, String country) {
+		int rows = 0;
+		try {
+			int cid = insertComment(sin, rating, text);
+			int count = 0;
+			insertCommentOnListing.setInt(++count, cid);
+			insertCommentOnListing.setString(++count, street);
+			insertCommentOnListing.setInt(++count, number);
+			insertCommentOnListing.setString(++count, postalCode);
+			insertCommentOnListing.setString(++count, country);
+			rows += insertCommentOnListing.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when inserting comment on listing.");
+			e.printStackTrace();
+		}
+		return rows;
+	}
+
+	// Controls the execution of an insert query.
+	// Functionality: Insert a comment on a user.
+	public int insertCommentOnUser(String sin, int rating, String text, String sinComment) {
+		int rows = 0;
+		try {
+			int cid = insertComment(sin, rating, text);
+			int count = 0;
+			insertCommentOnUser.setInt(++count, cid);
+			insertCommentOnUser.setString(++count, sinComment);
+			rows += insertCommentOnUser.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when inserting comment on user.");
+			e.printStackTrace();
+		}
+		return rows;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select the comments on a listing.
+	public ArrayList<Comment> selectCommentByListing(String street, int number, String postalCode, String country) {
+		ArrayList<Comment> comments = new ArrayList<>();
+		try {
+			int count = 0;
+			selectCommentByListing.setString(++count, street);
+			selectCommentByListing.setInt(++count, number);
+			selectCommentByListing.setString(++count, postalCode);
+			selectCommentByListing.setString(++count, country);
+			ResultSet rs = selectCommentByListing.executeQuery();
+
+			while (rs.next()) {
+				Comment temp = new Comment();
+				temp.sin = rs.getString("SIN");
+				temp.rating = rs.getInt("Rating");
+				temp.text = rs.getString("Text");
+				temp.date = rs.getObject("Date", LocalDateTime.class);
+				User tempUser = new User();
+				tempUser.sin = rs.getString("SIN");
+				tempUser.name = rs.getString("Name");
+				temp.commentedByUser = tempUser;
+				Listing tempListing = new Listing();
+				tempListing.street = rs.getString("Street");
+				tempListing.number = rs.getInt("Number");
+				tempListing.postalCode = rs.getString("PostalCode");
+				tempListing.country = rs.getString("Country");
+				temp.commentedOnListing = tempListing;
+				comments.add(temp);
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting comments on listing!");
+			e.printStackTrace();
+		}
+		return comments;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select the comments on a user.
+	public ArrayList<Comment> selectCommentByUser(String sin) {
+		ArrayList<Comment> comments = new ArrayList<>();
+		try {
+			int count = 0;
+			selectCommentByUser.setString(++count, sin);
+			ResultSet rs = selectCommentByUser.executeQuery();
+
+			while (rs.next()) {
+				Comment temp = new Comment();
+				temp.sin = rs.getString("SIN");
+				temp.rating = rs.getInt("Rating");
+				temp.text = rs.getString("Text");
+				temp.date = rs.getObject("Date", LocalDateTime.class);
+				User tempUser = new User();
+				tempUser.sin = rs.getString("SIN");
+				tempUser.name = rs.getString("Name");
+				temp.commentedByUser = tempUser;
+				User tempUser2 = new User();
+				tempUser2.sin = rs.getString("SINComment");
+				temp.commentedOnUser = tempUser2;
+				comments.add(temp);
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting comments on user!");
+			e.printStackTrace();
+		}
+		return comments;
+	}
+
+	// Controls the execution of a select query.
+	// Functionality: Select the comments made by a user.
+	public ArrayList<Comment> selectCommentMadeByUser(String sin) {
+		ArrayList<Comment> comments = new ArrayList<>();
+		try {
+			int count = 0;
+			selectCommentMadeByUser.setString(++count, sin);
+			ResultSet rs = selectCommentMadeByUser.executeQuery();
+
+			while (rs.next()) {
+				Comment temp = new Comment();
+				temp.sin = rs.getString("SIN");
+				temp.rating = rs.getInt("Rating");
+				temp.text = rs.getString("Text");
+				temp.date = rs.getObject("Date", LocalDateTime.class);
+				User tempUser = new User();
+				tempUser.sin = rs.getString("SINComment");
+				temp.commentedOnUser = tempUser;
+				Listing tempListing = new Listing();
+				tempListing.street = rs.getString("Street");
+				tempListing.number = rs.getInt("Number");
+				tempListing.postalCode = rs.getString("PostalCode");
+				tempListing.country = rs.getString("Country");
+				temp.commentedOnListing = tempListing;
+				comments.add(temp);
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when getting comments made by user!");
+			e.printStackTrace();
+		}
+		return comments;
 	}
 }

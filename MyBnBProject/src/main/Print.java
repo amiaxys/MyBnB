@@ -24,8 +24,9 @@ public class Print {
 		System.out.println(" 2. Report renters ranked by the number of bookings in a specific date range.");
 		System.out.println(" 3. Report total number of listings.");
 		System.out.println(" 4. Report hosts ranked by total number of listings.");
-		System.out.println(" 5. Report hosts that have a number of listings that is more than 10% of the total number of"
-				+ "\n\tlistings for every country and city.");
+		System.out
+				.println(" 5. Report hosts that have a number of listings that is more than 10% of the total number of"
+						+ "\n\tlistings for every country and city.");
 		System.out.println(
 				" 6. Report hosts and renters with the largest number of cancellations within a year.");
 		System.out.println(
@@ -41,20 +42,29 @@ public class Print {
 			System.out.println("Your bookings have been updated!");
 			System.out.println("To view your updated bookings, enter \"u\".");
 		}
-		System.out.println(" 0. Exit.");
-		System.out.println(" 1. Create a listing.");
-		System.out.println(" 2. Add availabilities to listings.");
-		System.out.println(" 3. Change price of existing availabilities.");
-		System.out.println(" 4. Search for listings (to book).");
-		System.out.println(" 5. View your bookings.");
-		System.out.println(" 6. Cancel a booking.");
-		System.out.println(" 7. View your listings' bookings.");
-		System.out.println(" 8. Cancel a listing's booking.");
-		System.out.println(" 9. Delete a listing.");
-		System.out.println(" 10. Sign out.");
+		int count = 0;
+		System.out.printf(" %d. Exit.\n", count++);
+		System.out.println("---------------------------");
+		System.out.printf(" %d. Create a listing.\n", count++);
+		System.out.printf(" %d. Add availabilities to listings.\n", count++);
+		System.out.printf(" %d. Change price of existing availabilities.\n", count++);
+		System.out.printf(" %d. Delete a listing.\n", count++);
+		System.out.println("---------------------------");
+		System.out.printf(" %d. Search for listings (to book).\n", count++);
+		System.out.printf(" %d. View your bookings.\n", count++);
+		System.out.printf(" %d. Cancel a booking.\n", count++);
+		System.out.println("---------------------------");
+		System.out.printf(" %d. View your listings' bookings.\n", count++);
+		System.out.printf(" %d. Cancel a listing's booking.\n", count++);
+		System.out.println("---------------------------");
+		System.out.printf(" %d. Comment on a listing.\n", count++);
+		System.out.printf(" %d. Comment on a user.\n", count++);
+		System.out.printf(" %d. View your comments.\n", count++);
+		System.out.println("---------------------------");
+		System.out.printf(" %d. Sign out.\n", count++);
 		// add comments
 		// add delete account later
-		System.out.print("Choose one of the previous options [0-10]: ");
+		System.out.print("Choose one of the previous options [0-14]: ");
 	}
 
 	public void searchOptions() {
@@ -83,6 +93,27 @@ public class Print {
 		System.out.print("Enter an option [1-3]: ");
 	}
 
+	public void printViewCommentOptions() {
+		System.out.println("Do you want to view comments received, comments made or comments on your listings?");
+		System.out.println(" 1. Comments you have received");
+		System.out.println(" 2. Comments you have made");
+		System.out.println(" 3. Comments on your listings");
+		System.out.print("Enter an option [1-3]: ");
+	}
+
+	public void printUsers(ArrayList<User> users) {
+		int count = 0;
+		System.out.println("\nResult: " + users.size() + " users\n");
+		System.out.println("+-----+-----------+----------------------+");
+		System.out.printf("| %-3s | %-9s | %-20s |%n", "#", "SIN", "Name");
+		System.out.println("+=====+===========+======================+");
+		for (User user : users) {
+			count++;
+			System.out.printf("| %-3d | %-9s | %-20s |%n", count, user.sin, user.name);
+		}
+		System.out.println("+-----+-----------+----------------------+");
+	}
+
 	public void printFilteredListings(ArrayList<AvailabilityListing> listings) {
 		int count = 0;
 		System.out.println("\nResult: " + listings.size() + " listings\n");
@@ -104,6 +135,28 @@ public class Print {
 		}
 		System.out.println(
 				"+-----+-----------+----------------------------------------------------------------------------------+----------+-----------+------------+------------+\n");
+	}
+
+	public void printListings(ArrayList<Listing> listings) {
+		int count = 0;
+		System.out.println("\n Result: " + listings.size() + " listings\n");
+		System.out.println(
+				"+-----+-----------+----------------------------------------------------------------------------------+----------+-----------+");
+		System.out.printf("| %-3s | %-9s | %-80s | %-8s | %-9s |%n",
+				"#", "Type", "Address", "Latitude", "Longitude");
+		System.out.println(
+				"+=====+===========+==================================================================================+==========+===========+");
+		for (Listing listing : listings) {
+			count++;
+			String lat = coordinatesDf.format(listing.latitude.doubleValue());
+			String lon = coordinatesDf.format(listing.longitude.doubleValue());
+			System.out.printf("| %-3s | %-9s | %-80s | %-8s | %-9s |%n", count, listing.type,
+					listing.number + " " + listing.street + ", " + listing.city + ", " + listing.country + " "
+							+ listing.postalCode,
+					lat, lon);
+		}
+		System.out.println(
+				"+-----+-----------+----------------------------------------------------------------------------------+----------+-----------+\n");
 	}
 
 	public void printHostedListings(ArrayList<Listing> hostedListings) {
@@ -260,14 +313,69 @@ public class Print {
 		System.out.println("+----------------------+--------------------+\n");
 	}
 
-  public void printHost10Percent(ArrayList<String> result) {
-		System.out.println("+----------------------+---------------------------+---------------------------+-------------------+---------------+");
-		System.out.printf("| %-20s | %-25s | %-25s | %-17s | %-13s |%n", "Name", "City", "Country", "Number of Listing", "Total Listing");
-		System.out.println("+======================+===========================+===========================+===================+===============+");
+	public void printHost10Percent(ArrayList<String> result) {
+		System.out.println(
+				"\n+----------------------+---------------------------+---------------------------+-------------------+---------------+");
+		System.out.printf("| %-20s | %-25s | %-25s | %-17s | %-13s |%n", "Name", "City", "Country", "Number of Listing",
+				"Total Listing");
+		System.out.println(
+				"+======================+===========================+===========================+===================+===============+");
 		for (int i = 0; i < result.size(); i++) {
-			System.out.printf("| %-20s | %-25s | %-25s | %-17s | %-13s |%n", result.get(i), result.get(++i), result.get(++i), result.get(++i),
-          result.get(++i));
+			System.out.printf("| %-20s | %-25s | %-25s | %-17s | %-13s |%n", result.get(i), result.get(++i),
+					result.get(++i), result.get(++i),
+					result.get(++i));
 		}
-		System.out.println("+----------------------+---------------------------+---------------------------+-------------------+---------------+\n");
+		System.out.println(
+				"+----------------------+---------------------------+---------------------------+-------------------+---------------+\n");
+	}
+
+	public void printComments(ArrayList<Comment> comments) {
+		System.out.println("\n+-----+-----------+----------------------+--------+----------------------+");
+		System.out.printf("| %-3s | %-9s | %-20s | %-6s | %-20s |%n", "#", "SIN", "Name", "Rating", "Date");
+		System.out.println("+=====+===========+======================+========+======================+");
+		for (int i = 0; i < comments.size(); i++) {
+			System.out.printf("| %-3s | %-9s | %-20s | %-6s | %-20s |%n", i + 1, comments.get(i).sin,
+					comments.get(i).commentedByUser.name, comments.get(i).rating, comments.get(i).date);
+			System.out.println("+------------------------------------------------------------------------+");
+			System.out.println(comments.get(i).text);
+			System.out.println("+------------------------------------------------------------------------+");
+		}
+		System.out.println("+-----+-----------+----------------------+--------+----------------------+\n");
+	}
+
+	public void printCommentsUserListing(ArrayList<Comment> comments) {
+		System.out.println(
+				"\n+-----+--------+----------------------+-------------------+----------------------------------------------------------------------------------+");
+		System.out.printf("| %-3s | %-6s | %-20s | %-17s | %-80s |%n", "#", "Rating", "Date", "Commented On User",
+				"Address of Listing");
+		System.out.println(
+				"+=====+========+======================+===================+==================================================================================+");
+		String address = "";
+		String sin = "";
+		for (int i = 0; i < comments.size(); i++) {
+			if (comments.get(i).commentedOnListing.street != null) {
+				address = comments.get(i).commentedOnListing.number + " " + comments.get(i).commentedOnListing.street
+						+ ", " + comments.get(i).commentedOnListing.postalCode + ", "
+						+ comments.get(i).commentedOnListing.country;
+			} else {
+				address = "N/A";
+			}
+
+			if (comments.get(i).commentedOnUser.sin != null) {
+				sin = comments.get(i).commentedOnUser.sin;
+			} else {
+				sin = "N/A";
+			}
+
+			System.out.printf("| %-3s | %-6s | %-20s | %-17s | %-80s |%n", i + 1, comments.get(i).rating,
+					comments.get(i).date, sin, address);
+			System.out.println(
+					"+--------------------------------------------------------------------------------------------------------------------------------------------+");
+			System.out.println(comments.get(i).text);
+			System.out.println(
+					"+--------------------------------------------------------------------------------------------------------------------------------------------+");
+		}
+		System.out.println(
+				"+-----+--------+----------------------+-------------------+----------------------------------------------------------------------------------+\n");
 	}
 }

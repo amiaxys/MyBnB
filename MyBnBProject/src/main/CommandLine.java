@@ -170,7 +170,7 @@ public class CommandLine {
 					reportRankHost();
 					break;
 				case 5:
-          reportHost10Percent();
+					reportHost10Percent();
 					break;
 				case 6:
 					reportNumCancelled();
@@ -191,14 +191,11 @@ public class CommandLine {
 	private String runUserMenuOptions() {
 		ArrayList<Booked> updatedBooked = sqlMngr.selectUpdatedBookedBySIN(currentUser.sin);
 		boolean updated = false;
-
 		if (!updatedBooked.isEmpty()) {
 			updated = true;
 		}
-
 		printMethods.userMenu(currentUser.name != null ? currentUser.name : "", updated); // Print Menu
 		String input = sc.nextLine().strip();
-
 		if (updated && input.equalsIgnoreCase("u")) {
 			printMethods.printBookedWithCanceled(updatedBooked, true);
 			sqlMngr.updateBookedStatusBySIN(currentUser.sin);
@@ -223,27 +220,36 @@ public class CommandLine {
 					this.changeAvailabilityPrice();
 					break;
 				case 4:
+					this.deleteListing();
+					break;
+				case 5:
 					String searchInput;
 					do {
 						searchInput = this.runSearchOptions();
 					} while (searchInput.compareTo("0") != 0);
-					break;
-				case 5:
+					break; // remember to add ability to view comments here
+				case 6:
 					this.viewBookings();
 					break;
-				case 6:
+				case 7:
 					this.cancelBooked();
 					break;
-				case 7:
-					this.viewListingBookings();
-					break;
 				case 8:
-					this.cancelListingBooked();
+					this.viewListingBookings(); // remember to add SIN to print and ability to view comments here
 					break;
 				case 9:
-					this.deleteListing();
+					this.cancelListingBooked();
 					break;
 				case 10:
+					this.commentOnListing();
+					break;
+				case 11:
+					this.commentOnUser();
+					break;
+				case 12:
+					this.viewComments();
+					break;
+				case 13:
 					this.signOut();
 					break;
 				default:
@@ -369,8 +375,8 @@ public class CommandLine {
 					char[] passwordChar = console.readPassword("Enter password (8-250 characters): ");
 					input = new String(passwordChar);
 				}
-				//System.out.print("Enter password (8-250 characters): ");
-				//input = sc.nextLine();
+				// System.out.print("Enter password (8-250 characters): ");
+				// input = sc.nextLine();
 				int tempLen = input.length();
 				if (tempLen >= 8 && tempLen <= 250) {
 					user.password = passMethods.getSaltHashedPassword(input, user.salt);
@@ -613,7 +619,7 @@ public class CommandLine {
 			printMethods.printHostedListings(listings);
 			System.out.printf("Choose a listing you want to delete [1-%d] or enter 0 to exit: ", listings.size());
 			input = sc.nextLine().strip();
-			if (!checkInputArrayList(input, listings.size())) {
+			if (!checkInputClamp(input, listings.size(), true)) {
 				continue;
 			}
 			choice = Integer.parseInt(input);
@@ -1012,12 +1018,17 @@ public class CommandLine {
 		return availListings;
 	}
 
-	private boolean checkInputArrayList(String input, int size) {
+	private boolean checkInputClamp(String input, int size, boolean isZeroAllowed) {
 		int choice = -1;
 		try {
 			choice = Integer.parseInt(input);
 		} catch (NumberFormatException e) {
 			System.out.println("That's not a number, please try again!");
+			return false;
+		}
+
+		if (choice == 0 && !isZeroAllowed) {
+			System.out.println("That's not an option, please try again!");
 			return false;
 		}
 
@@ -1058,7 +1069,7 @@ public class CommandLine {
 			System.out.printf("Choose a listing to add availabilities to [1-%d] or enter 0 to exit: ",
 					hostedListings.size());
 			input = sc.nextLine().strip();
-			if (!checkInputArrayList(input, hostedListings.size())) {
+			if (!checkInputClamp(input, hostedListings.size(), true)) {
 				continue;
 			}
 
@@ -1141,7 +1152,7 @@ public class CommandLine {
 			System.out.printf("Choose a listing to change the price of [1-%d] or enter 0 to exit: ",
 					hostedListings.size());
 			input = sc.nextLine().strip();
-			if (!checkInputArrayList(input, hostedListings.size())) {
+			if (!checkInputClamp(input, hostedListings.size(), true)) {
 				continue;
 			}
 
@@ -1302,7 +1313,7 @@ public class CommandLine {
 					System.out.printf("Choose %s to book [1-%d]: ", bookedListings.isEmpty() ? "a listing" : "dates",
 							printListings.size());
 					input = sc.nextLine().replaceAll("\\s", "");
-					if (!checkInputArrayList(input, printListings.size())) {
+					if (!checkInputClamp(input, printListings.size(), true)) {
 						continue;
 					}
 					choice = Integer.parseInt(input);
@@ -1559,6 +1570,146 @@ public class CommandLine {
 		}
 	}
 
+	private void commentOnListing() {
+		ArrayList<Listing> listings = sqlMngr.selectListingByBooked(currentUser.sin);
+		if (listings.isEmpty()) {
+			System.out.println("You have booked no listings and cannot comment!");
+			return;
+		}
+
+		String input = "";
+		int choice = -1;
+		Comment comment = new Comment();
+		while (comment.sin == null) {
+			printMethods.printListings(listings);
+			System.out.printf("Choose a listing to comment on [1-%d] or enter 0 to exit: ", listings.size());
+			input = sc.nextLine().strip();
+			if (!checkInputClamp(input, listings.size(), true)) {
+				continue;
+			}
+			choice = Integer.parseInt(input);
+			if (choice == 0) {
+				break;
+			}
+
+			Listing listing = listings.get(choice - 1);
+			System.out.print("Enter a rating (1-5): ");
+			input = sc.nextLine().strip();
+			if (input.length() != 0) {
+				if (!checkInputClamp(input, 5, false)) {
+					continue;
+				}
+
+				comment.rating = Integer.parseInt(input);
+			}
+
+			System.out.print("Enter a comment: ");
+			comment.text = sc.nextLine().strip();
+			comment.sin = currentUser.sin;
+
+			int rows = sqlMngr.insertCommentOnListing(comment.sin, comment.rating, comment.text, listing.street,
+					listing.number, listing.postalCode, listing.country);
+			System.out.println("CommentOnListing rows affected: " + rows);
+		}
+	}
+
+	private void commentOnUser() {
+		ArrayList<User> users = sqlMngr.selectUserByListingBooked(currentUser.sin);
+		if (users.isEmpty()) {
+			System.out.println("Nobody has booked your listings so you cannot comment!");
+			return;
+		}
+
+		String input = "";
+		int choice = -1;
+		Comment comment = new Comment();
+		while (comment.sin == null) {
+			printMethods.printUsers(users);
+			System.out.printf("Choose a user to comment on [1-%d] or enter 0 to exit: ", users.size());
+			input = sc.nextLine().strip();
+			if (!checkInputClamp(input, users.size(), true)) {
+				continue;
+			}
+			choice = Integer.parseInt(input);
+			if (choice == 0) {
+				break;
+			}
+
+			User user = users.get(choice - 1);
+			System.out.print("Enter a rating (1-5): ");
+			input = sc.nextLine().strip();
+			if (input.length() != 0) {
+				if (!checkInputClamp(input, 5, false)) {
+					continue;
+				}
+
+				comment.rating = Integer.parseInt(input);
+			}
+
+			System.out.print("Enter a comment: ");
+			comment.text = sc.nextLine().strip();
+			comment.sin = currentUser.sin;
+
+			int rows = sqlMngr.insertCommentOnUser(comment.sin, comment.rating, comment.text, user.sin);
+			System.out.println("CommentOnUser rows affected: " + rows);
+		}
+	}
+
+	private void viewComments() {
+		String input = "";
+		while (input.equals("")) {
+			printMethods.printViewCommentOptions();
+			input = sc.nextLine().strip();
+			if (input.equals("1") || input.equals("2") || input.equals("3")) {
+				break;
+			} else {
+				System.out.println("That's not a valid option, please try again!");
+				input = "";
+			}
+		}
+
+		ArrayList<Comment> comments = null;
+
+		switch (input) {
+			case "1":
+				comments = sqlMngr.selectCommentByUser(currentUser.sin);
+				printMethods.printComments(comments);
+				break;
+			case "2":
+				comments = sqlMngr.selectCommentMadeByUser(currentUser.sin);
+				printMethods.printCommentsUserListing(comments);
+				break;
+			case "3":
+			  	input = "";
+				ArrayList<Listing> listings = null;
+			 	while (input.equals("")) {
+					listings = sqlMngr.selectHostsBySIN(currentUser.sin);
+					if (listings.isEmpty()) {
+						System.out.println("You have no listings!");
+						return;
+					}
+					printMethods.printHostedListings(listings);
+					System.out.printf("Choose a listing to view comments on [1-%d] or enter 0 to exit: ", listings.size());
+					input = sc.nextLine().strip();
+					if (!checkInputClamp(input, listings.size(), true)) {
+						input = "";
+					}
+				}
+				int choice = Integer.parseInt(input);
+				if (choice == 0) {
+					return;
+				}
+				Listing listing = listings.get(choice - 1);
+				comments = sqlMngr.selectCommentByListing(listing.street, listing.number, listing.postalCode,
+						listing.country);
+				printMethods.printComments(comments);
+				break;
+		}
+
+		System.out.print("Enter to continue. ");
+		sc.nextLine();
+	}
+
 	private void reportNumBookings() {
 		String input = null;
 		LocalDate[] dateFromTo = null;
@@ -1724,10 +1875,10 @@ public class CommandLine {
 		}
 	}
 
-  private void reportHost10Percent() {
-    ArrayList<String> result = sqlMngr.reportHost10Percent();
-    System.out.println(
+	private void reportHost10Percent() {
+		ArrayList<String> result = sqlMngr.reportHost10Percent();
+		System.out.println(
 				"\nHosts with more than 10% of the total number of listings in each city and country:");
 		printMethods.printHost10Percent(result);
-  }
+	}
 }
