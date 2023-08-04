@@ -21,6 +21,7 @@ public class SQLController {
 	private PreparedStatement insertUser = null;
 	private PreparedStatement selectUserBySIN = null;
 	private PreparedStatement selectUserByListingBooked = null;
+	private PreparedStatement deleteUser = null;
 	// Listing statements
 	private PreparedStatement insertListing = null;
 	private PreparedStatement selectAllListing = null;
@@ -28,6 +29,7 @@ public class SQLController {
 	private PreparedStatement selectListingPostalCode = null;
 	private PreparedStatement selectListingBooked = null;
 	private PreparedStatement deleteListing = null;
+	private PreparedStatement deleteListingHostedBySIN = null;
 	// Hosts statements
 	private PreparedStatement insertHosts = null;
 	private PreparedStatement selectHostsBySIN = null;
@@ -36,6 +38,7 @@ public class SQLController {
 	private PreparedStatement insertOrUpdateAvailability = null;
 	private PreparedStatement updateAvailability = null;
 	private PreparedStatement updateAvailabilityPrice = null;
+	private PreparedStatement updateAvailabilityBetweenDate = null;
 	private PreparedStatement selectAllAvailBetweenDate = null;
 	private PreparedStatement selectAvailBetweenDate = null;
 	private PreparedStatement sumAvailBetweenDate = null;
@@ -47,6 +50,7 @@ public class SQLController {
 	private PreparedStatement updateBookedUpdatedBySIN = null;
 	private PreparedStatement cancelBooked = null;
 	private PreparedStatement cancelBookedByListing = null;
+	private PreparedStatement cancelBookedByHostedListing = null;
 	private PreparedStatement selectAllBookedBySIN = null;
 	private PreparedStatement selectBookedBySIN = null;
 	private PreparedStatement selectAllBookedByHostListings = null;
@@ -191,7 +195,7 @@ public class SQLController {
 					+ " PostalCode VARCHAR(10),"
 					+ " Country VARCHAR(56),"
 					+ " PRIMARY KEY(Street, Number, PostalCode, Country),"
-					+ " FOREIGN KEY (SIN) REFERENCES User(SIN),"
+					+ " FOREIGN KEY (SIN) REFERENCES User(SIN) ON DELETE CASCADE,"
 					+ " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES"
 					+ " Listing(Street, Number, PostalCode, Country) ON DELETE CASCADE"
 					+ ")");
@@ -243,7 +247,7 @@ public class SQLController {
 					+ " Canceled BOOL NOT NULL DEFAULT 0,"
 					+ " Updated BOOL NOT NULL DEFAULT 0,"
 					+ " PRIMARY KEY (BID),"
-					+ " FOREIGN KEY (SIN) REFERENCES User(SIN),"
+					+ " FOREIGN KEY (SIN) REFERENCES User(SIN) ON DELETE CASCADE,"
 					+ " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES"
 					+ " Listing(Street, Number, PostalCode, Country) ON DELETE SET NULL"
 					+ ")");
@@ -263,14 +267,14 @@ public class SQLController {
 					+ " SIN CHAR(9) NOT NULL,"
 					+ " PRIMARY KEY (BID),"
 					+ " FOREIGN KEY (BID) REFERENCES Booked(BID),"
-					+ " FOREIGN KEY (SIN) REFERENCES User(SIN)"
+					+ " FOREIGN KEY (SIN) REFERENCES User(SIN) ON DELETE CASCADE"
 					+ ")");
 			// @formatter:on
 			createCancellationTb.executeUpdate();
 			createCancellationTb.close();
 		} catch (SQLException e) {
 			// success = false;
-			System.err.println("Booked table already exists!");
+			System.err.println("Cancellation table already exists!");
 			// e.printStackTrace();
 		}
 
@@ -282,14 +286,14 @@ public class SQLController {
 					+ " Text TEXT(65000),"
 					+ " Date DATETIME DEFAULT CURRENT_TIMESTAMP,"
 					+ " PRIMARY KEY(CID),"
-					+ " FOREIGN KEY (SIN) REFERENCES User(SIN)"
+					+ " FOREIGN KEY (SIN) REFERENCES User(SIN) ON DELETE SET NULL"
 					+ ")");
 			createCommentTb.executeUpdate();
 			createCommentTb.close();
 		} catch (SQLException e) {
 			// success = false;
 			System.err.println("Comment table already exists!");
-			e.printStackTrace();
+			// e.printStackTrace();
 		}
 
 		try {
@@ -298,14 +302,14 @@ public class SQLController {
 					+ " SINComment CHAR(9),"
 					+ " PRIMARY KEY(CID),"
 					+ " FOREIGN KEY (CID) REFERENCES Comment(CID),"
-					+ " FOREIGN KEY (SINComment) REFERENCES User(SIN)"
+					+ " FOREIGN KEY (SINComment) REFERENCES User(SIN) ON DELETE CASCADE"
 					+ ")");
 			createCommentUserTb.executeUpdate();
-			createCommentUserTb.close();
+			// createCommentUserTb.close();
 		} catch (SQLException e) {
 			// success = false;
 			System.err.println("CommentOnUser table already exists!");
-			e.printStackTrace();
+			// e.printStackTrace();
 		}
 
 		try {
@@ -324,7 +328,7 @@ public class SQLController {
 		} catch (SQLException e) {
 			// success = false;
 			System.err.println("CommentOnListing table already exists!");
-			e.printStackTrace();
+			// e.printStackTrace();
 		}
 
 		return success;
@@ -342,6 +346,7 @@ public class SQLController {
 					+ " INNER JOIN Booked ON User.SIN=Booked.SIN"
 					+ " INNER JOIN Hosts ON Booked.Street=Hosts.Street AND Booked.Number=Hosts.Number"
 					+ " AND Booked.PostalCode=Hosts.PostalCode AND Booked.Country=Hosts.Country WHERE Hosts.SIN=?");
+			deleteUser = conn.prepareStatement("DELETE FROM User WHERE SIN=?");
 			// Listing statements
 			insertListing = conn.prepareStatement("INSERT INTO Listing"
 					+ " (Type, Street, Number, PostalCode, Country, City, Latitude, Longitude, Amenities)"
@@ -357,6 +362,9 @@ public class SQLController {
 					+ " AND Listing.PostalCode=Booked.PostalCode AND Listing.Country=Booked.Country WHERE Booked.SIN=?");
 			deleteListing = conn
 					.prepareStatement("DELETE FROM Listing WHERE Street=? AND Number=? AND PostalCode=? AND Country=?");
+			deleteListingHostedBySIN = conn.prepareStatement("DELETE Listing FROM Listing INNER JOIN Hosts"
+					+ " ON Listing.Street=Hosts.Street AND Listing.Number=Hosts.Number AND Listing.PostalCode=Hosts.PostalCode"
+					+ " AND Listing.Country=Hosts.Country WHERE Hosts.SIN=?");
 			// Hosts statements
 			insertHosts = conn.prepareStatement("INSERT INTO Hosts"
 					+ " (SIN, Street, Number, PostalCode, Country)"
@@ -373,6 +381,9 @@ public class SQLController {
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND Date=?");
 			updateAvailabilityPrice = conn.prepareStatement("UPDATE Availability SET Price=? WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND Date=?");
+			updateAvailabilityBetweenDate = conn.prepareStatement("UPDATE Availability SET Available=? WHERE"
+					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND"
+					+ " (Date BETWEEN ? AND ?)");
 			selectAllAvailBetweenDate = conn.prepareStatement("SELECT * FROM Availability WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=? AND"
 					+ " (Date BETWEEN ? AND ?)");
@@ -398,6 +409,9 @@ public class SQLController {
 					+ " FromDate=? AND ToDate=?");
 			cancelBookedByListing = conn.prepareStatement("UPDATE Booked SET Canceled=1, Updated=? WHERE"
 					+ " Street=? AND Number=? AND PostalCode=? AND Country=?");
+			cancelBookedByHostedListing = conn.prepareStatement("UPDATE Booked INNER JOIN Hosts ON"
+					+ " Booked.Street=Hosts.Street AND Booked.Number=Hosts.Number AND Booked.PostalCode=Hosts.PostalCode"
+					+ " AND Booked.Country=Hosts.Country SET Booked.Canceled=1, Booked.Updated=1 WHERE Hosts.SIN=?");
 			selectAllBookedBySIN = conn.prepareStatement("SELECT * FROM Booked WHERE SIN=?");
 			selectBookedBySIN = conn.prepareStatement("SELECT * FROM Booked WHERE SIN=? AND Canceled=?");
 			selectAllBookedByHostListings = conn.prepareStatement("SELECT A.* FROM Booked AS A NATURAL JOIN"
@@ -715,6 +729,29 @@ public class SQLController {
 			System.err.println("Exception triggered when updating availability!");
 			e.printStackTrace();
 		}
+		return rows;
+	}
+
+	// Controls the execution of an update query.
+	// Functionality: Update an availability's availability between dates.
+	public int updateAvailability(String street, int number, String postalCode, String country, LocalDate from,
+			LocalDate to, boolean available) {
+		int rows = 0;
+		try {
+			int count = 0;
+			updateAvailabilityBetweenDate.setBoolean(++count, available);
+			updateAvailabilityBetweenDate.setString(++count, street);
+			updateAvailabilityBetweenDate.setInt(++count, number);
+			updateAvailabilityBetweenDate.setString(++count, postalCode);
+			updateAvailabilityBetweenDate.setString(++count, country);
+			updateAvailabilityBetweenDate.setObject(++count, from);
+			updateAvailabilityBetweenDate.setObject(++count, to);
+			rows = updateAvailabilityBetweenDate.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when updating availability!");
+			e.printStackTrace();
+		}
+
 		return rows;
 	}
 
@@ -1107,6 +1144,21 @@ public class SQLController {
 			rows = cancelBookedByListing.executeUpdate();
 		} catch (SQLException e) {
 			System.err.println("Exception triggered when cancelling booked record by listing!");
+			e.printStackTrace();
+		}
+		return rows;
+	}
+
+	// Controls the execution of an update query.
+	// Functionality: Cancel a booked record by host SIN.
+	public int cancelBookedByHostedListing(String sin) {
+		int rows = 0;
+		try {
+			int count = 0;
+			cancelBookedByHostedListing.setString(++count, sin);
+			rows = cancelBookedByHostedListing.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when cancelling booked record by host SIN!");
 			e.printStackTrace();
 		}
 		return rows;
@@ -1826,5 +1878,27 @@ public class SQLController {
 			e.printStackTrace();
 		}
 		return comments;
+	}
+
+	public int deleteUser(String sin) {
+		int rows = 0;
+		try {
+			ArrayList<Booked> booked = selectBookedBySIN(sin, false);
+			for (Booked booking : booked) {
+				rows += updateAvailability(booking.street, booking.number, booking.postalCode, booking.country,
+						booking.fromDate, booking.toDate, true);
+			}
+			rows += cancelBookedByHostedListing(sin);
+			int count = 0;
+			deleteListingHostedBySIN.setString(++count, sin);
+			rows += deleteListingHostedBySIN.executeUpdate();
+			count = 0;
+			deleteUser.setString(++count, sin);
+			rows += deleteUser.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when deleting user.");
+			e.printStackTrace();
+		}
+		return rows;
 	}
 }

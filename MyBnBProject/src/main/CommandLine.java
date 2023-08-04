@@ -252,6 +252,9 @@ public class CommandLine {
 				case 13:
 					this.signOut();
 					break;
+				case 14:
+					this.deleteUser();
+					break;
 				default:
 					System.out.println("That's not an option, please try again!");
 					break;
@@ -1387,11 +1390,9 @@ public class CommandLine {
 
 				System.out.println("Booking rows affected: " + rows);
 
-				rows = 0;
-				for (AvailabilityListing booking : bookedListings) {
-					rows += sqlMngr.updateAvailability(booking.street, booking.number, booking.postalCode,
-							booking.country, booking.date, false);
-				}
+				rows = sqlMngr.updateAvailability(bookedListings.get(0).street, bookedListings.get(0).number,
+						bookedListings.get(0).postalCode, bookedListings.get(0).country, bookedListings.get(0).date,
+						bookedListings.get(bookedListings.size() - 1).date, false);
 				System.out.println("Availability rows affected: " + rows);
 			}
 		}
@@ -1464,17 +1465,6 @@ public class CommandLine {
 		sc.nextLine();
 	}
 
-	private void updateAllAvailabilities(String street, int number, String postalCode, String country,
-			LocalDate from, LocalDate to, boolean available) {
-		int rows = 0;
-		LocalDate temp = from;
-		while (temp.isBefore(to) || temp.isEqual(to)) {
-			rows += sqlMngr.updateAvailability(street, number, postalCode, country, temp, true);
-			temp = temp.plusDays(1);
-		}
-		System.out.println("Availability rows affected: " + rows);
-	}
-
 	private void cancelBooked() {
 		String input = "";
 		ArrayList<Booked> booked = sqlMngr.selectBookedBySIN(currentUser.sin, false);
@@ -1507,8 +1497,9 @@ public class CommandLine {
 			rows = sqlMngr.insertCancellation(currentUser.sin, temp);
 			System.out.println("Cancellation rows affected: " + rows);
 
-			updateAllAvailabilities(booking.street, booking.number, booking.postalCode, booking.country,
+			rows = sqlMngr.updateAvailability(booking.street, booking.number, booking.postalCode, booking.country,
 					booking.fromDate, booking.toDate, true);
+			System.out.println("Availability rows affected: " + rows);
 		}
 	}
 
@@ -1590,8 +1581,9 @@ public class CommandLine {
 			rows = sqlMngr.insertCancellation(currentUser.sin, temp);
 			System.out.println("Cancellation rows affected: " + rows);
 
-			updateAllAvailabilities(booking.street, booking.number, booking.postalCode, booking.country,
+			rows = sqlMngr.updateAvailability(booking.street, booking.number, booking.postalCode, booking.country,
 					booking.fromDate, booking.toDate, true);
+			System.out.println("Availability rows affected: " + rows);
 		}
 	}
 
@@ -1698,10 +1690,18 @@ public class CommandLine {
 		switch (input) {
 			case "1":
 				comments = sqlMngr.selectCommentByUser(currentUser.sin);
+				if (comments.isEmpty()) {
+					System.out.println("You have no comments!");
+					return;
+				}
 				printMethods.printComments(comments);
 				break;
 			case "2":
 				comments = sqlMngr.selectCommentMadeByUser(currentUser.sin);
+				if (comments.isEmpty()) {
+					System.out.println("You have written no comments!");
+					return;
+				}
 				printMethods.printCommentsUserListing(comments);
 				break;
 			case "3":
@@ -1728,12 +1728,34 @@ public class CommandLine {
 				Listing listing = listings.get(choice - 1);
 				comments = sqlMngr.selectCommentByListing(listing.street, listing.number, listing.postalCode,
 						listing.country);
+				if (comments.isEmpty()) {
+					System.out.println("This listing has no comments!");
+					return;
+				}
 				printMethods.printComments(comments);
 				break;
 		}
 
 		System.out.print("Enter to continue. ");
 		sc.nextLine();
+	}
+
+	private void deleteUser() {
+		String input = "";
+		System.out.println();
+		while (!input.equalsIgnoreCase("y")) {
+			System.out.print("Are you sure you want to delete your account? [y/n]: ");
+			input = sc.nextLine().strip();
+			if (input.equalsIgnoreCase("n")) {
+				break;
+			} else if (input.equalsIgnoreCase("y")) {
+				int rows = sqlMngr.deleteUser(currentUser.sin);
+				System.out.println("Rows affected: " + rows);
+				this.currentUser = null;
+			} else {
+				System.out.println("That's not proper input, please try again!");
+			}
+		}
 	}
 
 	private void reportNumBookings() {

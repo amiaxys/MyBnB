@@ -14,6 +14,7 @@ public class Print {
 		System.out.println(" 1. Create an account.");
 		System.out.println(" 2. Sign in.");
 		System.out.println(" 3. Run reports.");
+		System.out.println("---------------------------");
 		System.out.print("Choose one of the previous options [0-3]: ");
 	}
 
@@ -31,6 +32,7 @@ public class Print {
 				" 6. Report hosts and renters with the largest number of cancellations within a year.");
 		System.out.println(
 				" 7. Report the set of most popular noun phrases (in comments) for each listing. [not implemented]");
+		System.out.println("---------------------------");
 		System.out.print("Choose one of the previous options [0-7]: ");
 	}
 
@@ -38,9 +40,11 @@ public class Print {
 	public void userMenu(String name, boolean updated) {
 		System.out.println("\n=========USER MENU=========");
 		System.out.printf("Welcome back%s" + name + "!\n", name.equals("") ? "" : ", ");
+		System.out.println("---------------------------");
 		if (updated) {
 			System.out.println("Your bookings have been updated!");
 			System.out.println("To view your updated bookings, enter \"u\".");
+			System.out.println("---------------------------");
 		}
 		int count = 0;
 		System.out.printf(" %d. Exit.\n", count++);
@@ -62,8 +66,8 @@ public class Print {
 		System.out.printf(" %d. View your comments.\n", count++);
 		System.out.println("---------------------------");
 		System.out.printf(" %d. Sign out.\n", count++);
-		// add comments
-		// add delete account later
+		System.out.printf(" %d. Delete your account.\n", count++);
+		System.out.println("---------------------------");
 		System.out.print("Choose one of the previous options [0-14]: ");
 	}
 
@@ -87,17 +91,17 @@ public class Print {
 
 	public void printViewBookingOptions() {
 		System.out.println("Do you want to view only active bookings, canceled bookings or all bookings?");
-		System.out.println(" 1. Active bookings");
-		System.out.println(" 2. Canceled bookings");
-		System.out.println(" 3. All bookings");
+		System.out.println(" 1. Active bookings.");
+		System.out.println(" 2. Canceled bookings.");
+		System.out.println(" 3. All bookings.");
 		System.out.print("Enter an option [1-3]: ");
 	}
 
 	public void printViewCommentOptions() {
 		System.out.println("Do you want to view comments received, comments made or comments on your listings?");
-		System.out.println(" 1. Comments you have received");
-		System.out.println(" 2. Comments you have made");
-		System.out.println(" 3. Comments on your listings");
+		System.out.println(" 1. Comments you have received.");
+		System.out.println(" 2. Comments you have written.");
+		System.out.println(" 3. Comments on your listings.");
 		System.out.print("Enter an option [1-3]: ");
 	}
 
