@@ -235,7 +235,7 @@ public class CommandLine {
 					this.cancelBooked();
 					break;
 				case 8:
-					this.viewListingBookings(); // remember to add SIN to print and ability to view comments here
+					this.viewListingBookings(); // remember to add ability to view comments here
 					break;
 				case 9:
 					this.cancelListingBooked();
@@ -1525,7 +1525,7 @@ public class CommandLine {
 					System.out.println("You have no active bookings for your listings!");
 					return;
 				}
-				printMethods.printBooked(booked);
+				printMethods.printBookedWithSIN(booked);
 				break;
 			case "2":
 				booked = sqlMngr.selectBookedByHostListings(currentUser.sin, true);
@@ -1533,7 +1533,7 @@ public class CommandLine {
 					System.out.println("You have no canceled bookings for your listings!");
 					return;
 				}
-				printMethods.printBooked(booked);
+				printMethods.printBookedWithSIN(booked);
 				break;
 			case "3":
 				booked = sqlMngr.selectBookedByHostListings(currentUser.sin);
@@ -1541,7 +1541,7 @@ public class CommandLine {
 					System.out.println("You have no bookings for your listings!");
 					return;
 				}
-				printMethods.printBookedWithCanceled(booked, false);
+				printMethods.printBookedWithSINCanceled(booked, false);
 				break;
 		}
 
