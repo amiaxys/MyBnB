@@ -29,8 +29,9 @@ public class CommandLine {
 
 	private Console console = System.console();
 
-	DecimalFormat coordinatesDf = new DecimalFormat("#.####");
-	DecimalFormat priceDf = new DecimalFormat("#.##");
+	public static DecimalFormat coordinatesDf = new DecimalFormat("#.####");
+	public static DecimalFormat priceDf = new DecimalFormat("#.##");
+  public static DateTimeFormatter format = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT);
 
 	private ArrayList<String> amenities = new ArrayList<>(Arrays.asList("wifi", "kitchen", "washer", "dryer",
 			"air conditioning", "heating", "dedicated workspace", "tv", "hair dryer", "iron", "pool", "hot tub",
@@ -326,7 +327,6 @@ public class CommandLine {
 	}
 
 	private LocalDate checkValidDate(String date) {
-		DateTimeFormatter format = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT);
 		LocalDate parsedDate = null;
 		try {
 			parsedDate = LocalDate.parse(date, format);
