@@ -1,10 +1,17 @@
 package main;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import org.apache.ibatis.jdbc.ScriptRunner;
 
 public class SQLController {
 	private static final String dbClassName = "com.mysql.cj.jdbc.Driver";// "com.mysql.jdbc.Driver";
@@ -81,7 +88,7 @@ public class SQLController {
 	private PreparedStatement selectCommentByListing = null;
 	private PreparedStatement selectCommentByUser = null;
 	private PreparedStatement selectCommentMadeByUser = null;
-  private PreparedStatement selectAllListingWComments = null;
+	private PreparedStatement selectAllListingWComments = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -96,7 +103,7 @@ public class SQLController {
 			conn.close();
 			conn = DriverManager.getConnection(connection, user, pass);
 			success = prepareStatements();
-      success = createTables();
+			success = createTables();
 
 		} catch (SQLException e) {
 			success = false;
@@ -154,36 +161,53 @@ public class SQLController {
 			createUserTb.executeUpdate();
 			createUserTb.close();
 
-      // insert rows to table
-      try {
-        int count = 0, rows = 0;
-        Password passMethods = new Password(); 
+			// insert rows to table
+			try {
+				int count = 0, rows = 0;
+				Password passMethods = new Password();
 
-        LocalDate birthDate = LocalDate.parse("1998-04-16", CommandLine.format);
-        byte[] salt = passMethods.getSalt(); String password = passMethods.getSaltHashedPassword("password", salt);
-        insertUser.setString(++count, "111111111"); insertUser.setString(++count, password); insertUser.setBytes(++count, salt);
-        insertUser.setString(++count, "Andy"); insertUser.setString(++count, "823 London Ave"); insertUser.setObject(++count, birthDate);
-        insertUser.setString(++count, "Lawyer");
-        rows += insertUser.executeUpdate();
+				LocalDate birthDate = LocalDate.parse("1998-04-16", CommandLine.format);
+				byte[] salt = passMethods.getSalt();
+				String password = passMethods.getSaltHashedPassword("password", salt);
+				insertUser.setString(++count, "111111111");
+				insertUser.setString(++count, password);
+				insertUser.setBytes(++count, salt);
+				insertUser.setString(++count, "Andy");
+				insertUser.setString(++count, "823 London Ave");
+				insertUser.setObject(++count, birthDate);
+				insertUser.setString(++count, "Lawyer");
+				rows += insertUser.executeUpdate();
 
-        count = 0; birthDate = LocalDate.parse("1971-04-19", CommandLine.format);
-        salt = passMethods.getSalt(); password = passMethods.getSaltHashedPassword("password", salt);
-        insertUser.setString(++count, "123456789"); insertUser.setString(++count, password); insertUser.setBytes(++count, salt);
-        insertUser.setString(++count, "Hoppy Molly"); insertUser.setString(++count, "5 Some street"); insertUser.setObject(++count, birthDate);
-        insertUser.setString(++count, "Teacher");
-        rows += insertUser.executeUpdate();
+				count = 0;
+				birthDate = LocalDate.parse("1971-04-19", CommandLine.format);
+				salt = passMethods.getSalt();
+				password = passMethods.getSaltHashedPassword("password", salt);
+				insertUser.setString(++count, "123456789");
+				insertUser.setString(++count, password);
+				insertUser.setBytes(++count, salt);
+				insertUser.setString(++count, "Hoppy Molly");
+				insertUser.setString(++count, "5 Some street");
+				insertUser.setObject(++count, birthDate);
+				insertUser.setString(++count, "Teacher");
+				rows += insertUser.executeUpdate();
 
-        count = 0; birthDate = LocalDate.parse("2000-12-12", CommandLine.format);
-        salt = passMethods.getSalt(); password = passMethods.getSaltHashedPassword("password", salt);
-        insertUser.setString(++count, "555555555"); insertUser.setString(++count, password); insertUser.setBytes(++count, salt);
-        insertUser.setString(++count, "Bobby Smith"); insertUser.setString(++count, "123 Street"); insertUser.setObject(++count, birthDate);
-        insertUser.setString(++count, "Student");
-        rows += insertUser.executeUpdate();
+				count = 0;
+				birthDate = LocalDate.parse("2000-12-12", CommandLine.format);
+				salt = passMethods.getSalt();
+				password = passMethods.getSaltHashedPassword("password", salt);
+				insertUser.setString(++count, "555555555");
+				insertUser.setString(++count, password);
+				insertUser.setBytes(++count, salt);
+				insertUser.setString(++count, "Bobby Smith");
+				insertUser.setString(++count, "123 Street");
+				insertUser.setObject(++count, birthDate);
+				insertUser.setString(++count, "Student");
+				rows += insertUser.executeUpdate();
 
-        System.out.println("Successfully inserted "+rows+" sample users!");
-      } catch (SQLException e) {
-        System.err.println("Exception triggered when inserting sample users!");
-      }
+				System.out.println("Successfully inserted " + rows + " sample users!");
+			} catch (SQLException e) {
+				System.err.println("Exception triggered when inserting sample users!");
+			}
 		} catch (SQLException e) {
 			// success = false;
 			System.err.println("User table already exists!");
@@ -213,53 +237,82 @@ public class SQLController {
 			createListingTb.executeUpdate();
 			createListingTb.close();
 
-      // insert rows to table
-      try {
-        int count = 0, rows = 0;
-        BigDecimal latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("51.123")));
-        BigDecimal longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("108.3")));
-        insertListing.setString(++count, "apartment"); insertListing.setString(++count, "Expensive Road"); insertListing.setInt(++count, 858); 
-        insertListing.setString(++count, "B3C3B2"); insertListing.setString(++count, "United States"); insertListing.setString(++count, "LA");
-        insertListing.setBigDecimal(++count, latitude); insertListing.setBigDecimal(++count, longitude);
-        insertListing.setString(++count, "Dryer,TV,Iron,Smoke alarm");
-			  rows += insertListing.executeUpdate();
+			// insert rows to table
+			try {
+				int count = 0, rows = 0;
+				BigDecimal latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("51.123")));
+				BigDecimal longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("108.3")));
+				insertListing.setString(++count, "apartment");
+				insertListing.setString(++count, "Expensive Road");
+				insertListing.setInt(++count, 858);
+				insertListing.setString(++count, "B3C3B2");
+				insertListing.setString(++count, "United States");
+				insertListing.setString(++count, "LA");
+				insertListing.setBigDecimal(++count, latitude);
+				insertListing.setBigDecimal(++count, longitude);
+				insertListing.setString(++count, "Dryer,TV,Iron,Smoke alarm");
+				rows += insertListing.executeUpdate();
 
-        count = 0; latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("12.2")));
-        longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("34.661")));
-        insertListing.setString(++count, "room"); insertListing.setString(++count, "Main Street"); insertListing.setInt(++count, 122); 
-        insertListing.setString(++count, "A1A1A1"); insertListing.setString(++count, "Canada"); insertListing.setString(++count, "Toronto");
-        insertListing.setBigDecimal(++count, latitude); insertListing.setBigDecimal(++count, longitude);
-        insertListing.setString(++count, "Wifi,Kitchen,Washer");
-			  rows += insertListing.executeUpdate();
+				count = 0;
+				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("12.2")));
+				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("34.661")));
+				insertListing.setString(++count, "room");
+				insertListing.setString(++count, "Main Street");
+				insertListing.setInt(++count, 122);
+				insertListing.setString(++count, "A1A1A1");
+				insertListing.setString(++count, "Canada");
+				insertListing.setString(++count, "Toronto");
+				insertListing.setBigDecimal(++count, latitude);
+				insertListing.setBigDecimal(++count, longitude);
+				insertListing.setString(++count, "Wifi,Kitchen,Washer");
+				rows += insertListing.executeUpdate();
 
-        count = 0; latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("12.3451")));
-        longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("34.589")));
-        insertListing.setString(++count, "room"); insertListing.setString(++count, "Main Street"); insertListing.setInt(++count, 125); 
-        insertListing.setString(++count, "A1A1A1"); insertListing.setString(++count, "Canada"); insertListing.setString(++count, "Toronto");
-        insertListing.setBigDecimal(++count, latitude); insertListing.setBigDecimal(++count, longitude);
-        insertListing.setString(++count, "Heating,Free parking");
-			  rows += insertListing.executeUpdate();
-        
-        count = 0; latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("12")));
-        longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("23.5411")));
-        insertListing.setString(++count, "house"); insertListing.setString(++count, "Second Main Street"); insertListing.setInt(++count, 43); 
-        insertListing.setString(++count, "A1A1A3"); insertListing.setString(++count, "Canada"); insertListing.setString(++count, "Toronto");
-        insertListing.setBigDecimal(++count, latitude); insertListing.setBigDecimal(++count, longitude);
-        insertListing.setString(++count, "Air conditioning,TV,Pool");
-			  rows += insertListing.executeUpdate();
+				count = 0;
+				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("12.3451")));
+				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("34.589")));
+				insertListing.setString(++count, "room");
+				insertListing.setString(++count, "Main Street");
+				insertListing.setInt(++count, 125);
+				insertListing.setString(++count, "A1A1A1");
+				insertListing.setString(++count, "Canada");
+				insertListing.setString(++count, "Toronto");
+				insertListing.setBigDecimal(++count, latitude);
+				insertListing.setBigDecimal(++count, longitude);
+				insertListing.setString(++count, "Heating,Free parking");
+				rows += insertListing.executeUpdate();
 
-        count = 0; latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("-30.453")));
-        longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("-70.71")));
-        insertListing.setString(++count, "house"); insertListing.setString(++count, "Some Street"); insertListing.setInt(++count, 4); 
-        insertListing.setString(++count, "P3CC"); insertListing.setString(++count, "Canada"); insertListing.setString(++count, "City");
-        insertListing.setBigDecimal(++count, latitude); insertListing.setBigDecimal(++count, longitude);
-        insertListing.setString(++count, "Wifi,Gym,Beachfront");
-			  rows += insertListing.executeUpdate();
+				count = 0;
+				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("12")));
+				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("23.5411")));
+				insertListing.setString(++count, "house");
+				insertListing.setString(++count, "Second Main Street");
+				insertListing.setInt(++count, 43);
+				insertListing.setString(++count, "A1A1A3");
+				insertListing.setString(++count, "Canada");
+				insertListing.setString(++count, "Toronto");
+				insertListing.setBigDecimal(++count, latitude);
+				insertListing.setBigDecimal(++count, longitude);
+				insertListing.setString(++count, "Air conditioning,TV,Pool");
+				rows += insertListing.executeUpdate();
 
-        System.out.println("Successfully inserted "+rows+" sample listings!");
-      } catch (SQLException e) {
-        System.err.println("Exception triggered when inserting sample listings!");
-      }
+				count = 0;
+				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("-30.453")));
+				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("-70.71")));
+				insertListing.setString(++count, "house");
+				insertListing.setString(++count, "Some Street");
+				insertListing.setInt(++count, 4);
+				insertListing.setString(++count, "P3CC");
+				insertListing.setString(++count, "Canada");
+				insertListing.setString(++count, "City");
+				insertListing.setBigDecimal(++count, latitude);
+				insertListing.setBigDecimal(++count, longitude);
+				insertListing.setString(++count, "Wifi,Gym,Beachfront");
+				rows += insertListing.executeUpdate();
+
+				System.out.println("Successfully inserted " + rows + " sample listings!");
+			} catch (SQLException e) {
+				System.err.println("Exception triggered when inserting sample listings!");
+			}
 		} catch (SQLException e) {
 			// success = false;
 			System.err.println("Listing table already exists!");
@@ -282,38 +335,53 @@ public class SQLController {
 			// @formatter:on
 			createHostsTb.executeUpdate();
 			createHostsTb.close();
-      
-      // insert rows to table
-      try {
-        int count = 0, rows = 0;
-        insertHosts.setString(++count, "111111111"); insertHosts.setString(++count, "Expensive Road"); insertHosts.setInt(++count, 858);
-			  insertHosts.setString(++count, "B3C3B2"); insertHosts.setString(++count, "United States");
-			  rows += insertHosts.executeUpdate();
 
-        count = 0; 
-        insertHosts.setString(++count, "111111111"); insertHosts.setString(++count, "Main Street"); insertHosts.setInt(++count, 122);
-			  insertHosts.setString(++count, "A1A1A1"); insertHosts.setString(++count, "Canada");
-			  rows += insertHosts.executeUpdate();
+			// insert rows to table
+			try {
+				int count = 0, rows = 0;
+				insertHosts.setString(++count, "111111111");
+				insertHosts.setString(++count, "Expensive Road");
+				insertHosts.setInt(++count, 858);
+				insertHosts.setString(++count, "B3C3B2");
+				insertHosts.setString(++count, "United States");
+				rows += insertHosts.executeUpdate();
 
-        count = 0; 
-        insertHosts.setString(++count, "111111111"); insertHosts.setString(++count, "Some Street"); insertHosts.setInt(++count, 4);
-			  insertHosts.setString(++count, "P3CC"); insertHosts.setString(++count, "Canada");
-			  rows += insertHosts.executeUpdate();
-        
-        count = 0;
-        insertHosts.setString(++count, "555555555"); insertHosts.setString(++count, "Main Street"); insertHosts.setInt(++count, 125);
-			  insertHosts.setString(++count, "A1A1A1"); insertHosts.setString(++count, "Canada");
-			  rows += insertHosts.executeUpdate();
+				count = 0;
+				insertHosts.setString(++count, "111111111");
+				insertHosts.setString(++count, "Main Street");
+				insertHosts.setInt(++count, 122);
+				insertHosts.setString(++count, "A1A1A1");
+				insertHosts.setString(++count, "Canada");
+				rows += insertHosts.executeUpdate();
 
-        count = 0;
-        insertHosts.setString(++count, "555555555"); insertHosts.setString(++count, "Second Main Street"); insertHosts.setInt(++count, 43);
-			  insertHosts.setString(++count, "A1A1A3"); insertHosts.setString(++count, "Canada");
-			  rows += insertHosts.executeUpdate();
+				count = 0;
+				insertHosts.setString(++count, "111111111");
+				insertHosts.setString(++count, "Some Street");
+				insertHosts.setInt(++count, 4);
+				insertHosts.setString(++count, "P3CC");
+				insertHosts.setString(++count, "Canada");
+				rows += insertHosts.executeUpdate();
 
-        System.out.println("Successfully inserted "+rows+" sample hosts!");
-      } catch (SQLException e) {
-        System.err.println("Exception triggered when inserting sample hosts!");
-      }
+				count = 0;
+				insertHosts.setString(++count, "555555555");
+				insertHosts.setString(++count, "Main Street");
+				insertHosts.setInt(++count, 125);
+				insertHosts.setString(++count, "A1A1A1");
+				insertHosts.setString(++count, "Canada");
+				rows += insertHosts.executeUpdate();
+
+				count = 0;
+				insertHosts.setString(++count, "555555555");
+				insertHosts.setString(++count, "Second Main Street");
+				insertHosts.setInt(++count, 43);
+				insertHosts.setString(++count, "A1A1A3");
+				insertHosts.setString(++count, "Canada");
+				rows += insertHosts.executeUpdate();
+
+				System.out.println("Successfully inserted " + rows + " sample hosts!");
+			} catch (SQLException e) {
+				System.err.println("Exception triggered when inserting sample hosts!");
+			}
 		} catch (SQLException e) {
 			// success = false;
 			System.err.println("Hosts table already exists!");
@@ -338,108 +406,182 @@ public class SQLController {
 			createAvailabilityTb.executeUpdate();
 			createAvailabilityTb.close();
 
-      // insert rows to table
-      try {
-        int count = 0, rows = 0;
-        LocalDate date = LocalDate.parse("2023-09-10", CommandLine.format);
-        BigDecimal price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("756.5")));
-        insertAvailability.setString(++count, "Expensive Road"); insertAvailability.setInt(++count, 858); insertAvailability.setString(++count, "B3C3B2");
-        insertAvailability.setString(++count, "United States"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, true);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
-        count = 0; date = LocalDate.parse("2023-09-11", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("756.5")));
-        insertAvailability.setString(++count, "Expensive Road"); insertAvailability.setInt(++count, 858); insertAvailability.setString(++count, "B3C3B2");
-        insertAvailability.setString(++count, "United States"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, true);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
-        count = 0; date = LocalDate.parse("2023-09-12", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("756.5")));
-        insertAvailability.setString(++count, "Expensive Road"); insertAvailability.setInt(++count, 858); insertAvailability.setString(++count, "B3C3B2");
-        insertAvailability.setString(++count, "United States"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, true);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
+			// insert rows to table
+			try {
+				int count = 0, rows = 0;
+				LocalDate date = LocalDate.parse("2023-09-10", CommandLine.format);
+				BigDecimal price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("756.5")));
+				insertAvailability.setString(++count, "Expensive Road");
+				insertAvailability.setInt(++count, 858);
+				insertAvailability.setString(++count, "B3C3B2");
+				insertAvailability.setString(++count, "United States");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, true);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-11", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("756.5")));
+				insertAvailability.setString(++count, "Expensive Road");
+				insertAvailability.setInt(++count, 858);
+				insertAvailability.setString(++count, "B3C3B2");
+				insertAvailability.setString(++count, "United States");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, true);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-12", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("756.5")));
+				insertAvailability.setString(++count, "Expensive Road");
+				insertAvailability.setInt(++count, 858);
+				insertAvailability.setString(++count, "B3C3B2");
+				insertAvailability.setString(++count, "United States");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, true);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
 
-        count = 0; date = LocalDate.parse("2023-09-28", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("120.13")));
-        insertAvailability.setString(++count, "Main Street"); insertAvailability.setInt(++count, 122); insertAvailability.setString(++count, "A1A1A1");
-        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, true);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
-        count = 0; date = LocalDate.parse("2023-09-29", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("120.13")));
-        insertAvailability.setString(++count, "Main Street"); insertAvailability.setInt(++count, 122); insertAvailability.setString(++count, "A1A1A1");
-        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, false);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
-        count = 0; date = LocalDate.parse("2023-09-30", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("120.13")));
-        insertAvailability.setString(++count, "Main Street"); insertAvailability.setInt(++count, 122); insertAvailability.setString(++count, "A1A1A1");
-        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, true);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-28", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("120.13")));
+				insertAvailability.setString(++count, "Main Street");
+				insertAvailability.setInt(++count, 122);
+				insertAvailability.setString(++count, "A1A1A1");
+				insertAvailability.setString(++count, "Canada");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, true);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-29", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("120.13")));
+				insertAvailability.setString(++count, "Main Street");
+				insertAvailability.setInt(++count, 122);
+				insertAvailability.setString(++count, "A1A1A1");
+				insertAvailability.setString(++count, "Canada");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, false);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-30", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("120.13")));
+				insertAvailability.setString(++count, "Main Street");
+				insertAvailability.setInt(++count, 122);
+				insertAvailability.setString(++count, "A1A1A1");
+				insertAvailability.setString(++count, "Canada");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, true);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
 
-        count = 0; date = LocalDate.parse("2023-09-14", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("85")));
-        insertAvailability.setString(++count, "Main Street"); insertAvailability.setInt(++count, 125); insertAvailability.setString(++count, "A1A1A1");
-        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, false);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
-        count = 0; date = LocalDate.parse("2023-09-18", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("85")));
-        insertAvailability.setString(++count, "Main Street"); insertAvailability.setInt(++count, 125); insertAvailability.setString(++count, "A1A1A1");
-        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, true);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
-        count = 0; date = LocalDate.parse("2023-09-19", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("85")));
-        insertAvailability.setString(++count, "Main Street"); insertAvailability.setInt(++count, 125); insertAvailability.setString(++count, "A1A1A1");
-        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, false);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-14", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("85")));
+				insertAvailability.setString(++count, "Main Street");
+				insertAvailability.setInt(++count, 125);
+				insertAvailability.setString(++count, "A1A1A1");
+				insertAvailability.setString(++count, "Canada");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, false);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-18", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("85")));
+				insertAvailability.setString(++count, "Main Street");
+				insertAvailability.setInt(++count, 125);
+				insertAvailability.setString(++count, "A1A1A1");
+				insertAvailability.setString(++count, "Canada");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, true);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-19", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("85")));
+				insertAvailability.setString(++count, "Main Street");
+				insertAvailability.setInt(++count, 125);
+				insertAvailability.setString(++count, "A1A1A1");
+				insertAvailability.setString(++count, "Canada");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, false);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
 
-        count = 0; date = LocalDate.parse("2023-09-20", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("510.34")));
-        insertAvailability.setString(++count, "Second Main Street"); insertAvailability.setInt(++count, 43); insertAvailability.setString(++count, "A1A1A3");
-        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, true);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
-        count = 0; date = LocalDate.parse("2023-09-21", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("510.34")));
-        insertAvailability.setString(++count, "Second Main Street"); insertAvailability.setInt(++count, 43); insertAvailability.setString(++count, "A1A1A3");
-        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, false);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
-        count = 0; date = LocalDate.parse("2023-09-22", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("510.34")));
-        insertAvailability.setString(++count, "Second Main Street"); insertAvailability.setInt(++count, 43); insertAvailability.setString(++count, "A1A1A3");
-        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, true);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-20", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("510.34")));
+				insertAvailability.setString(++count, "Second Main Street");
+				insertAvailability.setInt(++count, 43);
+				insertAvailability.setString(++count, "A1A1A3");
+				insertAvailability.setString(++count, "Canada");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, true);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-21", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("510.34")));
+				insertAvailability.setString(++count, "Second Main Street");
+				insertAvailability.setInt(++count, 43);
+				insertAvailability.setString(++count, "A1A1A3");
+				insertAvailability.setString(++count, "Canada");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, false);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-22", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("510.34")));
+				insertAvailability.setString(++count, "Second Main Street");
+				insertAvailability.setInt(++count, 43);
+				insertAvailability.setString(++count, "A1A1A3");
+				insertAvailability.setString(++count, "Canada");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, true);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
 
-        count = 0; date = LocalDate.parse("2023-09-16", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("723.4")));
-        insertAvailability.setString(++count, "Some Street"); insertAvailability.setInt(++count, 4); insertAvailability.setString(++count, "P3CC");
-        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, true);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
-        count = 0; date = LocalDate.parse("2023-09-17", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("723.4")));
-        insertAvailability.setString(++count, "Some Street"); insertAvailability.setInt(++count, 4); insertAvailability.setString(++count, "P3CC");
-        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, true);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
-        count = 0; date = LocalDate.parse("2023-09-18", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("723.4")));
-        insertAvailability.setString(++count, "Some Street"); insertAvailability.setInt(++count, 4); insertAvailability.setString(++count, "P3CC");
-        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, false);
-        insertAvailability.setBigDecimal(++count, price);
-        rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-16", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("723.4")));
+				insertAvailability.setString(++count, "Some Street");
+				insertAvailability.setInt(++count, 4);
+				insertAvailability.setString(++count, "P3CC");
+				insertAvailability.setString(++count, "Canada");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, true);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-17", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("723.4")));
+				insertAvailability.setString(++count, "Some Street");
+				insertAvailability.setInt(++count, 4);
+				insertAvailability.setString(++count, "P3CC");
+				insertAvailability.setString(++count, "Canada");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, true);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-18", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("723.4")));
+				insertAvailability.setString(++count, "Some Street");
+				insertAvailability.setInt(++count, 4);
+				insertAvailability.setString(++count, "P3CC");
+				insertAvailability.setString(++count, "Canada");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, false);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
 
-        System.out.println("Successfully inserted "+rows+" sample availability!");
-      } catch (SQLException e) {
-        System.err.println("Exception triggered when inserting sample availability!");
-      }
+				System.out.println("Successfully inserted " + rows + " sample availability!");
+			} catch (SQLException e) {
+				System.err.println("Exception triggered when inserting sample availability!");
+			}
 		} catch (SQLException e) {
 			// success = false;
 			System.err.println("Availability table already exists!");
@@ -470,48 +612,82 @@ public class SQLController {
 			createBookedTb.executeUpdate();
 			createBookedTb.close();
 
-      // insert rows to table
-      try {
-        int count = 0, rows = 0;
-        LocalDate date = LocalDate.parse("2023-09-29", CommandLine.format);
-        BigDecimal price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("120.13")));
-        insertBooked.setString(++count, "555555555"); insertBooked.setString(++count, "Main Street"); insertBooked.setInt(++count, 122);
-        insertBooked.setString(++count, "A1A1A1"); insertBooked.setString(++count, "Canada"); insertBooked.setObject(++count, date);
-        insertBooked.setObject(++count, date); insertBooked.setString(++count, "cash"); insertBooked.setBigDecimal(++count, price);
-        rows += insertBooked.executeUpdate();
+			// insert rows to table
+			try {
+				int count = 0, rows = 0;
+				LocalDate date = LocalDate.parse("2023-09-29", CommandLine.format);
+				BigDecimal price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("120.13")));
+				insertBooked.setString(++count, "555555555");
+				insertBooked.setString(++count, "Main Street");
+				insertBooked.setInt(++count, 122);
+				insertBooked.setString(++count, "A1A1A1");
+				insertBooked.setString(++count, "Canada");
+				insertBooked.setObject(++count, date);
+				insertBooked.setObject(++count, date);
+				insertBooked.setString(++count, "cash");
+				insertBooked.setBigDecimal(++count, price);
+				rows += insertBooked.executeUpdate();
 
-        count = 0; date = LocalDate.parse("2023-09-14", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("85")));
-        insertBooked.setString(++count, "555555555"); insertBooked.setString(++count, "Main Street"); insertBooked.setInt(++count, 125);
-        insertBooked.setString(++count, "A1A1A1"); insertBooked.setString(++count, "Canada"); insertBooked.setObject(++count, date);
-        insertBooked.setObject(++count, date); insertBooked.setString(++count, "credit card"); insertBooked.setBigDecimal(++count, price);
-        rows += insertBooked.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-14", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("85")));
+				insertBooked.setString(++count, "555555555");
+				insertBooked.setString(++count, "Main Street");
+				insertBooked.setInt(++count, 125);
+				insertBooked.setString(++count, "A1A1A1");
+				insertBooked.setString(++count, "Canada");
+				insertBooked.setObject(++count, date);
+				insertBooked.setObject(++count, date);
+				insertBooked.setString(++count, "credit card");
+				insertBooked.setBigDecimal(++count, price);
+				rows += insertBooked.executeUpdate();
 
-        count = 0; date = LocalDate.parse("2023-09-19", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("85")));
-        insertBooked.setString(++count, "123456789"); insertBooked.setString(++count, "Main Street"); insertBooked.setInt(++count, 125);
-        insertBooked.setString(++count, "A1A1A1"); insertBooked.setString(++count, "Canada"); insertBooked.setObject(++count, date);
-        insertBooked.setObject(++count, date); insertBooked.setString(++count, "debit card"); insertBooked.setBigDecimal(++count, price);
-        rows += insertBooked.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-19", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("85")));
+				insertBooked.setString(++count, "123456789");
+				insertBooked.setString(++count, "Main Street");
+				insertBooked.setInt(++count, 125);
+				insertBooked.setString(++count, "A1A1A1");
+				insertBooked.setString(++count, "Canada");
+				insertBooked.setObject(++count, date);
+				insertBooked.setObject(++count, date);
+				insertBooked.setString(++count, "debit card");
+				insertBooked.setBigDecimal(++count, price);
+				rows += insertBooked.executeUpdate();
 
-        count = 0; date = LocalDate.parse("2023-09-18", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("723.4")));
-        insertBooked.setString(++count, "123456789"); insertBooked.setString(++count, "Some Street"); insertBooked.setInt(++count, 4);
-        insertBooked.setString(++count, "P3CC"); insertBooked.setString(++count, "Canada"); insertBooked.setObject(++count, date);
-        insertBooked.setObject(++count, date); insertBooked.setString(++count, "credit card"); insertBooked.setBigDecimal(++count, price);
-        rows += insertBooked.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-18", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("723.4")));
+				insertBooked.setString(++count, "123456789");
+				insertBooked.setString(++count, "Some Street");
+				insertBooked.setInt(++count, 4);
+				insertBooked.setString(++count, "P3CC");
+				insertBooked.setString(++count, "Canada");
+				insertBooked.setObject(++count, date);
+				insertBooked.setObject(++count, date);
+				insertBooked.setString(++count, "credit card");
+				insertBooked.setBigDecimal(++count, price);
+				rows += insertBooked.executeUpdate();
 
-        count = 0; date = LocalDate.parse("2023-09-21", CommandLine.format);
-        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("510.34")));
-        insertBooked.setString(++count, "123456789"); insertBooked.setString(++count, "Second Main Street"); insertBooked.setInt(++count, 43);
-        insertBooked.setString(++count, "A1A1A3"); insertBooked.setString(++count, "Canada"); insertBooked.setObject(++count, date);
-        insertBooked.setObject(++count, date); insertBooked.setString(++count, "credit card"); insertBooked.setBigDecimal(++count, price);
-        rows += insertBooked.executeUpdate();
+				count = 0;
+				date = LocalDate.parse("2023-09-21", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("510.34")));
+				insertBooked.setString(++count, "123456789");
+				insertBooked.setString(++count, "Second Main Street");
+				insertBooked.setInt(++count, 43);
+				insertBooked.setString(++count, "A1A1A3");
+				insertBooked.setString(++count, "Canada");
+				insertBooked.setObject(++count, date);
+				insertBooked.setObject(++count, date);
+				insertBooked.setString(++count, "credit card");
+				insertBooked.setBigDecimal(++count, price);
+				rows += insertBooked.executeUpdate();
 
-        System.out.println("Successfully inserted "+rows+" sample booked!");
-      } catch (SQLException e) {
-        System.err.println("Exception triggered when inserting sample booked!");
-      }
+				System.out.println("Successfully inserted " + rows + " sample booked!");
+			} catch (SQLException e) {
+				System.err.println("Exception triggered when inserting sample booked!");
+			}
 		} catch (SQLException e) {
 			// success = false;
 			System.err.println("Booked table already exists!");
@@ -587,6 +763,18 @@ public class SQLController {
 			// success = false;
 			System.err.println("CommentOnListing table already exists!");
 			// e.printStackTrace();
+		}
+
+		try {
+			ScriptRunner sr = new ScriptRunner(conn);
+			Reader reader = new BufferedReader(new FileReader("MyBnBProject/src/main/sampleRecords.sql"));
+			sr.setLogWriter(null);
+			sr.runScript(reader);
+			reader.close();
+		} catch (Exception e) {
+			success = false;
+			System.err.println("Inserting sample records failed!");
+			e.printStackTrace();
 		}
 
 		return success;
@@ -741,8 +929,9 @@ public class SQLController {
 			selectCommentMadeByUser = conn
 					.prepareStatement("SELECT * FROM Comment LEFT JOIN CommentOnUser ON Comment.CID=CommentOnUser.CID"
 							+ " LEFT JOIN CommentOnListing ON Comment.CID=CommentOnListing.CID WHERE Comment.SIN=?");
-      selectAllListingWComments = conn
-					.prepareStatement("SELECT DISTINCT Street, Number, PostalCode, Country FROM Comment NATURAL JOIN CommentOnListing");
+			selectAllListingWComments = conn
+					.prepareStatement(
+							"SELECT DISTINCT Street, Number, PostalCode, Country FROM Comment NATURAL JOIN CommentOnListing");
 		} catch (SQLException e) {
 			success = false;
 			System.err.println("Prepared statements could not be created!");
@@ -2162,11 +2351,11 @@ public class SQLController {
 		return rows;
 	}
 
-  // Controls the execution of a select query.
+	// Controls the execution of a select query.
 	// Functionality: Select the listings that have comments.
-  public ArrayList<Listing> getAllListingsWComments() {
-    ArrayList<Listing> listings = new ArrayList<>();
-    try {
+	public ArrayList<Listing> getAllListingsWComments() {
+		ArrayList<Listing> listings = new ArrayList<>();
+		try {
 			ResultSet rs = selectAllListingWComments.executeQuery();
 
 			while (rs.next()) {
@@ -2182,6 +2371,6 @@ public class SQLController {
 			System.err.println("Exception triggered when selecting listings with comments!");
 			e.printStackTrace();
 		}
-    return listings;
-  }
+		return listings;
+	}
 }
