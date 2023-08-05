@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Scanner;
 
 import java.time.LocalDate;
@@ -174,6 +175,9 @@ public class CommandLine {
 					break;
 				case 6:
 					reportNumCancelled();
+					break;
+        case 7:
+					reportPopularNoun();
 					break;
 				default:
 					System.out.println("That's not an option, please try again!");
@@ -1989,4 +1993,80 @@ public class CommandLine {
 				"\nHosts with more than 10% of the total number of listings in each city and country:");
 		printMethods.printHost10Percent(result);
 	}
+
+  private boolean isPossibleNoun(String word) {
+    if (word.equalsIgnoreCase("and")||word.equalsIgnoreCase("a")||word.equalsIgnoreCase("is")||
+        word.equalsIgnoreCase("not")||word.equalsIgnoreCase("the")||word.equalsIgnoreCase("and")||
+        word.equalsIgnoreCase("at")||word.equalsIgnoreCase("there")||word.equalsIgnoreCase("were")||
+        word.equalsIgnoreCase("was")||word.equalsIgnoreCase("or")||word.equalsIgnoreCase("but")||
+        word.equalsIgnoreCase("because")||word.equalsIgnoreCase("when")||word.equalsIgnoreCase("what")||
+        word.equalsIgnoreCase("beside")||word.equalsIgnoreCase("from")||word.equalsIgnoreCase("in")||
+        word.equalsIgnoreCase("of")||word.equalsIgnoreCase("to")||word.equalsIgnoreCase("on")||
+        word.equalsIgnoreCase("or")||word.equalsIgnoreCase("with")||word.equalsIgnoreCase("by")) {
+      return false;
+    }
+
+    return true;
+  }
+  
+  // Getting the most common phrases from:
+  // https://stackoverflow.com/questions/74693114/how-to-find-the-most-common-phrases-in-a-list-of-strings
+  private String getCommonNouns(ArrayList<Comment> comments) {
+    String common = "";
+    HashMap<String, Integer> countWords = new HashMap<>();
+
+    for (Comment comment: comments) {
+      String sentence = comment.text.replaceAll("[,.!?:()]", " ");
+
+      String[] words = sentence.split(" ");
+      for (int i = 0; i < words.length - 1; i++) {
+        if (isPossibleNoun(words[i]) && isPossibleNoun(words[i + 1])) {
+          String phrase = words[i] + " " + words[i + 1];
+          Integer count = countWords.get(phrase);
+          if (count == null) {
+            countWords.put(phrase, 1);
+          }
+          else {
+            countWords.put(phrase, count + 1);
+          }
+        }
+      }
+    }
+
+    int max = 0;
+    for (String key : countWords.keySet()) {
+      int count = countWords.get(key);
+      if (count > max) {
+        max = count;
+        common = key;
+      }
+    }
+
+    if (common == "") {
+      common = comments.get(0).text;
+    }
+    return common;
+  }
+
+  private void reportPopularNoun() {
+    ArrayList<Listing> listings = sqlMngr.getAllListingsWComments();
+    if (listings.size() == 0) {
+      System.out.println("There are no listings with comments!");
+      return;
+    }
+
+    System.out.println("+----------------------------------------------------------------"
+        + "-------------------------+----------------------------------------------------+");
+		System.out.printf("| %-87s | %-50s |%n", "Address of Listing", "Popular noun phrase");
+		System.out.println("+================================================================"
+		    + "=========================+====================================================+");
+    for (Listing listing: listings) {
+      ArrayList<Comment> comments = sqlMngr.selectCommentByListing(listing.street, listing.number, listing.postalCode, listing.country);
+      String common = getCommonNouns(comments);
+      System.out.printf("| %-87s | %-50s |%n", listing.number + " " + listing.street +
+      ", " + listing.country + ", " + listing.postalCode, common);
+    }
+    System.out.println("+----------------------------------------------------------------"
+        + "-------------------------+----------------------------------------------------+\n");
+  }
 }

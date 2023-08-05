@@ -81,6 +81,7 @@ public class SQLController {
 	private PreparedStatement selectCommentByListing = null;
 	private PreparedStatement selectCommentByUser = null;
 	private PreparedStatement selectCommentMadeByUser = null;
+  private PreparedStatement selectAllListingWComments = null;
 
 	// Initialize current instance of this class.
 	public boolean connect(String[] cred) throws ClassNotFoundException {
@@ -483,6 +484,8 @@ public class SQLController {
 			selectCommentMadeByUser = conn
 					.prepareStatement("SELECT * FROM Comment LEFT JOIN CommentOnUser ON Comment.CID=CommentOnUser.CID"
 							+ " LEFT JOIN CommentOnListing ON Comment.CID=CommentOnListing.CID WHERE Comment.SIN=?");
+      selectAllListingWComments = conn
+					.prepareStatement("SELECT DISTINCT Street, Number, PostalCode, Country FROM Comment NATURAL JOIN CommentOnListing");
 		} catch (SQLException e) {
 			success = false;
 			System.err.println("Prepared statements could not be created!");
@@ -1901,4 +1904,27 @@ public class SQLController {
 		}
 		return rows;
 	}
+
+  // Controls the execution of a select query.
+	// Functionality: Select the listings that have comments.
+  public ArrayList<Listing> getAllListingsWComments() {
+    ArrayList<Listing> listings = new ArrayList<>();
+    try {
+			ResultSet rs = selectAllListingWComments.executeQuery();
+
+			while (rs.next()) {
+				Listing temp = new Listing();
+				temp.street = rs.getString("Street");
+				temp.number = rs.getInt("Number");
+				temp.postalCode = rs.getString("PostalCode");
+				temp.country = rs.getString("Country");
+				listings.add(temp);
+			}
+			rs.close();
+		} catch (SQLException e) {
+			System.err.println("Exception triggered when selecting listings with comments!");
+			e.printStackTrace();
+		}
+    return listings;
+  }
 }

@@ -31,7 +31,7 @@ public class Print {
 		System.out.println(
 				" 6. Report hosts and renters with the largest number of cancellations within a year.");
 		System.out.println(
-				" 7. Report the set of most popular noun phrases (in comments) for each listing. [not implemented]");
+				" 7. Report the most popular noun phrase in the comments for each listing.");
 		System.out.println("---------------------------");
 		System.out.print("Choose one of the previous options [0-7]: ");
 	}
