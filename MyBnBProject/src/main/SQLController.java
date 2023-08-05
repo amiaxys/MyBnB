@@ -407,7 +407,7 @@ public class SQLController {
         count = 0; date = LocalDate.parse("2023-09-21", CommandLine.format);
         price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("510.34")));
         insertAvailability.setString(++count, "Second Main Street"); insertAvailability.setInt(++count, 43); insertAvailability.setString(++count, "A1A1A3");
-        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, true);
+        insertAvailability.setString(++count, "Canada"); insertAvailability.setObject(++count, date); insertAvailability.setBoolean(++count, false);
         insertAvailability.setBigDecimal(++count, price);
         rows += insertAvailability.executeUpdate();
         count = 0; date = LocalDate.parse("2023-09-22", CommandLine.format);
@@ -498,6 +498,13 @@ public class SQLController {
         price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("723.4")));
         insertBooked.setString(++count, "123456789"); insertBooked.setString(++count, "Some Street"); insertBooked.setInt(++count, 4);
         insertBooked.setString(++count, "P3CC"); insertBooked.setString(++count, "Canada"); insertBooked.setObject(++count, date);
+        insertBooked.setObject(++count, date); insertBooked.setString(++count, "credit card"); insertBooked.setBigDecimal(++count, price);
+        rows += insertBooked.executeUpdate();
+
+        count = 0; date = LocalDate.parse("2023-09-21", CommandLine.format);
+        price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("510.34")));
+        insertBooked.setString(++count, "123456789"); insertBooked.setString(++count, "Second Main Street"); insertBooked.setInt(++count, 43);
+        insertBooked.setString(++count, "A1A1A3"); insertBooked.setString(++count, "Canada"); insertBooked.setObject(++count, date);
         insertBooked.setObject(++count, date); insertBooked.setString(++count, "credit card"); insertBooked.setBigDecimal(++count, price);
         rows += insertBooked.executeUpdate();
 
@@ -692,7 +699,7 @@ public class SQLController {
 					+ " AND Canceled=0 GROUP BY Name ORDER BY TotalBooking DESC");
 			reportRenterBookingCity = conn.prepareStatement("SELECT Name, City, COUNT(SIN) AS TotalBooking"
 					+ " from Booked NATURAL JOIN Listing NATURAL JOIN User where (FromDate BETWEEN ? AND ?) AND"
-					+ " AND Canceled=0 (ToDate BETWEEN ? AND ?) GROUP BY Name, City ORDER BY TotalBooking DESC");
+					+ " (ToDate BETWEEN ? AND ?) AND Canceled=0 GROUP BY Name, City ORDER BY TotalBooking DESC");
 			reportNumListingsCount = conn.prepareStatement("SELECT Country, COUNT(*) AS TotalListing FROM Listing"
 					+ " GROUP BY Country");
 			reportNumListingsCountCity = conn.prepareStatement("SELECT Country, City, COUNT(*) AS TotalListing FROM"
