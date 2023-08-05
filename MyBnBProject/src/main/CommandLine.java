@@ -573,7 +573,7 @@ public class CommandLine {
 				input = sc.nextLine();
 				if (!isValid(input, 8)) {
 					continue;
-				} else if (Integer.parseInt(input) < -90 || Integer.parseInt(input) > 90) {
+				} else if (Double.parseDouble(input) < -90 || Double.parseDouble(input) > 90) {
 					System.out.println("Latitude in decimal format range from -90 to 90. Try again!");
 					continue;
 				}
@@ -583,7 +583,7 @@ public class CommandLine {
 				input = sc.nextLine();
 				if (!isValid(input, 9)) {
 					continue;
-				} else if (Integer.parseInt(input) < -180 || Integer.parseInt(input) > 180) {
+				} else if (Double.parseDouble(input) < -180 || Double.parseDouble(input) > 180) {
 					System.out.println("Longitude in decimal format range from -180 to 180. Try again!");
 					continue;
 				}

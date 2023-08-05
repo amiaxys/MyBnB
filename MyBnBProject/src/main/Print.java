@@ -54,7 +54,7 @@ public class Print {
 		System.out.printf(" %d. Change price of existing availabilities.\n", count++);
 		System.out.printf(" %d. Delete a listing.\n", count++);
 		System.out.println("---------------------------");
-		System.out.printf(" %d. Search for listings (to book).\n", count++);
+		System.out.printf(" %d. Search for listings (to book and view comments).\n", count++);
 		System.out.printf(" %d. View your bookings.\n", count++);
 		System.out.printf(" %d. Cancel a booking.\n", count++);
 		System.out.println("---------------------------");
