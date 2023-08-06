@@ -136,6 +136,26 @@ INSERT INTO
 VALUES
     (
         555555555,
+        2,
+        "I guess it is just mediocre..."
+    );
+
+INSERT INTO
+    CommentOnListing (CID, Street, Number, PostalCode, Country)
+VALUES
+    (
+        LAST_INSERT_ID(),
+        "Main Street",
+        125,
+        "A1A1A1",
+        "Canada"
+    );
+
+INSERT INTO
+    Comment (SIN, Rating, Text)
+VALUES
+    (
+        555555555,
         5,
         "This listing was amazing, I know I would've loved it — if I had actually gone."
     );

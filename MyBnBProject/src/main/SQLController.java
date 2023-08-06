@@ -1,10 +1,7 @@
 package main;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.sql.*;
@@ -309,6 +306,104 @@ public class SQLController {
 				insertListing.setString(++count, "Wifi,Gym,Beachfront");
 				rows += insertListing.executeUpdate();
 
+        count = 0;
+				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("-2.1234")));
+				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("100")));
+				insertListing.setString(++count, "apartment");
+				insertListing.setString(++count, "Sesame Street");
+				insertListing.setInt(++count, 1131);
+				insertListing.setString(++count, "C1C1C1");
+				insertListing.setString(++count, "Canada");
+				insertListing.setString(++count, "Toronto");
+				insertListing.setBigDecimal(++count, latitude);
+				insertListing.setBigDecimal(++count, longitude);
+				insertListing.setString(++count, "Waterfront");
+				rows += insertListing.executeUpdate();
+
+        count = 0;
+				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("-2.1")));
+				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("99.9812")));
+				insertListing.setString(++count, "room");
+				insertListing.setString(++count, "Sesame Street");
+				insertListing.setInt(++count, 1134);
+				insertListing.setString(++count, "C1C1C1");
+				insertListing.setString(++count, "Canada");
+				insertListing.setString(++count, "Toronto");
+				insertListing.setBigDecimal(++count, latitude);
+				insertListing.setBigDecimal(++count, longitude);
+				insertListing.setString(++count, "Gym,Heating");
+				rows += insertListing.executeUpdate();
+
+        count = 0;
+				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("76.2")));
+				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("65")));
+				insertListing.setString(++count, "house");
+				insertListing.setString(++count, "ABC Road");
+				insertListing.setInt(++count, 123);
+				insertListing.setString(++count, "ABCD");
+				insertListing.setString(++count, "Canada");
+				insertListing.setString(++count, "Toronto");
+				insertListing.setBigDecimal(++count, latitude);
+				insertListing.setBigDecimal(++count, longitude);
+				insertListing.setString(++count, "ski-in/ski-out,indoor fireplace");
+				rows += insertListing.executeUpdate();
+
+        count = 0;
+				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("-60.4")));
+				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("120.43")));
+				insertListing.setString(++count, "house");
+				insertListing.setString(++count, "Real Street");
+				insertListing.setInt(++count, 89);
+				insertListing.setString(++count, "L1A1A2");
+				insertListing.setString(++count, "Canada");
+				insertListing.setString(++count, "Toronto");
+				insertListing.setBigDecimal(++count, latitude);
+				insertListing.setBigDecimal(++count, longitude);
+				insertListing.setString(++count, "bbq grill,smoking allowed,TV");
+				rows += insertListing.executeUpdate();
+
+        count = 0;
+				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("43.78")));
+				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("45.1")));
+				insertListing.setString(++count, "apartment");
+				insertListing.setString(++count, "Not Scam Avenue");
+				insertListing.setInt(++count, 8);
+				insertListing.setString(++count, "Q1Q1Q1");
+				insertListing.setString(++count, "Canada");
+				insertListing.setString(++count, "Toronto");
+				insertListing.setBigDecimal(++count, latitude);
+				insertListing.setBigDecimal(++count, longitude);
+				insertListing.setString(++count, "carbon monoxide alarm,smoke alarm");
+				rows += insertListing.executeUpdate();
+
+        count = 0;
+				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("66.564")));
+				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("10.6")));
+				insertListing.setString(++count, "house");
+				insertListing.setString(++count, "Flower Road");
+				insertListing.setInt(++count, 456);
+				insertListing.setString(++count, "M1M2M3");
+				insertListing.setString(++count, "Canada");
+				insertListing.setString(++count, "Toronto");
+				insertListing.setBigDecimal(++count, latitude);
+				insertListing.setBigDecimal(++count, longitude);
+				insertListing.setString(++count, "hair dryer,pool,crib,wifi");
+				rows += insertListing.executeUpdate();
+
+        count = 0;
+				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("45.3462")));
+				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("-45.2")));
+				insertListing.setString(++count, "room");
+				insertListing.setString(++count, "Not Free Circle");
+				insertListing.setInt(++count, 19);
+				insertListing.setString(++count, "C12C3");
+				insertListing.setString(++count, "Canada");
+				insertListing.setString(++count, "toronto");
+				insertListing.setBigDecimal(++count, latitude);
+				insertListing.setBigDecimal(++count, longitude);
+				insertListing.setString(++count, "ev charger,free parking");
+				rows += insertListing.executeUpdate();
+
 				System.out.println("Successfully inserted " + rows + " sample listings!");
 			} catch (SQLException e) {
 				System.err.println("Exception triggered when inserting sample listings!");
@@ -375,6 +470,62 @@ public class SQLController {
 				insertHosts.setString(++count, "Second Main Street");
 				insertHosts.setInt(++count, 43);
 				insertHosts.setString(++count, "A1A1A3");
+				insertHosts.setString(++count, "Canada");
+				rows += insertHosts.executeUpdate();
+
+        count = 0;
+				insertHosts.setString(++count, "555555555");
+				insertHosts.setString(++count, "Sesame Street");
+				insertHosts.setInt(++count, 1131);
+				insertHosts.setString(++count, "C1C1C1");
+				insertHosts.setString(++count, "Canada");
+				rows += insertHosts.executeUpdate();
+
+        count = 0;
+				insertHosts.setString(++count, "555555555");
+				insertHosts.setString(++count, "Sesame Street");
+				insertHosts.setInt(++count, 1134);
+				insertHosts.setString(++count, "C1C1C1");
+				insertHosts.setString(++count, "Canada");
+				rows += insertHosts.executeUpdate();
+        
+        count = 0;
+				insertHosts.setString(++count, "555555555");
+				insertHosts.setString(++count, "ABC Road");
+				insertHosts.setInt(++count, 123);
+				insertHosts.setString(++count, "ABCD");
+				insertHosts.setString(++count, "Canada");
+				rows += insertHosts.executeUpdate();
+
+        count = 0;
+				insertHosts.setString(++count, "555555555");
+				insertHosts.setString(++count, "Real Street");
+				insertHosts.setInt(++count, 89);
+				insertHosts.setString(++count, "L1A1A2");
+				insertHosts.setString(++count, "Canada");
+				rows += insertHosts.executeUpdate();
+
+        count = 0;
+				insertHosts.setString(++count, "555555555");
+				insertHosts.setString(++count, "Not Scam Avenue");
+				insertHosts.setInt(++count, 8);
+				insertHosts.setString(++count, "Q1Q1Q1");
+				insertHosts.setString(++count, "Canada");
+				rows += insertHosts.executeUpdate();
+
+        count = 0;
+				insertHosts.setString(++count, "555555555");
+				insertHosts.setString(++count, "Flower Road");
+				insertHosts.setInt(++count, 456);
+				insertHosts.setString(++count, "M1M2M3");
+				insertHosts.setString(++count, "Canada");
+				rows += insertHosts.executeUpdate();
+
+        count = 0;
+				insertHosts.setString(++count, "555555555");
+				insertHosts.setString(++count, "Not Free Circle");
+				insertHosts.setInt(++count, 19);
+				insertHosts.setString(++count, "C12C3");
 				insertHosts.setString(++count, "Canada");
 				rows += insertHosts.executeUpdate();
 

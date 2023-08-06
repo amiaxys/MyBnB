@@ -1998,11 +1998,16 @@ public class CommandLine {
     if (word.equalsIgnoreCase("and")||word.equalsIgnoreCase("a")||word.equalsIgnoreCase("is")||
         word.equalsIgnoreCase("not")||word.equalsIgnoreCase("the")||word.equalsIgnoreCase("and")||
         word.equalsIgnoreCase("at")||word.equalsIgnoreCase("there")||word.equalsIgnoreCase("were")||
-        word.equalsIgnoreCase("was")||word.equalsIgnoreCase("or")||word.equalsIgnoreCase("but")||
+        word.equalsIgnoreCase("listing")||word.equalsIgnoreCase("or")||word.equalsIgnoreCase("but")||
         word.equalsIgnoreCase("because")||word.equalsIgnoreCase("when")||word.equalsIgnoreCase("what")||
         word.equalsIgnoreCase("beside")||word.equalsIgnoreCase("from")||word.equalsIgnoreCase("in")||
         word.equalsIgnoreCase("of")||word.equalsIgnoreCase("to")||word.equalsIgnoreCase("on")||
-        word.equalsIgnoreCase("or")||word.equalsIgnoreCase("with")||word.equalsIgnoreCase("by")) {
+        word.equalsIgnoreCase("or")||word.equalsIgnoreCase("with")||word.equalsIgnoreCase("by")||
+        word.equalsIgnoreCase("I")||word.equalsIgnoreCase("had")||word.equalsIgnoreCase("have")||
+        word.equalsIgnoreCase("has")||word.equalsIgnoreCase("am")||word.equalsIgnoreCase("me")||
+        word.equalsIgnoreCase("you")||word.equalsIgnoreCase("my")||word.equalsIgnoreCase("our")||
+        word.equalsIgnoreCase("like")||word.equalsIgnoreCase("if")||word.equalsIgnoreCase("as")||
+        word.equalsIgnoreCase("it")||word.equalsIgnoreCase("your")||word.equalsIgnoreCase("this")) {
       return false;
     }
 
