@@ -906,7 +906,7 @@ public class SQLController {
 					+ " Country VARCHAR(56),"
 					+ " PRIMARY KEY(CID),"
 					+ " FOREIGN KEY (CID) REFERENCES Comment(CID),"
-					+ " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES Listing(Street, Number, PostalCode, Country)"
+					+ " FOREIGN KEY (Street, Number, PostalCode, Country) REFERENCES Listing(Street, Number, PostalCode, Country) ON DELETE CASCADE"
 					+ ")");
 			createCommentListingTb.executeUpdate();
 			createCommentListingTb.close();
