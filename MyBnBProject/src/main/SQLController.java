@@ -920,6 +920,7 @@ public class SQLController {
 			ScriptRunner sr = new ScriptRunner(conn);
 			Reader reader = new BufferedReader(new FileReader("MyBnBProject/src/main/sampleRecords.sql"));
 			sr.setLogWriter(null);
+			sr.setErrorLogWriter(null);
 			sr.runScript(reader);
 			reader.close();
 		} catch (Exception e) {
