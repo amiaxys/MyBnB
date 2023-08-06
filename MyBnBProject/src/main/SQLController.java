@@ -17,6 +17,7 @@ public class SQLController {
 	// Object that establishes and keeps the state of our application's
 	// connection with the MySQL backend.
 	private Connection conn = null;
+	private Connection connScript = null;
 
 	// Objects which communicates with the SQL backend delivering to it the
 	// desired statement/query from our application and returning the results
@@ -96,6 +97,7 @@ public class SQLController {
 		String connection = CONNECTION + "mybnb";
 		try {
 			conn = DriverManager.getConnection(CONNECTION, user, pass);
+			connScript = DriverManager.getConnection(CONNECTION, user, pass);
 			success = createDatabase();
 			conn.close();
 			conn = DriverManager.getConnection(connection, user, pass);
@@ -971,12 +973,13 @@ public class SQLController {
 		}
 
 		try {
-			ScriptRunner sr = new ScriptRunner(conn);
+			ScriptRunner sr = new ScriptRunner(connScript);
 			Reader reader = new BufferedReader(new FileReader("MyBnBProject/src/main/sampleRecords.sql"));
 			sr.setLogWriter(null);
 			sr.setErrorLogWriter(null);
 			sr.runScript(reader);
 			reader.close();
+			connScript.close();
 		} catch (Exception e) {
 			success = false;
 			System.err.println("Inserting sample records failed!");
