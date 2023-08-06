@@ -227,7 +227,7 @@ public class Print {
 		System.out.println(
 				"+-----+-----------+--------------------------------+------------+-------------+--------------------------+------------+------------+-------------+------------+");
 		System.out.printf(
-				"|  #  | %-9s | %-30s | %-10s | %-11s | %-24s | %-10s | %-10s | %-11s | %-10s |\n", 
+				"|  #  | %-9s | %-30s | %-10s | %-11s | %-24s | %-10s | %-10s | %-11s | %-10s |\n",
 				"SIN", "Street", "Number", "Postal Code", "Country", "From", "To", "Payment", "Price");
 		System.out.println(
 				"+=====+===========+================================+============+=============+==========================+============+============+=============+============+");
@@ -247,14 +247,15 @@ public class Print {
 		System.out.println(
 				"+-----+-----------+--------------------------------+------------+-------------+--------------------------+------------+------------+-------------+------------+----------+");
 		System.out.printf(
-				"|  #  | %-9s | %-30s | %-10s | %-11s | %-24s | %-10s | %-10s | %-11s | %-10s | %-8s |\n", 
+				"|  #  | %-9s | %-30s | %-10s | %-11s | %-24s | %-10s | %-10s | %-11s | %-10s | %-8s |\n",
 				"SIN", "Street", "Number", "Postal Code", "Country", "From", "To", "Payment", "Price", "Canceled");
 		System.out.println(
 				"+=====+===========+================================+============+=============+==========================+============+============+=============+============+==========+");
 		int count = 0;
 		for (Booked booking : booked) {
 			count++;
-			System.out.printf("| %-3s | %-9s | %-30s | %-10s | %-11s | %-24s | %-10s | %-10s | %-11s | %-10s | %-8s |%n",
+			System.out.printf(
+					"| %-3s | %-9s | %-30s | %-10s | %-11s | %-24s | %-10s | %-10s | %-11s | %-10s | %-8s |%n",
 					count, booking.sin, booking.street, booking.number, booking.postalCode, booking.country,
 					booking.fromDate.toString(), booking.toDate.toString(), booking.paymentMethod, booking.price,
 					booking.canceled);
@@ -378,9 +379,15 @@ public class Print {
 		System.out.println("\n+-----+-----------+----------------------+--------+----------------------+");
 		System.out.printf("| %-3s | %-9s | %-20s | %-6s | %-20s |%n", "#", "SIN", "Name", "Rating", "Date");
 		System.out.println("+=====+===========+======================+========+======================+");
+		String rating = "";
 		for (int i = 0; i < comments.size(); i++) {
+			if (comments.get(i).rating == 0) {
+				rating = "N/A";
+			} else {
+				rating = Integer.toString(comments.get(i).rating);
+			}
 			System.out.printf("| %-3s | %-9s | %-20s | %-6s | %-20s |%n", i + 1, comments.get(i).sin,
-					comments.get(i).commentedByUser.name, comments.get(i).rating, comments.get(i).date);
+					comments.get(i).commentedByUser.name, rating, comments.get(i).date);
 			System.out.println("+------------------------------------------------------------------------+");
 			System.out.println(comments.get(i).text);
 			System.out.println("+------------------------------------------------------------------------+");
@@ -397,6 +404,7 @@ public class Print {
 				"+=====+========+======================+===================+==================================================================================+");
 		String address = "";
 		String sin = "";
+		String rating = "";
 		for (int i = 0; i < comments.size(); i++) {
 			if (comments.get(i).commentedOnListing.street != null) {
 				address = comments.get(i).commentedOnListing.number + " " + comments.get(i).commentedOnListing.street
@@ -412,7 +420,13 @@ public class Print {
 				sin = "N/A";
 			}
 
-			System.out.printf("| %-3s | %-6s | %-20s | %-17s | %-80s |%n", i + 1, comments.get(i).rating,
+			if (comments.get(i).rating == 0) {
+				rating = "N/A";
+			} else {
+				rating = Integer.toString(comments.get(i).rating);
+			}
+
+			System.out.printf("| %-3s | %-6s | %-20s | %-17s | %-80s |%n", i + 1, rating,
 					comments.get(i).date, sin, address);
 			System.out.println(
 					"+--------------------------------------------------------------------------------------------------------------------------------------------+");

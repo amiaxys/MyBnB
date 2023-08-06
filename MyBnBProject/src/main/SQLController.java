@@ -306,7 +306,7 @@ public class SQLController {
 				insertListing.setString(++count, "Wifi,Gym,Beachfront");
 				rows += insertListing.executeUpdate();
 
-        count = 0;
+				count = 0;
 				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("-2.1234")));
 				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("100")));
 				insertListing.setString(++count, "apartment");
@@ -320,7 +320,7 @@ public class SQLController {
 				insertListing.setString(++count, "Waterfront");
 				rows += insertListing.executeUpdate();
 
-        count = 0;
+				count = 0;
 				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("-2.1")));
 				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("99.9812")));
 				insertListing.setString(++count, "room");
@@ -334,7 +334,7 @@ public class SQLController {
 				insertListing.setString(++count, "Gym,Heating");
 				rows += insertListing.executeUpdate();
 
-        count = 0;
+				count = 0;
 				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("76.2")));
 				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("65")));
 				insertListing.setString(++count, "house");
@@ -348,7 +348,7 @@ public class SQLController {
 				insertListing.setString(++count, "ski-in/ski-out,indoor fireplace");
 				rows += insertListing.executeUpdate();
 
-        count = 0;
+				count = 0;
 				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("-60.4")));
 				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("120.43")));
 				insertListing.setString(++count, "house");
@@ -362,7 +362,7 @@ public class SQLController {
 				insertListing.setString(++count, "bbq grill,smoking allowed,TV");
 				rows += insertListing.executeUpdate();
 
-        count = 0;
+				count = 0;
 				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("43.78")));
 				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("45.1")));
 				insertListing.setString(++count, "apartment");
@@ -376,7 +376,7 @@ public class SQLController {
 				insertListing.setString(++count, "carbon monoxide alarm,smoke alarm");
 				rows += insertListing.executeUpdate();
 
-        count = 0;
+				count = 0;
 				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("66.564")));
 				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("10.6")));
 				insertListing.setString(++count, "house");
@@ -390,7 +390,7 @@ public class SQLController {
 				insertListing.setString(++count, "hair dryer,pool,crib,wifi");
 				rows += insertListing.executeUpdate();
 
-        count = 0;
+				count = 0;
 				latitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("45.3462")));
 				longitude = new BigDecimal(CommandLine.coordinatesDf.format(Double.parseDouble("-45.2")));
 				insertListing.setString(++count, "room");
@@ -473,7 +473,7 @@ public class SQLController {
 				insertHosts.setString(++count, "Canada");
 				rows += insertHosts.executeUpdate();
 
-        count = 0;
+				count = 0;
 				insertHosts.setString(++count, "555555555");
 				insertHosts.setString(++count, "Sesame Street");
 				insertHosts.setInt(++count, 1131);
@@ -481,15 +481,15 @@ public class SQLController {
 				insertHosts.setString(++count, "Canada");
 				rows += insertHosts.executeUpdate();
 
-        count = 0;
+				count = 0;
 				insertHosts.setString(++count, "555555555");
 				insertHosts.setString(++count, "Sesame Street");
 				insertHosts.setInt(++count, 1134);
 				insertHosts.setString(++count, "C1C1C1");
 				insertHosts.setString(++count, "Canada");
 				rows += insertHosts.executeUpdate();
-        
-        count = 0;
+
+				count = 0;
 				insertHosts.setString(++count, "555555555");
 				insertHosts.setString(++count, "ABC Road");
 				insertHosts.setInt(++count, 123);
@@ -497,7 +497,7 @@ public class SQLController {
 				insertHosts.setString(++count, "Canada");
 				rows += insertHosts.executeUpdate();
 
-        count = 0;
+				count = 0;
 				insertHosts.setString(++count, "555555555");
 				insertHosts.setString(++count, "Real Street");
 				insertHosts.setInt(++count, 89);
@@ -505,7 +505,7 @@ public class SQLController {
 				insertHosts.setString(++count, "Canada");
 				rows += insertHosts.executeUpdate();
 
-        count = 0;
+				count = 0;
 				insertHosts.setString(++count, "555555555");
 				insertHosts.setString(++count, "Not Scam Avenue");
 				insertHosts.setInt(++count, 8);
@@ -513,7 +513,7 @@ public class SQLController {
 				insertHosts.setString(++count, "Canada");
 				rows += insertHosts.executeUpdate();
 
-        count = 0;
+				count = 0;
 				insertHosts.setString(++count, "555555555");
 				insertHosts.setString(++count, "Flower Road");
 				insertHosts.setInt(++count, 456);
@@ -521,7 +521,7 @@ public class SQLController {
 				insertHosts.setString(++count, "Canada");
 				rows += insertHosts.executeUpdate();
 
-        count = 0;
+				count = 0;
 				insertHosts.setString(++count, "555555555");
 				insertHosts.setString(++count, "Not Free Circle");
 				insertHosts.setInt(++count, 19);
