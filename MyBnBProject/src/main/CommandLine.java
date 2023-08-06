@@ -31,7 +31,8 @@ public class CommandLine {
 
 	public static DecimalFormat coordinatesDf = new DecimalFormat("#.####");
 	public static DecimalFormat priceDf = new DecimalFormat("#.##");
-  public static DateTimeFormatter format = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT);
+	public static DateTimeFormatter format = DateTimeFormatter.ofPattern("uuuu-MM-dd")
+			.withResolverStyle(ResolverStyle.STRICT);
 
 	private ArrayList<String> amenities = new ArrayList<>(Arrays.asList("wifi", "kitchen", "washer", "dryer",
 			"air conditioning", "heating", "dedicated workspace", "tv", "hair dryer", "iron", "pool", "hot tub",
@@ -177,7 +178,7 @@ public class CommandLine {
 				case 6:
 					reportNumCancelled();
 					break;
-        case 7:
+				case 7:
 					reportPopularNoun();
 					break;
 				default:
@@ -1994,84 +1995,84 @@ public class CommandLine {
 		printMethods.printHost10Percent(result);
 	}
 
-  private boolean isPossibleNoun(String word) {
-    if (word.equalsIgnoreCase("and")||word.equalsIgnoreCase("a")||word.equalsIgnoreCase("is")||
-        word.equalsIgnoreCase("not")||word.equalsIgnoreCase("the")||word.equalsIgnoreCase("and")||
-        word.equalsIgnoreCase("at")||word.equalsIgnoreCase("there")||word.equalsIgnoreCase("were")||
-        word.equalsIgnoreCase("listing")||word.equalsIgnoreCase("or")||word.equalsIgnoreCase("but")||
-        word.equalsIgnoreCase("because")||word.equalsIgnoreCase("when")||word.equalsIgnoreCase("what")||
-        word.equalsIgnoreCase("beside")||word.equalsIgnoreCase("from")||word.equalsIgnoreCase("in")||
-        word.equalsIgnoreCase("of")||word.equalsIgnoreCase("to")||word.equalsIgnoreCase("on")||
-        word.equalsIgnoreCase("or")||word.equalsIgnoreCase("with")||word.equalsIgnoreCase("by")||
-        word.equalsIgnoreCase("I")||word.equalsIgnoreCase("had")||word.equalsIgnoreCase("have")||
-        word.equalsIgnoreCase("has")||word.equalsIgnoreCase("am")||word.equalsIgnoreCase("me")||
-        word.equalsIgnoreCase("you")||word.equalsIgnoreCase("my")||word.equalsIgnoreCase("our")||
-        word.equalsIgnoreCase("like")||word.equalsIgnoreCase("if")||word.equalsIgnoreCase("as")||
-        word.equalsIgnoreCase("it")||word.equalsIgnoreCase("your")||word.equalsIgnoreCase("this")) {
-      return false;
-    }
+	private boolean isPossibleNoun(String word) {
+		if (word.equalsIgnoreCase("and") || word.equalsIgnoreCase("a") || word.equalsIgnoreCase("is") ||
+				word.equalsIgnoreCase("not") || word.equalsIgnoreCase("the") || word.equalsIgnoreCase("and") ||
+				word.equalsIgnoreCase("at") || word.equalsIgnoreCase("there") || word.equalsIgnoreCase("were") ||
+				word.equalsIgnoreCase("listing") || word.equalsIgnoreCase("or") || word.equalsIgnoreCase("but") ||
+				word.equalsIgnoreCase("because") || word.equalsIgnoreCase("when") || word.equalsIgnoreCase("what") ||
+				word.equalsIgnoreCase("beside") || word.equalsIgnoreCase("from") || word.equalsIgnoreCase("in") ||
+				word.equalsIgnoreCase("of") || word.equalsIgnoreCase("to") || word.equalsIgnoreCase("on") ||
+				word.equalsIgnoreCase("or") || word.equalsIgnoreCase("with") || word.equalsIgnoreCase("by") ||
+				word.equalsIgnoreCase("I") || word.equalsIgnoreCase("had") || word.equalsIgnoreCase("have") ||
+				word.equalsIgnoreCase("has") || word.equalsIgnoreCase("am") || word.equalsIgnoreCase("me") ||
+				word.equalsIgnoreCase("you") || word.equalsIgnoreCase("my") || word.equalsIgnoreCase("our") ||
+				word.equalsIgnoreCase("like") || word.equalsIgnoreCase("if") || word.equalsIgnoreCase("as") ||
+				word.equalsIgnoreCase("it") || word.equalsIgnoreCase("your") || word.equalsIgnoreCase("this")) {
+			return false;
+		}
 
-    return true;
-  }
-  
-  // Getting the most common phrases from:
-  // https://stackoverflow.com/questions/74693114/how-to-find-the-most-common-phrases-in-a-list-of-strings
-  private String getCommonNouns(ArrayList<Comment> comments) {
-    String common = "";
-    HashMap<String, Integer> countWords = new HashMap<>();
+		return true;
+	}
 
-    for (Comment comment: comments) {
-      String sentence = comment.text.replaceAll("[,.!?:()]", " ");
+	// Getting the most common phrases from:
+	// https://stackoverflow.com/questions/74693114/how-to-find-the-most-common-phrases-in-a-list-of-strings
+	private String getCommonNouns(ArrayList<Comment> comments) {
+		String common = "";
+		HashMap<String, Integer> countWords = new HashMap<>();
 
-      String[] words = sentence.split(" ");
-      for (int i = 0; i < words.length - 1; i++) {
-        if (isPossibleNoun(words[i]) && isPossibleNoun(words[i + 1])) {
-          String phrase = words[i] + " " + words[i + 1];
-          Integer count = countWords.get(phrase);
-          if (count == null) {
-            countWords.put(phrase, 1);
-          }
-          else {
-            countWords.put(phrase, count + 1);
-          }
-        }
-      }
-    }
+		for (Comment comment : comments) {
+			String sentence = comment.text.replaceAll("[,.!?:()]", " ");
 
-    int max = 0;
-    for (String key : countWords.keySet()) {
-      int count = countWords.get(key);
-      if (count > max) {
-        max = count;
-        common = key;
-      }
-    }
+			String[] words = sentence.split(" ");
+			for (int i = 0; i < words.length - 1; i++) {
+				if (isPossibleNoun(words[i]) && isPossibleNoun(words[i + 1])) {
+					String phrase = words[i] + " " + words[i + 1];
+					Integer count = countWords.get(phrase);
+					if (count == null) {
+						countWords.put(phrase, 1);
+					} else {
+						countWords.put(phrase, count + 1);
+					}
+				}
+			}
+		}
 
-    if (common == "") {
-      common = comments.get(0).text;
-    }
-    return common;
-  }
+		int max = 0;
+		for (String key : countWords.keySet()) {
+			int count = countWords.get(key);
+			if (count > max) {
+				max = count;
+				common = key;
+			}
+		}
 
-  private void reportPopularNoun() {
-    ArrayList<Listing> listings = sqlMngr.getAllListingsWComments();
-    if (listings.size() == 0) {
-      System.out.println("There are no listings with comments!");
-      return;
-    }
+		if (common == "") {
+			common = comments.get(0).text;
+		}
+		return common;
+	}
 
-    System.out.println("+----------------------------------------------------------------"
-        + "-------------------------+----------------------------------------------------+");
+	private void reportPopularNoun() {
+		ArrayList<Listing> listings = sqlMngr.getAllListingsWComments();
+		if (listings.size() == 0) {
+			System.out.println("There are no listings with comments!");
+			return;
+		}
+
+		System.out.println("+----------------------------------------------------------------"
+				+ "-------------------------+----------------------------------------------------+");
 		System.out.printf("| %-87s | %-50s |%n", "Address of Listing", "Popular noun phrase");
 		System.out.println("+================================================================"
-		    + "=========================+====================================================+");
-    for (Listing listing: listings) {
-      ArrayList<Comment> comments = sqlMngr.selectCommentByListing(listing.street, listing.number, listing.postalCode, listing.country);
-      String common = getCommonNouns(comments);
-      System.out.printf("| %-87s | %-50s |%n", listing.number + " " + listing.street +
-      ", " + listing.country + ", " + listing.postalCode, common);
-    }
-    System.out.println("+----------------------------------------------------------------"
-        + "-------------------------+----------------------------------------------------+\n");
-  }
+				+ "=========================+====================================================+");
+		for (Listing listing : listings) {
+			ArrayList<Comment> comments = sqlMngr.selectCommentByListing(listing.street, listing.number,
+					listing.postalCode, listing.country);
+			String common = getCommonNouns(comments);
+			System.out.printf("| %-87s | %-50s |%n", listing.number + " " + listing.street +
+					", " + listing.country + ", " + listing.postalCode, common);
+		}
+		System.out.println("+----------------------------------------------------------------"
+				+ "-------------------------+----------------------------------------------------+\n");
+	}
 }

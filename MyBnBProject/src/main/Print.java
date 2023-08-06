@@ -227,7 +227,7 @@ public class Print {
 		System.out.println(
 				"+-----+-----------+--------------------------------+------------+-------------+--------------------------+------------+------------+-------------+------------+");
 		System.out.printf(
-				"|  #  | %-9s | %-30s | %-10s | %-11s | %-24s | %-10s | %-10s | %-11s | %-10s |\n", 
+				"|  #  | %-9s | %-30s | %-10s | %-11s | %-24s | %-10s | %-10s | %-11s | %-10s |\n",
 				"SIN", "Street", "Number", "Postal Code", "Country", "From", "To", "Payment", "Price");
 		System.out.println(
 				"+=====+===========+================================+============+=============+==========================+============+============+=============+============+");
@@ -247,14 +247,15 @@ public class Print {
 		System.out.println(
 				"+-----+-----------+--------------------------------+------------+-------------+--------------------------+------------+------------+-------------+------------+----------+");
 		System.out.printf(
-				"|  #  | %-9s | %-30s | %-10s | %-11s | %-24s | %-10s | %-10s | %-11s | %-10s | %-8s |\n", 
+				"|  #  | %-9s | %-30s | %-10s | %-11s | %-24s | %-10s | %-10s | %-11s | %-10s | %-8s |\n",
 				"SIN", "Street", "Number", "Postal Code", "Country", "From", "To", "Payment", "Price", "Canceled");
 		System.out.println(
 				"+=====+===========+================================+============+=============+==========================+============+============+=============+============+==========+");
 		int count = 0;
 		for (Booked booking : booked) {
 			count++;
-			System.out.printf("| %-3s | %-9s | %-30s | %-10s | %-11s | %-24s | %-10s | %-10s | %-11s | %-10s | %-8s |%n",
+			System.out.printf(
+					"| %-3s | %-9s | %-30s | %-10s | %-11s | %-24s | %-10s | %-10s | %-11s | %-10s | %-8s |%n",
 					count, booking.sin, booking.street, booking.number, booking.postalCode, booking.country,
 					booking.fromDate.toString(), booking.toDate.toString(), booking.paymentMethod, booking.price,
 					booking.canceled);
