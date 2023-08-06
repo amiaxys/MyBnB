@@ -345,10 +345,13 @@ public class CommandLine {
 		return parsedDate;
 	}
 
-	private LocalDate checkValidAvailDate(String date) {
+	private LocalDate checkValidAvailDate(String date, boolean wantFuture) {
 		LocalDate parsedDate = checkValidDate(date);
 		LocalDate now = LocalDate.now();
-		if (parsedDate != null && (parsedDate.isBefore(now) || parsedDate.isEqual(now))) {
+    if (parsedDate == null) {
+			parsedDate = null;
+		}
+    if (wantFuture && (parsedDate.isBefore(now) || parsedDate.isEqual(now))) {
 			parsedDate = null;
 		}
 		return parsedDate;
@@ -828,7 +831,7 @@ public class CommandLine {
 							+ " (E.g., \"2023-09-10, 2023-09-20\"): ");
 					input = sc.nextLine().replaceAll("\\s", "");
 
-					dateFromTo = checkFromToDates(input);
+					dateFromTo = checkFromToDates(input, false);
 				}
 			} else if (input.equalsIgnoreCase("n")) {
 				break;
@@ -1069,15 +1072,15 @@ public class CommandLine {
 		return true;
 	}
 
-	private LocalDate[] checkFromToDates(String input) {
+	private LocalDate[] checkFromToDates(String input, boolean wantFuture) {
 		String[] dates = input.split(",");
 		if (dates.length != 2) {
 			System.out.println("That's not the right number of dates, please try again.");
 			return null;
 		}
 		LocalDate[] dateFromTo = new LocalDate[2];
-		dateFromTo[0] = checkValidAvailDate(dates[0]);
-		dateFromTo[1] = checkValidAvailDate(dates[1]);
+		dateFromTo[0] = checkValidAvailDate(dates[0], wantFuture);
+		dateFromTo[1] = checkValidAvailDate(dates[1], wantFuture);
 		if (dateFromTo[0] == null || dateFromTo[1] == null || dateFromTo[0].isAfter(dateFromTo[1])) {
 			System.out.println("Those aren't proper dates, please try again!");
 			return null;
@@ -1112,7 +1115,7 @@ public class CommandLine {
 					+ " (E.g., \"2023-09-10, 2023-09-20\"): ");
 			input = sc.nextLine().replaceAll("\\s", "");
 
-			dateFromTo = checkFromToDates(input);
+			dateFromTo = checkFromToDates(input, true);
 			if (dateFromTo == null) {
 				dateFromTo = null;
 				continue;
@@ -1199,7 +1202,7 @@ public class CommandLine {
 					+ " (E.g., \"2023-09-10, 2023-09-20\"): ");
 			input = sc.nextLine().replaceAll("\\s", "");
 
-			dateFromTo = checkFromToDates(input);
+			dateFromTo = checkFromToDates(input, true);
 			if (dateFromTo == null) {
 				dateFromTo = null;
 				continue;
@@ -1834,7 +1837,7 @@ public class CommandLine {
 					+ " (E.g., \"2023-09-10, 2023-09-20\"): ");
 			input = sc.nextLine().replaceAll("\\s", "");
 
-			dateFromTo = checkFromToDates(input);
+			dateFromTo = checkFromToDates(input, false);
 			input = null;
 		}
 
@@ -1873,7 +1876,7 @@ public class CommandLine {
 					+ " (E.g., \"2023-09-10, 2023-09-20\"): ");
 			input = sc.nextLine().replaceAll("\\s", "");
 
-			dateFromTo = checkFromToDates(input);
+			dateFromTo = checkFromToDates(input, false);
 			input = null;
 		}
 
