@@ -21,7 +21,7 @@ public class Print {
 	public void reportOptions() {
 		System.out.println("\n*********REPORT OPTIONS*********");
 		System.out.println(" 0. Back.");
-		System.out.println(" 1. Report total number of bookings in a specific date range.");
+		System.out.println(" 1. Report total number of (not cancelled) bookings in a specific date range.");
 		System.out.println(" 2. Report renters ranked by the number of bookings in a specific date range.");
 		System.out.println(" 3. Report total number of listings.");
 		System.out.println(" 4. Report hosts ranked by total number of listings.");
@@ -54,7 +54,7 @@ public class Print {
 		System.out.printf(" %d. Change price of existing availabilities.\n", count++);
 		System.out.printf(" %d. Delete a listing.\n", count++);
 		System.out.println("---------------------------");
-		System.out.printf(" %d. Search for listings (to book and view comments).\n", count++);
+		System.out.printf(" %d. Search for available listings (to book and view comments).\n", count++);
 		System.out.printf(" %d. View your bookings.\n", count++);
 		System.out.printf(" %d. Cancel a booking.\n", count++);
 		System.out.println("---------------------------");

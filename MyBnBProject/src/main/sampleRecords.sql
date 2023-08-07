@@ -225,7 +225,52 @@ WHERE
             AND Number = 125
             AND PostalCode = "A1A1A1"
             AND Country = "Canada"
-            AND SIN = 123456789
+        LIMIT
+            1
+    );
+
+INSERT INTO
+    Comment (SIN, Rating, Text)
+SELECT
+    555555555,
+    2,
+    "I guess it was just mediocre, but it could've been better"
+FROM
+    DUAL
+WHERE
+    NOT EXISTS (
+        SELECT
+            *
+        FROM
+            Comment
+        WHERE
+            SIN = 555555555
+            AND Rating = 2
+            AND Text = "I guess it was just mediocre, but it could've been better"
+        LIMIT
+            1
+    );
+
+INSERT INTO
+    CommentOnListing (CID, Street, Number, PostalCode, Country)
+SELECT
+    LAST_INSERT_ID(),
+    "Main Street",
+    125,
+    "A1A1A1",
+    "Canada"
+WHERE
+    NOT EXISTS (
+        SELECT
+            *
+        FROM
+            CommentOnListing NATURAL JOIN Comment
+        WHERE
+            Street = "Main Street"
+            AND Number = 125
+            AND PostalCode = "A1A1A1"
+            AND Country = "Canada"
+            AND SIN = 555555555
         LIMIT
             1
     );

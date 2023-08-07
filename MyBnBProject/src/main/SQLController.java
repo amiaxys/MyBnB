@@ -785,6 +785,18 @@ public class SQLController {
 				insertAvailability.setBigDecimal(++count, price);
 				rows += insertAvailability.executeUpdate();
 
+        count = 0;
+				date = LocalDate.parse("2023-09-01", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("99.99")));
+				insertAvailability.setString(++count, "Main Street");
+				insertAvailability.setInt(++count, 122);
+				insertAvailability.setString(++count, "A1A1A1");
+				insertAvailability.setString(++count, "Canada");
+				insertAvailability.setObject(++count, date);
+				insertAvailability.setBoolean(++count, false);
+				insertAvailability.setBigDecimal(++count, price);
+				rows += insertAvailability.executeUpdate();
+
 				System.out.println("Successfully inserted " + rows + " sample availability!");
 			} catch (SQLException e) {
 				System.err.println("Exception triggered when inserting sample availability!");
@@ -884,6 +896,20 @@ public class SQLController {
 				insertBooked.setString(++count, "Second Main Street");
 				insertBooked.setInt(++count, 43);
 				insertBooked.setString(++count, "A1A1A3");
+				insertBooked.setString(++count, "Canada");
+				insertBooked.setObject(++count, date);
+				insertBooked.setObject(++count, date);
+				insertBooked.setString(++count, "credit card");
+				insertBooked.setBigDecimal(++count, price);
+				rows += insertBooked.executeUpdate();
+
+        count = 0;
+				date = LocalDate.parse("2023-09-01", CommandLine.format);
+				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("99.99")));
+				insertBooked.setString(++count, "123456789");
+				insertBooked.setString(++count, "Main Street");
+				insertBooked.setInt(++count, 122);
+				insertBooked.setString(++count, "A1A1A1");
 				insertBooked.setString(++count, "Canada");
 				insertBooked.setObject(++count, date);
 				insertBooked.setObject(++count, date);
