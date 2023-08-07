@@ -1,6 +1,14 @@
 {
   "java.project.referencedLibraries": [
     "lib/**/*.jar",
-    "MyBnBProject/lib/mysql-connector-j-8.0.33.jar"
+    "MyBnBProject/lib/mysql-connector-j-8.0.33.jar",
+    "MyBnBProject/lib/lib/asm-7.1.jar",
+    "MyBnBProject/lib/lib/cglib-3.3.0.jar",
+    "MyBnBProject/lib/lib/commons-logging-1.2.jar",
+    "MyBnBProject/lib/lib/javassist-3.29.2-GA.jar",
+    "MyBnBProject/lib/lib/log4j-api-2.20.0.jar",
+    "MyBnBProject/lib/lib/ognl-3.3.4.jar",
+    "MyBnBProject/lib/lib/reload4j-1.2.24.jar",
+    "MyBnBProject/lib/lib/slf4j-api-2.0.6.jar"
   ]
 }

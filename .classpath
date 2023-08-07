@@ -7,5 +7,6 @@
 	</classpathentry>
 	<classpathentry kind="src" path="MyBnBProject/src"/>
 	<classpathentry kind="lib" path="MyBnBProject/lib/mysql-connector-j-8.0.33.jar"/>
+	<classpathentry kind="lib" path="MyBnBProject/lib/mybatis-3.5.13.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
