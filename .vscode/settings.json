@@ -2,6 +2,7 @@
   "java.project.referencedLibraries": [
     "lib/**/*.jar",
     "MyBnBProject/lib/mysql-connector-j-8.0.33.jar",
+    "MyBnBProject/lib/mybatis-3.5.13.jar",
     "MyBnBProject/lib/lib/asm-7.1.jar",
     "MyBnBProject/lib/lib/cglib-3.3.0.jar",
     "MyBnBProject/lib/lib/commons-logging-1.2.jar",

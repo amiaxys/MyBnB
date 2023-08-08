@@ -347,10 +347,10 @@ public class CommandLine {
 	private LocalDate checkValidAvailDate(String date, boolean wantFuture) {
 		LocalDate parsedDate = checkValidDate(date);
 		LocalDate now = LocalDate.now();
-    if (parsedDate == null) {
+		if (parsedDate == null) {
 			parsedDate = null;
 		}
-    if (wantFuture && (parsedDate.isBefore(now) || parsedDate.isEqual(now))) {
+		if (wantFuture && (parsedDate.isBefore(now) || parsedDate.isEqual(now))) {
 			parsedDate = null;
 		}
 		return parsedDate;
@@ -1308,7 +1308,9 @@ public class CommandLine {
 	}
 
 	private void bookListing(ArrayList<AvailabilityListing> listings) {
-		viewListingComments(listings);
+		if (!listings.isEmpty()) {
+			viewListingComments(listings);
+		}
 
 		String input = "";
 		while (!listings.isEmpty()) {
