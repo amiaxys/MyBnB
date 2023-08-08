@@ -785,7 +785,7 @@ public class SQLController {
 				insertAvailability.setBigDecimal(++count, price);
 				rows += insertAvailability.executeUpdate();
 
-        count = 0;
+				count = 0;
 				date = LocalDate.parse("2023-09-01", CommandLine.format);
 				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("99.99")));
 				insertAvailability.setString(++count, "Main Street");
@@ -903,7 +903,7 @@ public class SQLController {
 				insertBooked.setBigDecimal(++count, price);
 				rows += insertBooked.executeUpdate();
 
-        count = 0;
+				count = 0;
 				date = LocalDate.parse("2023-09-01", CommandLine.format);
 				price = new BigDecimal(CommandLine.priceDf.format(Double.parseDouble("99.99")));
 				insertBooked.setString(++count, "123456789");
