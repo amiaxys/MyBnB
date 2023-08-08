@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Scanner;
 
 import java.time.LocalDate;
@@ -956,7 +955,6 @@ public class CommandLine {
 			double long1, double distance) {
 		ArrayList<AvailabilityListing> filtered = new ArrayList<>();
 		ArrayList<Double> distArr = new ArrayList<>();
-		final int radius = 6371; // radius of earth in km
 
 		listings.forEach((listing) -> {
 			double lat2 = listing.latitude.doubleValue();
@@ -967,7 +965,7 @@ public class CommandLine {
 			double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2) + Math.cos(Math.toRadians(lat1))
 					* Math.cos(Math.toRadians(lat2)) * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
 			double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-			double calDistance = radius * c;
+			double calDistance = 6371 * c;
 
 			if (calDistance <= distance) {
 				addOrderByDistance(filtered, distArr, listing, (Double) calDistance);
@@ -2013,48 +2011,51 @@ public class CommandLine {
 				word.equalsIgnoreCase("has") || word.equalsIgnoreCase("am") || word.equalsIgnoreCase("me") ||
 				word.equalsIgnoreCase("you") || word.equalsIgnoreCase("my") || word.equalsIgnoreCase("our") ||
 				word.equalsIgnoreCase("like") || word.equalsIgnoreCase("if") || word.equalsIgnoreCase("as") ||
-				word.equalsIgnoreCase("it") || word.equalsIgnoreCase("your") || word.equalsIgnoreCase("this")) {
+				word.equalsIgnoreCase("it") || word.equalsIgnoreCase("your") || word.equalsIgnoreCase("this") ||
+        word.equalsIgnoreCase("was") || word.equalsIgnoreCase("just") || word.equalsIgnoreCase("actually") ||
+        word.equalsIgnoreCase("would've") || word.equalsIgnoreCase("know")) {
 			return false;
 		}
 
 		return true;
 	}
 
-	// Getting the most common phrases from:
-	// https://stackoverflow.com/questions/74693114/how-to-find-the-most-common-phrases-in-a-list-of-strings
-	private String getCommonNouns(ArrayList<Comment> comments) {
-		String common = "";
-		HashMap<String, Integer> countWords = new HashMap<>();
+	private ArrayList<String> getCommonNouns(ArrayList<Comment> comments) {
+		ArrayList<String> common = new ArrayList<>();
+		ArrayList<String> phrases = new ArrayList<>();
+    ArrayList<Integer> count = new ArrayList<>();
 
 		for (Comment comment : comments) {
 			String sentence = comment.text.replaceAll("[,.!?:()]", " ");
 
 			String[] words = sentence.split(" ");
-			for (int i = 0; i < words.length - 1; i++) {
-				if (isPossibleNoun(words[i]) && isPossibleNoun(words[i + 1])) {
-					String phrase = words[i] + " " + words[i + 1];
-					Integer count = countWords.get(phrase);
-					if (count == null) {
-						countWords.put(phrase, 1);
-					} else {
-						countWords.put(phrase, count + 1);
-					}
-				}
-			}
+      for (String word: words) {
+        if (!word.equals("") && isPossibleNoun(word)) {
+          if (phrases.contains(word)) {
+            int i = phrases.indexOf(word);
+            count.set(i,count.get(i) + 1);
+          }
+          else {
+            phrases.add(word);
+            count.add(1);
+          }
+        }
+      }
 		}
-
 		int max = 0;
-		for (String key : countWords.keySet()) {
-			int count = countWords.get(key);
-			if (count > max) {
-				max = count;
-				common = key;
+		for (int i = 0; i < phrases.size(); i++) {
+			int c = count.get(i);
+			if (c > max) {
+				max = c;
 			}
 		}
 
-		if (common == "") {
-			common = comments.get(0).text;
+    for (int i = 0; i < count.size(); i++) {
+			if (max == count.get(i)) {
+				common.add(phrases.get(i));
+			}
 		}
+
 		return common;
 	}
 
@@ -2073,9 +2074,13 @@ public class CommandLine {
 		for (Listing listing : listings) {
 			ArrayList<Comment> comments = sqlMngr.selectCommentByListing(listing.street, listing.number,
 					listing.postalCode, listing.country);
-			String common = getCommonNouns(comments);
-			System.out.printf("| %-87s | %-50s |%n", listing.number + " " + listing.street +
-					", " + listing.country + ", " + listing.postalCode, common);
+			ArrayList<String> common = getCommonNouns(comments);
+      System.out.printf("| %-87s | ", listing.number + " " + listing.street +
+					", " + listing.country + ", " + listing.postalCode);
+      for (String word: common) {
+        System.out.print(word + ",");
+      }
+      System.out.println();
 		}
 		System.out.println("+----------------------------------------------------------------"
 				+ "-------------------------+----------------------------------------------------+\n");
