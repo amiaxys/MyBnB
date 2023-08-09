@@ -1,2 +1,2 @@
 # MyBnB
-Simple AirBnB Knockoff
+Simple command line AirBnB Knockoff
